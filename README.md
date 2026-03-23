@@ -1,205 +1,268 @@
-# ACPulse Backend
+# ACPulse - Smart Campus Management System
 
-> **Feel the Pulse of AUCA** — A smarter, connected, and dynamic campus experience.
-
-[![Java](https://img.shields.io/badge/Java-21-orange.svg)](https://openjdk.java.net/)
-[![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.x-brightgreen.svg)](https://spring.io/projects/spring-boot)
-[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Database-blue.svg)](https://www.postgresql.org/)
-
+A modern, feature-rich web application for managing campus operations at Adventist University of Central Africa (AUCA). ACPulse streamlines room management, lecturer availability tracking, staff coordination, and student engagement through an intuitive, responsive interface.
 
 ## Overview
 
-**ACPulse** is a comprehensive campus digital management platform designed to revolutionize campus operations at the Adventist University of Central Africa (AUCA). The system provides real-time insights into lecturer availability, room utilization, personnel status, and campus-wide notifications, fostering a more efficient, transparent, and connected academic environment.
+ACPulse is built as a comprehensive solution for intelligent campus management, providing role-based access, real-time status tracking, verification workflows, and seamless collaboration across multiple user types.
 
-This repository contains the **Phase 1 backend system**, which implements core APIs, authentication infrastructure, hierarchical location management, and real-time lecturer-room mapping capabilities.
+## Features
 
-## Key Features
+### Core Functionality
+- **Role-Based Access Control**: Dedicated dashboards and workflows for Admin, Lecturer, Staff, and Student roles
+- **Room Management**: Intelligent room allocation, occupancy tracking, and extension management
+- **Lecturer Directory**: Searchable lecturer profiles with real-time availability status
+- **User Verification**: Streamlined verification request workflow for lecturers and staff
+- **Notification System**: Real-time notifications and updates across the platform
+- **Profile Management**: Secure user profile updates and password management
 
-### 🔐 Authentication & Authorization
-- Multi-role user system supporting **STUDENT**, **LECTURER**, **STAFF**, and **ADMIN** roles
-- Secure JWT-based authentication with refresh token support
-- Administrative verification workflow for new user approvals
-- Role-based access control (RBAC) for endpoint protection
+### User Dashboards
+- **Admin Dashboard**: System statistics, user management, and verification request handling
+- **Lecturer Dashboard**: Profile management, availability status updates, and room bookings
+- **Staff Dashboard**: Office status management and assignment tracking
+- **Student Dashboard**: Room search, booking, and lecturer discovery
 
-### 🏫 Room & Lecturer Management
-- Real-time room occupancy tracking and management
-- Lecturer availability status monitoring
-- Dynamic room booking with extension and release capabilities
-- Conflict resolution for room scheduling
+### Technical Excellence
+- **Dark Mode Support**: Full light/dark theme implementation with system preference detection
+- **Responsive Design**: Mobile-first approach with Tailwind CSS, fully functional on all screen sizes
+- **Real-Time State Management**: Zustand store for efficient global state handling
+- **Advanced Caching**: React Query with TanStack for optimized data fetching and caching
+- **Form Management**: React Hook Form for robust form handling and validation
+- **Component Library**: Reusable, well-documented UI components
 
-### 📍 Hierarchical Location System
-- Five-tier geographic hierarchy: Province → District → Sector → Cell → Village
-- Recursive relationship modeling for flexible location queries
-- Campus-wide location mapping and search functionality
+## Tech Stack
 
-### 📬 Notification System
-- Automated notifications for status changes and approvals
-- Read/unread tracking with persistence
-- Multi-channel notification delivery support
+### Frontend Framework
+- **React 19.2.0** - Modern React with latest features
+- **Vite 7.2** - Lightning-fast build tool and dev server
+- **React Router DOM 6** - Client-side routing
 
-### 🛠️ Administrative Tools
-- Comprehensive verification request management
-- Office status and assignment controls
-- User management and role assignment interfaces
-- System-wide configuration and monitoring
+### State & Data Management
+- **Zustand 5.0.9** - Lightweight state management
+- **TanStack React Query 5.90** - Powerful async state management and caching
+- **Axios 1.13** - HTTP client with interceptor support
 
-## Architecture
+### UI & Styling
+- **Tailwind CSS 3** - Utility-first CSS framework
+- **Tailwind Forms** - Form component styling plugin
+- **Lucide React 0.555** - Icon library with 555+ icons
+- **Framer Motion 12.23** - Animation and motion library
+- **CLSX 2.1.1** - Conditional className utility
 
-### Project Structure
+### Form & Validation
+- **React Hook Form 7** - Efficient form state management
+- **Custom validators** - Application-specific validation rules
+
+### Utilities
+- **date-fns 4.1** - Modern date manipulation
+- **Fuse.js 7.1** - Fuzzy search library
+- **React Hot Toast** - Toast notifications
+
+### Development
+- **ESLint** - Code linting and quality assurance
+- **PostCSS** - CSS processing and autoprefixing
+
+## Project Structure
 
 ```
-acpulse-backend/
+acpulse-frontend/
 ├── src/
-│   ├── main/
-│   │   ├── java/com/acpulse/
-│   │   │   ├── config/              # Security & configuration beans
-│   │   │   ├── controller/          # REST API endpoints
-│   │   │   ├── dto/                 # Data transfer objects
-│   │   │   ├── model/               # JPA entity models
-│   │   │   ├── repository/          # Spring Data repositories
-│   │   │   ├── security/            # JWT & authentication utilities
-│   │   │   ├── service/             # Business logic layer
-│   │   │   └── exception/           # Custom exception handlers
-│   │   └── resources/
-│   │       ├── application.properties   # Application configuration
-│   │       └── data.sql                 # Database seed scripts
-│   └── test/
-│       └── postman-tests/           # API test collection
-├── pom.xml                          # Maven dependencies
-└── README.md
+│   ├── components/
+│   │   ├── admin/              # Admin-specific components
+│   │   ├── auth/               # Authentication forms
+│   │   ├── common/             # Reusable UI components
+│   │   ├── dashboard/          # Role-specific dashboards
+│   │   ├── layout/             # Layout components
+│   │   ├── lecturers/          # Lecturer-related components
+│   │   ├── profile/            # User profile components
+│   │   └── rooms/              # Room management components
+│   ├── hooks/                  # Custom React hooks
+│   ├── pages/                  # Page components
+│   ├── routes/                 # Routing configuration
+│   ├── services/               # API service layer
+│   ├── store/                  # Zustand stores
+│   ├── utils/                  # Helper functions and constants
+│   ├── App.jsx                 # Root component
+│   ├── index.css               # Global styles
+│   └── main.jsx                # Entry point
+├── public/                     # Static assets
+├── index.html                  # HTML template
+├── vite.config.js              # Vite configuration
+├── tailwind.config.js          # Tailwind configuration
+├── postcss.config.js           # PostCSS configuration
+└── package.json                # Dependencies and scripts
 ```
-
-### Technology Stack
-
-| Layer | Technology |
-|-------|-----------|
-| **Language** | Java 21 |
-| **Framework** | Spring Boot 3.x |
-| **Database** | PostgreSQL / H2 |
-| **Security** | Spring Security + JWT (to be added) |
-| **Email** | JavaMailSender (to be added) |
-| **Testing** | Postman |
-| **Build Tool** | Maven 3.8+ |
 
 ## Getting Started
 
 ### Prerequisites
-
-Ensure you have the following installed:
-- **Java Development Kit (JDK)** 21 or higher
-- **Apache Maven** 3.8+
-- **PostgreSQL** 12+ or H2 Database
-- **Postman** (for API testing)
+- Node.js 16+ and npm/yarn
+- Backend API running on `http://localhost:8080/api`
 
 ### Installation
 
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/your-username/acpulse-backend.git
-   cd acpulse-backend
-   ```
+1. Clone the repository:
+```bash
+git clone <repository-url>
+cd acpulse-frontend
+```
 
-2. **Configure database connection**
-   
-   Edit `src/main/resources/application.properties`:
-   ```properties
-   spring.datasource.url=jdbc:postgresql://localhost:5432/acpulse
-   spring.datasource.username=postgres
-   spring.datasource.password=your_password
-   spring.jpa.hibernate.ddl-auto=update
-   ```
+2. Install dependencies:
+```bash
+npm install
+```
 
-3. **Build the project**
-   ```bash
-   mvn clean install
-   ```
+3. Configure environment variables:
+```bash
+cp .env.example .env
+# Update VITE_API_BASE_URL if necessary
+```
 
-4. **Run the application**
-   ```bash
-   mvn spring-boot:run
-   ```
+### Development
 
-The server will start at `http://localhost:8080`
+Start the development server:
+```bash
+npm run dev
+```
 
-### Initial Data
+The application will be available at `http://localhost:5173` (or next available port)
 
-The application automatically seeds essential data on startup:
+### Building
 
-| Entity | Sample Data |
-|--------|-------------|
-| **Roles** | STUDENT, LECTURER, STAFF, ADMIN |
-| **Admin Account** | Email: `admin@auca.ac.rw` <br/> Password: `Admin123!` |
-| **Locations** | Kigali → Gasabo → Kacyiru |
-| **Rooms** | A-101, A-102 |
-| **Offices** | Admin-101 |
-| **Semester** | Fall 2024/2025 |
+Build for production:
+```bash
+npm run build
+```
 
-## API Testing
+Preview production build:
+```bash
+npm run preview
+```
 
-Comprehensive API tests are available in the `src/test/postman-tests/` directory.
+### Linting
 
-**Test Collection Includes:**
-- ✅ User authentication (registration, login, token validation)
-- ✅ Lecturer room operations (occupy, extend, release)
-- ✅ Admin verification workflows
-- ✅ Staff office management
-- ✅ Notification endpoints
-- ✅ Location hierarchy queries
+Run ESLint to check code quality:
+```bash
+npm run lint
+```
 
-Each test includes request templates, authentication headers, expected responses, and automated validation scripts.
+## Environment Configuration
 
-📂 **Access the full test suite:** `src/test/postman-tests/Individual_Postman_Tests.md`
+Create a `.env` file in the root directory:
 
-## API Documentation
+```env
+VITE_API_BASE_URL=http://localhost:8080/api
+VITE_APP_NAME=ACPulse
+VITE_APP_VERSION=1.0.0
+```
 
-API endpoints follow RESTful conventions:
+## Authentication Flow
 
-- **Authentication:** `/api/auth/*`
-- **Users:** `/api/users/*`
-- **Rooms:** `/api/rooms/*`
-- **Lecturers:** `/api/lecturers/*`
-- **Notifications:** `/api/notifications/*`
-- **Locations:** `/api/locations/*`
+1. Users access the application and are directed to the login page
+2. Upon successful authentication, users are redirected to their role-specific dashboard
+3. JWT tokens are stored securely and included in API requests via axios interceptors
+4. Token refresh and logout functionality managed through the auth store
 
-Detailed endpoint documentation with request/response examples is available in the Postman collection.
+## State Management
 
-## Roadmap
+### Auth Store (`useAuthStore`)
+- Manages user authentication state and session
+- Persists auth data to localStorage
+- Provides login/logout actions
 
-### Future Enhancements
+### UI Store (`useUIStore`)
+- Manages theme (light/dark mode)
+- Manages sidebar state
+- Persists UI preferences to localStorage
 
-- [ ] **WebSocket Integration** — Real-time lecturer status updates
-- [ ] **Frontend Development** — React or Flutter dashboard interface
-- [ ] **Student Booking System** — Self-service room reservations
-- [ ] **Analytics Dashboard** — AI-powered insights on room utilization and attendance patterns
-- [ ] **Mobile Application** — Native iOS and Android apps
-- [ ] **Integration APIs** — Connect with existing campus systems (LMS, attendance)
+## API Integration
 
-## Contributing
+The application communicates with a RESTful API through the axios client configured in `services/api.js`. All API calls are made through specialized service modules:
 
-This is an academic project. For collaboration or extension proposals, please contact the author directly.
+- `authService.js` - Authentication endpoints
+- `userService.js` - User profile and verification
+- `lecturerService.js` - Lecturer data and status
+- `roomService.js` - Room management
+- `adminService.js` - Admin operations
+- `staffService.js` - Staff operations
+- `notificationService.js` - Notifications
+- `locationService.js` - Location hierarchy data
 
-## Author
+## Component Architecture
 
-**Joseph Manizabayo**  
-Software Engineering Student  
-Adventist University of Central Africa (AUCA)
+### Reusable Components
+Located in `components/common/`, these components follow a consistent API:
 
-📧 Email: [josephmanizabayo7@gmail.com](mailto:josephmanizabayo7@gmail.com)  
-🎓 Institution: AUCA  
-📅 Year: 2025
+- **Button** - Multi-variant button component
+- **Input** - Text input with validation support
+- **Card** - Container with customizable styling
+- **Modal** - Dialog component with configurable actions
+- **Avatar** - User avatar with fallback and status
+- **Badge** - Status and category badges
+- **Table** - Data table with search and sort
+- **Pagination** - Page navigation
+- **LoadingSpinner** - Loading indicator
+- **Toast** - Toast notifications
+- **GlobalSearch** - Application-wide search functionality
+
+## Performance Optimizations
+
+- **Code Splitting**: Route-based code splitting for faster initial load
+- **Image Optimization**: Lazy loading for images
+- **Caching Strategy**: React Query manages API response caching
+- **CSS Optimization**: Tailwind purges unused styles in production
+- **Debouncing**: Search and filter inputs debounced to reduce API calls
+
+## Browser Support
+
+- Chrome (latest)
+- Firefox (latest)
+- Safari (latest)
+- Edge (latest)
+
+## Contributing Guidelines
+
+1. Follow the existing code structure and naming conventions
+2. Maintain component reusability and modularity
+3. Use ESLint standards for code quality
+4. Document complex logic with comments
+5. Test all features before submitting changes
+
+## Known Limitations & Future Enhancements
+
+- TypeScript integration planned for improved type safety
+- Unit and integration tests to be added
+- Accessibility (a11y) improvements in progress
+- Advanced filtering and reporting features planned
+
+## Troubleshooting
+
+### Port Already in Use
+If port 5173 is already in use, Vite automatically tries the next available port.
+
+### API Connection Issues
+- Verify backend API is running on the configured URL
+- Check network requests in browser DevTools
+- Review console for detailed error messages
+
+### Module Resolution Errors
+Clear node_modules and reinstall:
+```bash
+rm -rf node_modules && npm install
+```
+
+### Build Failures
+Ensure all environment variables are set correctly and all dependencies are installed.
+
+## Support & Contact
+
+For issues, feature requests, or technical questions, please contact the development team or open an issue in the project repository.
 
 ## License
 
-This project is licensed under the AUCA WebTech class License.
-
-**Attribution Required:** Any reuse, modification, or extension of this codebase must credit the original author.
+© 2025 Adventist University of Central Africa. All rights reserved.
 
 ---
 
-<div align="center">
-
-**© 2025 Joseph Manizabayo — All Rights Reserved**
-
-*Original concept and implementation by Joseph Manizabayo*
-
-</div>
+**Version**: 1.0.0  
+**Last Updated**: December 2025
