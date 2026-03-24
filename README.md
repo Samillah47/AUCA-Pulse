@@ -260,9 +260,9 @@ For issues, feature requests, or technical questions, please contact the develop
 
 ## License
 
-© 2025 Adventist University of Central Africa. All rights reserved.
+© 2026 Adventist University of Central Africa. All rights reserved.
 
 ---
 
 **Version**: 1.0.0  
-**Last Updated**: December 2025
+**Last Updated**: March 2026
