@@ -171,6 +171,8 @@ namespace AUCAPulse.Data
 
         private void SeedData(ModelBuilder modelBuilder)
         {
+            var seedDate = new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+
             // Seed Roles
             modelBuilder.Entity<Role>().HasData(
                 new Role { Id = 1, RoleName = "STUDENT", Description = "Student user with search and view permissions" },
@@ -181,38 +183,38 @@ namespace AUCAPulse.Data
 
             // Seed Locations (Rwanda provinces)
             modelBuilder.Entity<Location>().HasData(
-                new Location { Id = 1, Name = "Kigali", Code = "KGL", Type = LocationType.PROVINCE, CreatedAt = DateTime.UtcNow },
-                new Location { Id = 2, Name = "Eastern Province", Code = "EST", Type = LocationType.PROVINCE, CreatedAt = DateTime.UtcNow },
-                new Location { Id = 3, Name = "Northern Province", Code = "NTH", Type = LocationType.PROVINCE, CreatedAt = DateTime.UtcNow },
-                new Location { Id = 4, Name = "Southern Province", Code = "STH", Type = LocationType.PROVINCE, CreatedAt = DateTime.UtcNow },
-                new Location { Id = 5, Name = "Western Province", Code = "WST", Type = LocationType.PROVINCE, CreatedAt = DateTime.UtcNow },
+                new Location { Id = 1, Name = "Kigali", Code = "KGL", Type = LocationType.PROVINCE, CreatedAt = seedDate },
+                new Location { Id = 2, Name = "Eastern Province", Code = "EST", Type = LocationType.PROVINCE, CreatedAt = seedDate },
+                new Location { Id = 3, Name = "Northern Province", Code = "NTH", Type = LocationType.PROVINCE, CreatedAt = seedDate },
+                new Location { Id = 4, Name = "Southern Province", Code = "STH", Type = LocationType.PROVINCE, CreatedAt = seedDate },
+                new Location { Id = 5, Name = "Western Province", Code = "WST", Type = LocationType.PROVINCE, CreatedAt = seedDate },
                 // Kigali districts
-                new Location { Id = 6, Name = "Gasabo", Code = "GSB", Type = LocationType.DISTRICT, ParentId = 1, CreatedAt = DateTime.UtcNow },
-                new Location { Id = 7, Name = "Kicukiro", Code = "KCK", Type = LocationType.DISTRICT, ParentId = 1, CreatedAt = DateTime.UtcNow },
-                new Location { Id = 8, Name = "Nyarugenge", Code = "NYR", Type = LocationType.DISTRICT, ParentId = 1, CreatedAt = DateTime.UtcNow }
+                new Location { Id = 6, Name = "Gasabo", Code = "GSB", Type = LocationType.DISTRICT, ParentId = 1, CreatedAt = seedDate },
+                new Location { Id = 7, Name = "Kicukiro", Code = "KCK", Type = LocationType.DISTRICT, ParentId = 1, CreatedAt = seedDate },
+                new Location { Id = 8, Name = "Nyarugenge", Code = "NYR", Type = LocationType.DISTRICT, ParentId = 1, CreatedAt = seedDate }
             );
 
             // Seed Rooms
             modelBuilder.Entity<Room>().HasData(
-                new Room { Id = 1, RoomNumber = "A-101", RoomName = "Lecture Hall 1", Capacity = 100, Building = "Academic Block A", Floor = "1st Floor", RoomType = RoomType.LECTURE_HALL, Status = RoomStatus.AVAILABLE, CreatedAt = DateTime.UtcNow },
-                new Room { Id = 2, RoomNumber = "A-102", RoomName = "Lecture Hall 2", Capacity = 100, Building = "Academic Block A", Floor = "1st Floor", RoomType = RoomType.LECTURE_HALL, Status = RoomStatus.AVAILABLE, CreatedAt = DateTime.UtcNow },
-                new Room { Id = 3, RoomNumber = "A-204", RoomName = "Computer Lab 1", Capacity = 40, Building = "Academic Block A", Floor = "2nd Floor", RoomType = RoomType.LAB, Status = RoomStatus.AVAILABLE, CreatedAt = DateTime.UtcNow },
-                new Room { Id = 4, RoomNumber = "A-205", RoomName = "Computer Lab 2", Capacity = 40, Building = "Academic Block A", Floor = "2nd Floor", RoomType = RoomType.LAB, Status = RoomStatus.AVAILABLE, CreatedAt = DateTime.UtcNow },
-                new Room { Id = 5, RoomNumber = "B-101", RoomName = "Science Lab", Capacity = 30, Building = "Academic Block B", Floor = "1st Floor", RoomType = RoomType.LAB, Status = RoomStatus.AVAILABLE, CreatedAt = DateTime.UtcNow },
-                new Room { Id = 6, RoomNumber = "B-201", RoomName = "Conference Room", Capacity = 50, Building = "Academic Block B", Floor = "2nd Floor", RoomType = RoomType.MEETING_ROOM, Status = RoomStatus.AVAILABLE, CreatedAt = DateTime.UtcNow }
+                new Room { Id = 1, RoomNumber = "A-101", RoomName = "Lecture Hall 1", Capacity = 100, Building = "Academic Block A", Floor = "1st Floor", RoomType = RoomType.LECTURE_HALL, Status = RoomStatus.AVAILABLE, CreatedAt = seedDate },
+                new Room { Id = 2, RoomNumber = "A-102", RoomName = "Lecture Hall 2", Capacity = 100, Building = "Academic Block A", Floor = "1st Floor", RoomType = RoomType.LECTURE_HALL, Status = RoomStatus.AVAILABLE, CreatedAt = seedDate },
+                new Room { Id = 3, RoomNumber = "A-204", RoomName = "Computer Lab 1", Capacity = 40, Building = "Academic Block A", Floor = "2nd Floor", RoomType = RoomType.LAB, Status = RoomStatus.AVAILABLE, CreatedAt = seedDate },
+                new Room { Id = 4, RoomNumber = "A-205", RoomName = "Computer Lab 2", Capacity = 40, Building = "Academic Block A", Floor = "2nd Floor", RoomType = RoomType.LAB, Status = RoomStatus.AVAILABLE, CreatedAt = seedDate },
+                new Room { Id = 5, RoomNumber = "B-101", RoomName = "Science Lab", Capacity = 30, Building = "Academic Block B", Floor = "1st Floor", RoomType = RoomType.LAB, Status = RoomStatus.AVAILABLE, CreatedAt = seedDate },
+                new Room { Id = 6, RoomNumber = "B-201", RoomName = "Conference Room", Capacity = 50, Building = "Academic Block B", Floor = "2nd Floor", RoomType = RoomType.MEETING_ROOM, Status = RoomStatus.AVAILABLE, CreatedAt = seedDate }
             );
 
             // Seed Offices
             modelBuilder.Entity<Office>().HasData(
-                new Office { Id = 1, OfficeNumber = "Admin-101", OfficeName = "Registrar Office", Building = "Admin Building", Floor = "1st Floor", AvailabilityStatus = AvailabilityStatus.CLOSED, RegularOpenTime = new TimeSpan(8, 0, 0), RegularCloseTime = new TimeSpan(17, 0, 0), CreatedAt = DateTime.UtcNow },
-                new Office { Id = 2, OfficeNumber = "Admin-102", OfficeName = "Finance Office", Building = "Admin Building", Floor = "1st Floor", AvailabilityStatus = AvailabilityStatus.CLOSED, RegularOpenTime = new TimeSpan(8, 0, 0), RegularCloseTime = new TimeSpan(17, 0, 0), CreatedAt = DateTime.UtcNow },
-                new Office { Id = 3, OfficeNumber = "Admin-201", OfficeName = "Student Affairs", Building = "Admin Building", Floor = "2nd Floor", AvailabilityStatus = AvailabilityStatus.CLOSED, RegularOpenTime = new TimeSpan(8, 0, 0), RegularCloseTime = new TimeSpan(17, 0, 0), CreatedAt = DateTime.UtcNow },
-                new Office { Id = 4, OfficeNumber = "Admin-202", OfficeName = "Academic Affairs", Building = "Admin Building", Floor = "2nd Floor", AvailabilityStatus = AvailabilityStatus.CLOSED, RegularOpenTime = new TimeSpan(8, 0, 0), RegularCloseTime = new TimeSpan(17, 0, 0), CreatedAt = DateTime.UtcNow }
+                new Office { Id = 1, OfficeNumber = "Admin-101", OfficeName = "Registrar Office", Building = "Admin Building", Floor = "1st Floor", AvailabilityStatus = AvailabilityStatus.CLOSED, RegularOpenTime = new TimeSpan(8, 0, 0), RegularCloseTime = new TimeSpan(17, 0, 0), CreatedAt = seedDate },
+                new Office { Id = 2, OfficeNumber = "Admin-102", OfficeName = "Finance Office", Building = "Admin Building", Floor = "1st Floor", AvailabilityStatus = AvailabilityStatus.CLOSED, RegularOpenTime = new TimeSpan(8, 0, 0), RegularCloseTime = new TimeSpan(17, 0, 0), CreatedAt = seedDate },
+                new Office { Id = 3, OfficeNumber = "Admin-201", OfficeName = "Student Affairs", Building = "Admin Building", Floor = "2nd Floor", AvailabilityStatus = AvailabilityStatus.CLOSED, RegularOpenTime = new TimeSpan(8, 0, 0), RegularCloseTime = new TimeSpan(17, 0, 0), CreatedAt = seedDate },
+                new Office { Id = 4, OfficeNumber = "Admin-202", OfficeName = "Academic Affairs", Building = "Admin Building", Floor = "2nd Floor", AvailabilityStatus = AvailabilityStatus.CLOSED, RegularOpenTime = new TimeSpan(8, 0, 0), RegularCloseTime = new TimeSpan(17, 0, 0), CreatedAt = seedDate }
             );
 
             // Seed Semester
             modelBuilder.Entity<Semester>().HasData(
-                new Semester { Id = 1, Name = "Fall 2024/2025", StartDate = new DateTime(2024, 9, 1), EndDate = new DateTime(2025, 1, 31), IsCurrent = true, CreatedAt = DateTime.UtcNow }
+                new Semester { Id = 1, Name = "Fall 2024/2025", StartDate = new DateTime(2024, 9, 1, 0, 0, 0, DateTimeKind.Utc), EndDate = new DateTime(2025, 1, 31, 0, 0, 0, DateTimeKind.Utc), IsCurrent = true, CreatedAt = seedDate }
             );
         }
     }
