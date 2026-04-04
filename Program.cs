@@ -10,6 +10,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddRazorPages();
+builder.Services.AddControllers(); // Add API controllers support
 
 // Add DbContext
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
@@ -88,5 +89,6 @@ app.UseAuthorization();
 app.UseSession();
 
 app.MapRazorPages();
+app.MapControllers(); // Map API controllers
 
 app.Run();
