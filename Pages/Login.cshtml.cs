@@ -48,7 +48,12 @@ namespace AUCAPulse.Pages
             try
             {
                 var client = _httpClientFactory.CreateClient();
-                var apiUrl = _configuration["ApiSettings:BaseUrl"] ?? "https://localhost:5204/api";
+                var baseUrl = _configuration["ApiSettings:BaseUrl"];
+                
+                if (string.IsNullOrEmpty(baseUrl))
+                {
+                    baseUrl = "http://localhost:5204/api";
+                }
 
                 var loginRequest = new
                 {
@@ -59,16 +64,13 @@ namespace AUCAPulse.Pages
                 var json = JsonSerializer.Serialize(loginRequest);
                 var content = new StringContent(json, Encoding.UTF8, "application/json");
 
-                var response = await client.PostAsync($"{apiUrl}/Auth/login", content);
+                var response = await client.PostAsync($"{baseUrl}/Auth/login", content);
                 var responseContent = await response.Content.ReadAsStringAsync();
 
                 if (response.IsSuccessStatusCode)
                 {
-                    var result = JsonSerializer.Deserialize<JsonElement>(responseContent);
-                    
-                    // Store user info in session
+                    // Store email in session for OTP verification
                     HttpContext.Session.SetString("Email", Email);
-                    HttpContext.Session.SetString("UserId", result.GetProperty("data").GetProperty("userId").ToString());
                     
                     // Redirect to OTP verification
                     return RedirectToPage("/VerifyOtp", new { email = Email });

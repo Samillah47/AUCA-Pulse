@@ -62,7 +62,7 @@ namespace AUCAPulse.Pages
                 var verifyRequest = new
                 {
                     email = Email,
-                    otpCode = OtpCode
+                    otp = OtpCode
                 };
 
                 var json = JsonSerializer.Serialize(verifyRequest);
@@ -74,13 +74,12 @@ namespace AUCAPulse.Pages
                 if (response.IsSuccessStatusCode)
                 {
                     var result = JsonSerializer.Deserialize<JsonElement>(responseContent);
-                    var data = result.GetProperty("data");
 
                     // Store authentication data in session
-                    HttpContext.Session.SetString("Token", data.GetProperty("token").GetString() ?? string.Empty);
-                    HttpContext.Session.SetString("UserId", data.GetProperty("userId").ToString());
-                    HttpContext.Session.SetString("UserName", data.GetProperty("name").GetString() ?? string.Empty);
-                    HttpContext.Session.SetString("UserRole", data.GetProperty("role").GetString() ?? string.Empty);
+                    HttpContext.Session.SetString("Token", result.GetProperty("token").GetString() ?? string.Empty);
+                    HttpContext.Session.SetString("UserId", result.GetProperty("userId").ToString());
+                    HttpContext.Session.SetString("UserName", result.GetProperty("name").GetString() ?? string.Empty);
+                    HttpContext.Session.SetString("UserRole", result.GetProperty("role").GetString() ?? string.Empty);
                     HttpContext.Session.SetString("Email", Email);
 
                     // Redirect to dashboard
