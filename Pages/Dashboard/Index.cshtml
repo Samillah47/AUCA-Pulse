@@ -1,0 +1,236 @@
+@page
+@model AUCAPulse.Pages.Dashboard.IndexModel
+@{
+    ViewData["Title"] = "Dashboard - ACPulse";
+}
+
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h1 class="display-6">Welcome back, @Model.UserName! 👋</h1>
+            <p class="text-muted">@Model.UserRole Dashboard</p>
+        </div>
+    </div>
+
+    @if (Model.UserRole == "ADMIN")
+    {
+        <!-- Admin Dashboard -->
+        <div class="row g-4">
+            <div class="col-md-3">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="text-muted mb-2">Total Users</h6>
+                                <h3 class="mb-0">@Model.TotalUsers</h3>
+                            </div>
+                            <div class="bg-primary bg-opacity-10 p-3 rounded">
+                                <i class="bi bi-people fs-3 text-primary"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-3">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="text-muted mb-2">Pending Requests</h6>
+                                <h3 class="mb-0">@Model.PendingRequests</h3>
+                            </div>
+                            <div class="bg-warning bg-opacity-10 p-3 rounded">
+                                <i class="bi bi-clock-history fs-3 text-warning"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-3">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="text-muted mb-2">Available Rooms</h6>
+                                <h3 class="mb-0">@Model.AvailableRooms</h3>
+                            </div>
+                            <div class="bg-success bg-opacity-10 p-3 rounded">
+                                <i class="bi bi-door-open fs-3 text-success"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-3">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="text-muted mb-2">Active Lecturers</h6>
+                                <h3 class="mb-0">@Model.ActiveLecturers</h3>
+                            </div>
+                            <div class="bg-info bg-opacity-10 p-3 rounded">
+                                <i class="bi bi-person-badge fs-3 text-info"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mt-4">
+            <div class="col-md-6">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-header bg-white">
+                        <h5 class="mb-0">Quick Actions</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-grid gap-2">
+                            <a href="/Admin/VerificationRequests" class="btn btn-outline-primary text-start">
+                                <i class="bi bi-check-circle me-2"></i> Review Verification Requests
+                            </a>
+                            <a href="/Admin/UserManagement" class="btn btn-outline-primary text-start">
+                                <i class="bi bi-people me-2"></i> Manage Users
+                            </a>
+                            <a href="/Admin/PasswordResets" class="btn btn-outline-primary text-start">
+                                <i class="bi bi-key me-2"></i> Password Reset Requests
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-header bg-white">
+                        <h5 class="mb-0">Recent Activity</h5>
+                    </div>
+                    <div class="card-body">
+                        <p class="text-muted">No recent activity</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+    else if (Model.UserRole == "LECTURER")
+    {
+        <!-- Lecturer Dashboard -->
+        <div class="row g-4">
+            <div class="col-md-4">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body">
+                        <h6 class="text-muted mb-2">My Status</h6>
+                        <h4 class="mb-0 text-success">Available</h4>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body">
+                        <h6 class="text-muted mb-2">Today's Classes</h6>
+                        <h4 class="mb-0">3</h4>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body">
+                        <h6 class="text-muted mb-2">Office Hours</h6>
+                        <h4 class="mb-0">9:00 - 17:00</h4>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-header bg-white">
+                        <h5 class="mb-0">Quick Actions</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-grid gap-2 d-md-flex">
+                            <a href="/Schedule" class="btn btn-primary">
+                                <i class="bi bi-calendar me-2"></i> View Schedule
+                            </a>
+                            <a href="/Rooms" class="btn btn-outline-primary">
+                                <i class="bi bi-door-open me-2"></i> Find Room
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+    else if (Model.UserRole == "STUDENT")
+    {
+        <!-- Student Dashboard -->
+        <div class="row g-4">
+            <div class="col-md-6">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-header bg-white">
+                        <h5 class="mb-0">Find Lecturers</h5>
+                    </div>
+                    <div class="card-body">
+                        <p class="text-muted">Search for lecturers and check their availability</p>
+                        <a href="/Lecturers" class="btn btn-primary">
+                            <i class="bi bi-search me-2"></i> Search Lecturers
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-header bg-white">
+                        <h5 class="mb-0">Available Rooms</h5>
+                    </div>
+                    <div class="card-body">
+                        <p class="text-muted">Find available rooms for study or meetings</p>
+                        <a href="/Rooms" class="btn btn-primary">
+                            <i class="bi bi-door-open me-2"></i> View Rooms
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+    else
+    {
+        <!-- Staff Dashboard -->
+        <div class="row g-4">
+            <div class="col-md-6">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-header bg-white">
+                        <h5 class="mb-0">My Office</h5>
+                    </div>
+                    <div class="card-body">
+                        <p class="text-muted">Manage your office status and availability</p>
+                        <a href="/Profile" class="btn btn-primary">
+                            <i class="bi bi-building me-2"></i> View Office
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-header bg-white">
+                        <h5 class="mb-0">Campus Resources</h5>
+                    </div>
+                    <div class="card-body">
+                        <p class="text-muted">Access rooms and facilities</p>
+                        <a href="/Rooms" class="btn btn-primary">
+                            <i class="bi bi-door-open me-2"></i> View Rooms
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</div>
