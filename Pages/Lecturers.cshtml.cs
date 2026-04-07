@@ -81,7 +81,8 @@ namespace AUCAPulse.Pages
                 }
                 else
                 {
-                    ErrorMessage = "Failed to load lecturers. Please try again.";
+                    var errorContent = await response.Content.ReadAsStringAsync();
+                    ErrorMessage = $"Failed to load lecturers. Status: {response.StatusCode}. Error: {errorContent}";
                 }
             }
             catch (Exception ex)
