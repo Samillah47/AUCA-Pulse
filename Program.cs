@@ -66,6 +66,9 @@ builder.Services.AddScoped<IPasswordResetRequestService, PasswordResetRequestSer
 builder.Services.AddScoped<ISemesterService, SemesterService>();
 builder.Services.AddScoped<JwtHelper>();
 
+// Add HttpClient for API calls
+builder.Services.AddHttpClient();
+
 // Add session support
 builder.Services.AddSession(options =>
 {
@@ -73,6 +76,9 @@ builder.Services.AddSession(options =>
     options.Cookie.HttpOnly = true;
     options.Cookie.IsEssential = true;
 });
+
+// Add distributed memory cache for session
+builder.Services.AddDistributedMemoryCache();
 
 // Add CORS
 builder.Services.AddCors(options =>

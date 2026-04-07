@@ -1,0 +1,140 @@
+@page
+@model AUCAPulse.Pages.LoginModel
+@{
+    ViewData["Title"] = "Login - ACPulse";
+    Layout = null;
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"]</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .login-container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+            max-width: 900px;
+            width: 100%;
+        }
+        .login-left {
+            padding: 60px;
+        }
+        .login-right {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 60px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        .brand-logo {
+            font-size: 2.5rem;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .btn-primary-custom {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            padding: 12px;
+            font-weight: 600;
+        }
+        .btn-primary-custom:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="login-container row g-0">
+            <!-- Left Side - Login Form -->
+            <div class="col-md-6 login-left">
+                <a href="/" class="text-decoration-none text-muted mb-4 d-inline-block">
+                    <i class="bi bi-arrow-left"></i> Back to Home
+                </a>
+                
+                <div class="mb-4">
+                    <div class="brand-logo">⚡ ACPulse</div>
+                    <p class="text-muted">AUCA Smart Campus</p>
+                </div>
+
+                <h2 class="mb-2">Welcome back</h2>
+                <p class="text-muted mb-4">Sign in to access your campus dashboard</p>
+
+                @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+                {
+                    <div class="alert alert-danger" role="alert">
+                        @Model.ErrorMessage
+                    </div>
+                }
+
+                <form method="post">
+                    <div class="mb-3">
+                        <label asp-for="Email" class="form-label">Email Address</label>
+                        <input asp-for="Email" class="form-control form-control-lg" placeholder="your.email@auca.ac.rw" />
+                        <span asp-validation-for="Email" class="text-danger"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Password" class="form-label">Password</label>
+                        <input asp-for="Password" type="password" class="form-control form-control-lg" placeholder="Enter your password" />
+                        <span asp-validation-for="Password" class="text-danger"></span>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary-custom btn-lg w-100 mb-3">
+                        Sign In
+                    </button>
+                </form>
+
+                <div class="text-center mt-4">
+                    <p class="text-muted">
+                        Don't have an account? 
+                        <a href="/Signup" class="text-primary fw-bold">Request Access</a>
+                    </p>
+                    <a href="/ForgotPassword" class="text-muted">Forgot your password?</a>
+                </div>
+            </div>
+
+            <!-- Right Side - Branding -->
+            <div class="col-md-6 login-right d-none d-md-flex">
+                <div>
+                    <h2 class="display-5 mb-4">Feel the Pulse of AUCA</h2>
+                    <p class="lead mb-5">Your gateway to smart campus connectivity. Track lecturers, find rooms, and stay connected with the AUCA community.</p>
+                    
+                    <div class="mb-3">
+                        <i class="bi bi-lightning-charge-fill"></i> Real-time campus visibility
+                    </div>
+                    <div class="mb-3">
+                        <i class="bi bi-shield-check"></i> Secure authentication
+                    </div>
+                    <div class="mb-3">
+                        <i class="bi bi-bell-fill"></i> Smart notifications
+                    </div>
+
+                    <div class="mt-5 pt-4 border-top border-light">
+                        <p class="small">Trusted by the Adventist University of Central Africa community</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/lib/jquery-validation/dist/jquery.validate.min.js"></script>
+    <script src="~/lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.min.js"></script>
+</body>
+</html>
