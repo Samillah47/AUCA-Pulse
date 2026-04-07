@@ -8,9 +8,13 @@
 
 ## Overview
 
-**AUCA Pulse** is a comprehensive campus digital management platform designed to revolutionize campus operations at the Adventist University of Central Africa (AUCA). This is the **.NET C# implementation** using ASP.NET Core Razor Pages, migrated from the original Spring Boot Java application.
+**AUCA Pulse** is a comprehensive campus digital management platform designed to revolutionize campus operations at the Adventist University of Central Africa (AUCA). This is the **.NET C# implementation** using ASP.NET Core with REST API backend and Razor Pages frontend, migrated from the original Spring Boot Java application.
 
 The system provides real-time insights into lecturer availability, room utilization, personnel status, and campus-wide notifications, fostering a more efficient, transparent, and connected academic environment.
+
+## Current Status
+
+✅ **FULLY FUNCTIONAL** - Complete backend API and frontend UI with authentication, role-based access, and all core features implemented.
 
 ## Key Features
 
@@ -51,7 +55,7 @@ The system provides real-time insights into lecturer availability, room utilizat
 | Layer | Technology |
 |-------|-----------|
 | **Language** | C# 12 |
-| **Framework** | ASP.NET Core 8.0 (Razor Pages) |
+| **Framework** | ASP.NET Core 8.0 (REST API + Razor Pages) |
 | **Database** | PostgreSQL 12+ |
 | **ORM** | Entity Framework Core 8.0 |
 | **Authentication** | JWT Bearer Tokens |
@@ -62,26 +66,79 @@ The system provides real-time insights into lecturer availability, room utilizat
 ## Project Structure
 
 ```
-AUCAPulse/
-├── Models/                  # Entity models (User, Role, Room, etc.)
-├── Data/                    # DbContext and migrations
-├── Services/                # Business logic layer
+FinalProject_GroupB/
+├── Controllers/             # REST API Controllers (12 endpoints)
+│   ├── AuthController.cs
+│   ├── UserController.cs
+│   ├── RoomController.cs
+│   ├── LecturerStatusController.cs
+│   ├── LectureScheduleController.cs
+│   ├── OfficeController.cs
+│   ├── LocationController.cs
+│   ├── NotificationController.cs
+│   ├── VerificationRequestController.cs
+│   ├── PasswordResetRequestController.cs
+│   ├── SemesterController.cs
+│   └── TestController.cs
+├── Models/                  # Entity models (11 entities)
+│   ├── User.cs
+│   ├── Role.cs
+│   ├── Room.cs
+│   ├── LecturerStatus.cs
+│   ├── LectureSchedule.cs
+│   ├── Office.cs
+│   ├── Location.cs
+│   ├── Notification.cs
+│   ├── VerificationRequest.cs
+│   ├── PasswordResetRequest.cs
+│   └── Semester.cs
+├── Data/                    # DbContext and database configuration
+│   └── ApplicationDbContext.cs
+├── Services/                # Business logic layer (22 services)
 │   ├── AuthService.cs
 │   ├── EmailService.cs
-│   ├── AdminService.cs
-│   ├── LecturerService.cs
-│   └── ...
-├── Pages/                   # Razor Pages (UI)
-│   ├── Auth/               # Login, Register, OTP
-│   ├── Admin/              # Admin dashboard
-│   ├── Lecturer/           # Lecturer dashboard
-│   ├── Student/            # Student dashboard
-│   └── ...
+│   ├── UserService.cs
+│   ├── RoomService.cs
+│   ├── LecturerStatusService.cs
+│   ├── LectureScheduleService.cs
+│   ├── OfficeService.cs
+│   ├── LocationService.cs
+│   ├── NotificationService.cs
+│   ├── VerificationRequestService.cs
+│   ├── PasswordResetRequestService.cs
+│   ├── SemesterService.cs
+│   └── I[Service]Service.cs (interfaces)
+├── Pages/                   # Razor Pages UI (Frontend)
+│   ├── Dashboard/          # Role-based dashboard
+│   ├── Login.cshtml        # Authentication pages
+│   ├── VerifyOtp.cshtml
+│   ├── Signup.cshtml
+│   ├── Logout.cshtml
+│   ├── Rooms.cshtml        # Room management
+│   ├── RoomDetails/
+│   ├── Lecturers.cshtml    # Lecturer directory
+│   ├── LecturerProfile/
+│   ├── Schedule.cshtml     # Lecture schedules
+│   ├── Profile.cshtml      # User profile
+│   ├── Notifications.cshtml
+│   ├── UserManagement.cshtml      # Admin pages
+│   ├── VerificationRequests.cshtml
+│   ├── PasswordResets.cshtml
+│   └── Shared/             # Layout and partials
 ├── DTOs/                    # Data Transfer Objects
+│   ├── Request/            # API request DTOs
+│   └── Response/           # API response DTOs
 ├── Helpers/                 # Utility classes
-├── wwwroot/                 # Static files (CSS, JS, images)
+│   ├── JwtHelper.cs
+│   ├── OtpHelper.cs
+│   └── AdminUserInitializer.cs
+├── Migrations/              # EF Core migrations
+│   └── 20260404145133_InitialCreate.cs
+├── wwwroot/                 # Static files (CSS, JS, Bootstrap)
 ├── appsettings.json         # Configuration
-└── Program.cs               # Application entry point
+├── Program.cs               # Application entry point
+├── AUCAPulse.csproj        # Project file
+└── FinalProject_GroupB.sln # Solution file
 ```
 
 ## Getting Started
@@ -98,8 +155,8 @@ AUCAPulse/
 1. **Clone the repository**
    ```bash
    git clone https://github.com/Samillah47/AUCA-Pulse.git
-   cd AUCA-Pulse
-   git checkout "Habiyaremye Adolphe_26751"
+   cd "AUCA-Pulse/FinalProject_GroupB"
+   git checkout Habiyaremye_Adolphe_26751
    ```
 
 2. **Configure database connection**
@@ -114,7 +171,7 @@ AUCAPulse/
        "SecretKey": "your-secret-key-minimum-32-characters-long",
        "Issuer": "AUCAPulse",
        "Audience": "AUCAPulseUsers",
-       "ExpirationMinutes": 1440
+       "ExpirationMinutes": 10080
      },
      "EmailSettings": {
        "SmtpServer": "smtp.gmail.com",
@@ -122,6 +179,9 @@ AUCAPulse/
        "SenderEmail": "your-email@gmail.com",
        "SenderPassword": "your-app-password",
        "SenderName": "AUCA Pulse"
+     },
+     "ApiSettings": {
+       "BaseUrl": "http://localhost:5204/api"
      }
    }
    ```
@@ -140,65 +200,91 @@ AUCAPulse/
    ```bash
    dotnet run
    ```
+   Or open `FinalProject_GroupB.sln` in Visual Studio and press F5.
 
-The application will start at `https://localhost:5001` or `http://localhost:5000`
+The application will start at `http://localhost:5204`
 
 ### Initial Data
 
-The application automatically seeds essential data on startup:
+The application automatically seeds essential data on first migration:
 
 | Entity | Sample Data |
 |--------|-------------|
 | **Roles** | STUDENT, LECTURER, STAFF, ADMIN |
-| **Admin Account** | Email: `admin@auca.ac.rw` <br/> Password: `Admin123!` |
-| **Locations** | Rwanda provinces and districts |
-| **Rooms** | Sample lecture halls and labs |
-| **Offices** | Sample administrative offices |
+| **Admin Account** | Email: `habiyaadolphe19@gmail.com` <br/> Password: `Mugisha1234!@` |
+| **Locations** | Rwanda provinces, districts, sectors, cells, villages |
+| **Rooms** | 10 lecture halls and labs |
+| **Offices** | 5 administrative offices |
+| **Users** | 15 sample users (students, lecturers, staff) |
+| **Schedules** | Sample lecture schedules |
+| **Semesters** | Current and upcoming semesters |
 
 ## Development Phases
 
 ### ✅ Phase 1: Project Setup & Core Infrastructure (COMPLETED)
-- ASP.NET Core Razor Pages project created
+- ASP.NET Core project created with REST API + Razor Pages
 - NuGet packages installed (EF Core, PostgreSQL, JWT, BCrypt, MailKit)
-- Git repository initialized
+- Git repository initialized and connected to GitHub
 - .gitignore configured
-- README created
 
-### 🚧 Phase 2: Database Models & Context (IN PROGRESS)
-- Entity models (User, Role, Location, Room, Office, etc.)
-- DbContext configuration
-- Relationships and constraints
-- Initial migration
+### ✅ Phase 2: Database Models & Context (COMPLETED)
+- 11 entity models created (User, Role, Location, Room, Office, etc.)
+- ApplicationDbContext configured with relationships
+- Database constraints and indexes
+- Initial migration created and applied
+- Seed data for all entities
 
-### 📋 Phase 3: Authentication & Authorization (PLANNED)
-- JWT service implementation
-- Authentication middleware
-- OTP system
-- Password hashing
+### ✅ Phase 3: Authentication & Authorization (COMPLETED)
+- JWT authentication with Bearer tokens
+- OTP-based two-factor authentication via email
+- BCrypt password hashing
+- Role-based authorization (ADMIN, LECTURER, STAFF, STUDENT)
+- Session management with 7-day persistent cookies
 
-### 📋 Phase 4: Core Services (PLANNED)
-- Email service
-- Admin service
-- Lecturer service
-- Room service
-- Notification service
+### ✅ Phase 4: Backend API Development (COMPLETED)
+- 12 REST API controllers with full CRUD operations
+- 22 service classes with business logic
+- Email service with MailKit
+- Notification system
+- Verification request workflow
+- Password reset workflow
+- Room booking and management
+- Lecturer status and schedule management
 
-### 📋 Phase 5: Razor Pages (UI) (PLANNED)
-- Authentication pages
-- Dashboards
-- Management pages
+### ✅ Phase 5: Razor Pages Frontend (COMPLETED)
+- Authentication pages (Login, Signup, OTP Verification, Logout)
+- Role-based dashboard with real-time statistics
+- Room management and details pages
+- Lecturer directory and profile pages
+- Lecture schedule viewer
+- User profile management
+- Notifications page
+- Admin pages (User Management, Verification Requests, Password Resets)
+- Responsive UI with Bootstrap 5
+- API integration with HttpClient
 
-### 📋 Phase 6: Testing & Deployment (PLANNED)
-- Unit tests
-- Integration tests
-- Deployment configuration
+### ✅ Phase 6: Bug Fixes & Optimization (COMPLETED)
+- Fixed authentication flow and session persistence
+- Corrected API response parsing across all pages
+- Fixed admin endpoint authorization
+- Added public lecturer endpoint for non-admin users
+- Removed mock data and integrated real API calls
+- Configured HTTP (disabled HTTPS for development)
+- Extended session timeout to 7 days
+- Project structure cleanup
+
+### 📋 Phase 7: Testing & Deployment (FUTURE)
+- Unit tests for services
+- Integration tests for API endpoints
+- UI testing
+- Production deployment configuration
+- HTTPS configuration for production
 
 ## Team Members
 
 This project is developed by **Group B**:
 
-- **Habiyaremye Adolphe** (26751) - Branch: `Habiyaremye Adolphe_26751`
-- [Add other team members here]
+- **Habiyaremye Adolphe** (26751) - Lead Developer - Branch: `Habiyaremye_Adolphe_26751`
 
 ## Contributing
 
@@ -206,13 +292,18 @@ Each team member works on their own branch and creates pull requests for code re
 
 ### Branch Naming Convention
 ```
-FirstName LastName_StudentID
+FirstName_LastName_StudentID
 ```
 
 ### Commit Message Convention
 ```
-[Phase X] Brief description of changes
+Phase X.Y - Feature: Brief description of changes
 ```
+
+### Git Workflow
+- Each phase is committed separately with descriptive messages
+- All commits are pushed to the feature branch
+- 16+ commits documenting the complete development journey
 
 ## Original Project
 
