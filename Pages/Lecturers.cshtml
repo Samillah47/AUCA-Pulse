@@ -1,0 +1,116 @@
+@page
+@model AUCAPulse.Pages.LecturersModel
+@{
+    ViewData["Title"] = "Lecturers";
+}
+
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h1 class="display-6">Find Lecturers</h1>
+            <p class="text-muted">Search for lecturers and check their availability</p>
+        </div>
+    </div>
+
+    <!-- Search Bar -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <form method="get" class="d-flex gap-2">
+                <input type="text" name="search" class="form-control form-control-lg" placeholder="Search by name, email, or department..." value="@Model.SearchQuery" />
+                <button type="submit" class="btn btn-primary btn-lg">
+                    <i class="bi bi-search"></i> Search
+                </button>
+            </form>
+        </div>
+    </div>
+
+    @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+    {
+        <div class="alert alert-danger" role="alert">
+            @Model.ErrorMessage
+        </div>
+    }
+
+    <!-- Lecturers Grid -->
+    <div class="row g-4">
+        @if (Model.Lecturers != null && Model.Lecturers.Any())
+        {
+            @foreach (var lecturer in Model.Lecturers)
+            {
+                <div class="col-md-6 col-lg-4">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-body">
+                            <div class="d-flex align-items-start mb-3">
+                                <div class="bg-primary bg-opacity-10 rounded-circle p-3 me-3">
+                                    <i class="bi bi-person fs-3 text-primary"></i>
+                                </div>
+                                <div class="flex-grow-1">
+                                    <h5 class="card-title mb-1">@lecturer.Name</h5>
+                                    <p class="text-muted small mb-2">
+                                        <i class="bi bi-envelope me-1"></i>@lecturer.Email
+                                    </p>
+                                    @if (!string.IsNullOrEmpty(lecturer.Department))
+                                    {
+                                        <p class="text-muted small mb-0">
+                                            <i class="bi bi-building me-1"></i>@lecturer.Department
+                                        </p>
+                                    }
+                                </div>
+                            </div>
+
+                            @if (!string.IsNullOrEmpty(lecturer.CurrentStatus))
+                            {
+                                <div class="mb-3">
+                                    <span class="badge @GetStatusBadgeClass(lecturer.CurrentStatus)">
+                                        <i class="bi bi-circle-fill me-1" style="font-size: 8px;"></i>
+                                        @lecturer.CurrentStatus
+                                    </span>
+                                </div>
+                            }
+
+                            @if (!string.IsNullOrEmpty(lecturer.PhoneNumber))
+                            {
+                                <p class="text-muted small mb-2">
+                                    <i class="bi bi-telephone me-1"></i>@lecturer.PhoneNumber
+                                </p>
+                            }
+
+                            <div class="d-grid gap-2 mt-3">
+                                <a href="/Lecturers/@lecturer.Id" class="btn btn-outline-primary btn-sm">
+                                    <i class="bi bi-eye me-1"></i> View Profile
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        }
+        else
+        {
+            <div class="col-12">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body text-center py-5">
+                        <i class="bi bi-search display-1 text-muted"></i>
+                        <h5 class="mt-3">No lecturers found</h5>
+                        <p class="text-muted">Try adjusting your search query</p>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+@functions {
+    string GetStatusBadgeClass(string status)
+    {
+        return status switch
+        {
+            "AVAILABLE" => "bg-success",
+            "IN_CLASS" => "bg-danger",
+            "IN_MEETING" => "bg-warning",
+            "ON_LEAVE" => "bg-secondary",
+            "UNAVAILABLE" => "bg-dark",
+            _ => "bg-secondary"
+        };
+    }
+}

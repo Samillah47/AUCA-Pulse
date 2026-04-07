@@ -1,0 +1,164 @@
+@page
+@model AUCAPulse.Pages.ScheduleModel
+@{
+    ViewData["Title"] = "My Schedule";
+}
+
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h1 class="display-6">My Lecture Schedule</h1>
+            <p class="text-muted">View and manage your teaching schedule</p>
+        </div>
+    </div>
+
+    @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+    {
+        <div class="alert alert-danger" role="alert">
+            @Model.ErrorMessage
+        </div>
+    }
+
+    @if (!string.IsNullOrEmpty(Model.SuccessMessage))
+    {
+        <div class="alert alert-success" role="alert">
+            @Model.SuccessMessage
+        </div>
+    }
+
+    <!-- Current Status Card -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <h5 class="mb-3">Current Status</h5>
+                    @if (!string.IsNullOrEmpty(Model.CurrentStatus))
+                    {
+                        <span class="badge @GetStatusBadgeClass(Model.CurrentStatus) fs-5">
+                            <i class="bi bi-circle-fill me-1" style="font-size: 8px;"></i>
+                            @Model.CurrentStatus
+                        </span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-secondary fs-5">No Status Set</span>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Schedule Table -->
+    <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Weekly Schedule</h5>
+        </div>
+        <div class="card-body">
+            @if (Model.Schedules != null && Model.Schedules.Any())
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Day</th>
+                                <th>Time</th>
+                                <th>Course</th>
+                                <th>Room</th>
+                                <th>Semester</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var schedule in Model.Schedules.OrderBy(s => GetDayOrder(s.DayOfWeek)))
+                            {
+                                <tr>
+                                    <td><strong>@schedule.DayOfWeek</strong></td>
+                                    <td>@schedule.StartTime - @schedule.EndTime</td>
+                                    <td>@schedule.CourseName</td>
+                                    <td>
+                                        <span class="badge bg-primary">@schedule.RoomNumber</span>
+                                    </td>
+                                    <td>@schedule.SemesterName</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            else
+            {
+                <div class="text-center py-5">
+                    <i class="bi bi-calendar-x display-1 text-muted"></i>
+                    <h5 class="mt-3">No schedule available</h5>
+                    <p class="text-muted">You have no scheduled classes at the moment</p>
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- Today's Classes -->
+    <div class="card border-0 shadow-sm mt-4">
+        <div class="card-header bg-white">
+            <h5 class="mb-0">Today's Classes (@DateTime.Now.DayOfWeek)</h5>
+        </div>
+        <div class="card-body">
+            @{
+                var todaySchedules = Model.Schedules?.Where(s => s.DayOfWeek.Equals(DateTime.Now.DayOfWeek.ToString(), StringComparison.OrdinalIgnoreCase)).ToList();
+            }
+            @if (todaySchedules != null && todaySchedules.Any())
+            {
+                <div class="list-group">
+                    @foreach (var schedule in todaySchedules.OrderBy(s => s.StartTime))
+                    {
+                        <div class="list-group-item">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="mb-1">@schedule.CourseName</h6>
+                                    <p class="mb-0 text-muted">
+                                        <i class="bi bi-clock me-1"></i>@schedule.StartTime - @schedule.EndTime
+                                        <span class="ms-3">
+                                            <i class="bi bi-door-open me-1"></i>Room @schedule.RoomNumber
+                                        </span>
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+            else
+            {
+                <p class="text-muted mb-0">No classes scheduled for today</p>
+            }
+        </div>
+    </div>
+</div>
+
+@functions {
+    string GetStatusBadgeClass(string status)
+    {
+        return status switch
+        {
+            "AVAILABLE" => "bg-success",
+            "IN_CLASS" => "bg-danger",
+            "IN_MEETING" => "bg-warning",
+            "ON_LEAVE" => "bg-secondary",
+            "UNAVAILABLE" => "bg-dark",
+            _ => "bg-secondary"
+        };
+    }
+
+    int GetDayOrder(string day)
+    {
+        return day.ToUpper() switch
+        {
+            "MONDAY" => 1,
+            "TUESDAY" => 2,
+            "WEDNESDAY" => 3,
+            "THURSDAY" => 4,
+            "FRIDAY" => 5,
+            "SATURDAY" => 6,
+            "SUNDAY" => 7,
+            _ => 8
+        };
+    }
+}
