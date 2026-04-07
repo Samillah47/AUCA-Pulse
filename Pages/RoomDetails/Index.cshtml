@@ -1,0 +1,181 @@
+@page "{id:int}"
+@model AUCAPulse.Pages.RoomDetails.IndexModel
+@{
+    ViewData["Title"] = $"Room {Model.Room?.RoomNumber}";
+}
+
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <a href="/Rooms" class="btn btn-outline-secondary mb-3">
+                <i class="bi bi-arrow-left"></i> Back to Rooms
+            </a>
+        </div>
+    </div>
+
+    @if (Model.Room != null)
+    {
+        <div class="row">
+            <div class="col-lg-8">
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start mb-4">
+                            <div>
+                                <h2 class="mb-2">Room @Model.Room.RoomNumber</h2>
+                                <p class="text-muted mb-0">
+                                    <i class="bi bi-building me-2"></i>@Model.Room.Building
+                                    @if (!string.IsNullOrEmpty(Model.Room.Floor))
+                                    {
+                                        <span class="ms-3">
+                                            <i class="bi bi-layers me-2"></i>Floor @Model.Room.Floor
+                                        </span>
+                                    }
+                                </p>
+                            </div>
+                            <span class="badge @GetStatusBadgeClass(Model.Room.Status) fs-6">
+                                @Model.Room.Status
+                            </span>
+                        </div>
+
+                        <hr />
+
+                        <div class="row g-4 mb-4">
+                            <div class="col-md-4">
+                                <div class="text-center p-3 bg-light rounded">
+                                    <i class="bi bi-people fs-1 text-primary"></i>
+                                    <h5 class="mt-2 mb-0">@Model.Room.Capacity</h5>
+                                    <small class="text-muted">Capacity</small>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="text-center p-3 bg-light rounded">
+                                    <i class="bi bi-tag fs-1 text-primary"></i>
+                                    <h5 class="mt-2 mb-0">@Model.Room.RoomType</h5>
+                                    <small class="text-muted">Room Type</small>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="text-center p-3 bg-light rounded">
+                                    <i class="bi bi-door-open fs-1 text-primary"></i>
+                                    <h5 class="mt-2 mb-0">@Model.Room.Status</h5>
+                                    <small class="text-muted">Current Status</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        @if (!string.IsNullOrEmpty(Model.Room.Description))
+                        {
+                            <div class="mb-4">
+                                <h5>Description</h5>
+                                <p class="text-muted">@Model.Room.Description</p>
+                            </div>
+                        }
+
+                        @if (Model.Room.OccupiedBy.HasValue)
+                        {
+                            <div class="alert alert-info">
+                                <i class="bi bi-info-circle me-2"></i>
+                                Currently occupied by user ID: @Model.Room.OccupiedBy
+                                @if (Model.Room.OccupiedUntil.HasValue)
+                                {
+                                    <span>until @Model.Room.OccupiedUntil.Value.ToString("MMM dd, yyyy HH:mm")</span>
+                                }
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-4">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-header bg-white">
+                        <h5 class="mb-0">Actions</h5>
+                    </div>
+                    <div class="card-body">
+                        @if (Model.Room.Status == "AVAILABLE")
+                        {
+                            <form method="post" asp-page-handler="Occupy">
+                                <input type="hidden" name="roomId" value="@Model.Room.Id" />
+                                <div class="mb-3">
+                                    <label class="form-label">Occupy Until</label>
+                                    <input type="datetime-local" name="occupyUntil" class="form-control" required />
+                                </div>
+                                <button type="submit" class="btn btn-primary w-100">
+                                    <i class="bi bi-lock me-2"></i>Occupy Room
+                                </button>
+                            </form>
+                        }
+                        else if (Model.Room.Status == "OCCUPIED")
+                        {
+                            <button class="btn btn-secondary w-100" disabled>
+                                <i class="bi bi-lock me-2"></i>Currently Occupied
+                            </button>
+                            @if (Model.CanRelease)
+                            {
+                                <form method="post" asp-page-handler="Release" class="mt-2">
+                                    <input type="hidden" name="roomId" value="@Model.Room.Id" />
+                                    <button type="submit" class="btn btn-outline-danger w-100">
+                                        <i class="bi bi-unlock me-2"></i>Release Room
+                                    </button>
+                                </form>
+                            }
+                        }
+                        else
+                        {
+                            <button class="btn btn-outline-secondary w-100" disabled>
+                                Room @Model.Room.Status
+                            </button>
+                        }
+                    </div>
+                </div>
+
+                <div class="card border-0 shadow-sm mt-3">
+                    <div class="card-header bg-white">
+                        <h5 class="mb-0">Room Information</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <small class="text-muted">Room Number</small>
+                            <p class="mb-0 fw-bold">@Model.Room.RoomNumber</p>
+                        </div>
+                        <div class="mb-3">
+                            <small class="text-muted">Building</small>
+                            <p class="mb-0 fw-bold">@Model.Room.Building</p>
+                        </div>
+                        @if (!string.IsNullOrEmpty(Model.Room.Floor))
+                        {
+                            <div class="mb-3">
+                                <small class="text-muted">Floor</small>
+                                <p class="mb-0 fw-bold">@Model.Room.Floor</p>
+                            </div>
+                        }
+                        <div class="mb-0">
+                            <small class="text-muted">Created</small>
+                            <p class="mb-0 fw-bold">@Model.Room.CreatedAt.ToString("MMM dd, yyyy")</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="alert alert-danger">
+            Room not found or an error occurred.
+        </div>
+    }
+</div>
+
+@functions {
+    string GetStatusBadgeClass(string status)
+    {
+        return status switch
+        {
+            "AVAILABLE" => "bg-success",
+            "OCCUPIED" => "bg-danger",
+            "MAINTENANCE" => "bg-warning",
+            "RESERVED" => "bg-info",
+            _ => "bg-secondary"
+        };
+    }
+}
