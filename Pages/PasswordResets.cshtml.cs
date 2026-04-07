@@ -36,7 +36,7 @@ namespace AUCAPulse.Pages
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
             var baseUrl = _configuration["ApiSettings:BaseUrl"];
 
-            var response = await client.GetAsync($"{baseUrl}/api/passwordresetrequests");
+            var response = await client.GetAsync($"{baseUrl}/passwordresetrequests");
             if (response.IsSuccessStatusCode)
             {
                 var content = await response.Content.ReadAsStringAsync();
@@ -53,7 +53,7 @@ namespace AUCAPulse.Pages
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
             var baseUrl = _configuration["ApiSettings:BaseUrl"];
 
-            var response = await client.PostAsync($"{baseUrl}/api/passwordresetrequests/{requestId}/approve", null);
+            var response = await client.PostAsync($"{baseUrl}/passwordresetrequests/{requestId}/approve", null);
             if (response.IsSuccessStatusCode)
             {
                 TempData["SuccessMessage"] = "Password reset approved! User will receive reset instructions.";
@@ -73,7 +73,7 @@ namespace AUCAPulse.Pages
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
             var baseUrl = _configuration["ApiSettings:BaseUrl"];
 
-            var response = await client.PostAsync($"{baseUrl}/api/passwordresetrequests/{requestId}/reject", null);
+            var response = await client.PostAsync($"{baseUrl}/passwordresetrequests/{requestId}/reject", null);
             if (response.IsSuccessStatusCode)
             {
                 TempData["SuccessMessage"] = "Password reset rejected.";

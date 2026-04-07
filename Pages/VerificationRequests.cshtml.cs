@@ -37,7 +37,7 @@ namespace AUCAPulse.Pages
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
             var baseUrl = _configuration["ApiSettings:BaseUrl"];
 
-            var response = await client.GetAsync($"{baseUrl}/api/verificationrequests/pending");
+            var response = await client.GetAsync($"{baseUrl}/verificationrequests/pending");
             if (response.IsSuccessStatusCode)
             {
                 var content = await response.Content.ReadAsStringAsync();
@@ -54,7 +54,7 @@ namespace AUCAPulse.Pages
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
             var baseUrl = _configuration["ApiSettings:BaseUrl"];
 
-            var response = await client.PostAsync($"{baseUrl}/api/verificationrequests/{requestId}/approve", null);
+            var response = await client.PostAsync($"{baseUrl}/verificationrequests/{requestId}/approve", null);
             if (response.IsSuccessStatusCode)
             {
                 TempData["SuccessMessage"] = "User approved successfully!";
@@ -74,7 +74,7 @@ namespace AUCAPulse.Pages
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
             var baseUrl = _configuration["ApiSettings:BaseUrl"];
 
-            var response = await client.PostAsync($"{baseUrl}/api/verificationrequests/{requestId}/reject", null);
+            var response = await client.PostAsync($"{baseUrl}/verificationrequests/{requestId}/reject", null);
             if (response.IsSuccessStatusCode)
             {
                 TempData["SuccessMessage"] = "User rejected successfully!";

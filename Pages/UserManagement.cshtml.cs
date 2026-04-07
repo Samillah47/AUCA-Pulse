@@ -36,7 +36,7 @@ namespace AUCAPulse.Pages
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
             var baseUrl = _configuration["ApiSettings:BaseUrl"];
 
-            var response = await client.GetAsync($"{baseUrl}/api/users");
+            var response = await client.GetAsync($"{baseUrl}/users");
             if (response.IsSuccessStatusCode)
             {
                 var content = await response.Content.ReadAsStringAsync();
@@ -53,7 +53,7 @@ namespace AUCAPulse.Pages
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
             var baseUrl = _configuration["ApiSettings:BaseUrl"];
 
-            var response = await client.PutAsync($"{baseUrl}/api/users/{userId}/approve", null);
+            var response = await client.PutAsync($"{baseUrl}/users/{userId}/approve", null);
             if (response.IsSuccessStatusCode)
             {
                 TempData["SuccessMessage"] = "User activated successfully!";
@@ -69,7 +69,7 @@ namespace AUCAPulse.Pages
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
             var baseUrl = _configuration["ApiSettings:BaseUrl"];
 
-            var response = await client.PutAsync($"{baseUrl}/api/users/{userId}/deactivate", null);
+            var response = await client.PutAsync($"{baseUrl}/users/{userId}/deactivate", null);
             if (response.IsSuccessStatusCode)
             {
                 TempData["SuccessMessage"] = "User deactivated successfully!";
@@ -85,7 +85,7 @@ namespace AUCAPulse.Pages
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
             var baseUrl = _configuration["ApiSettings:BaseUrl"];
 
-            var response = await client.DeleteAsync($"{baseUrl}/api/users/{userId}");
+            var response = await client.DeleteAsync($"{baseUrl}/users/{userId}");
             if (response.IsSuccessStatusCode)
             {
                 TempData["SuccessMessage"] = "User deleted successfully!";
