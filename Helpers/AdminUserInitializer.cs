@@ -18,7 +18,7 @@ namespace AUCAPulse.Helpers
                 await context.Database.MigrateAsync();
 
                 // Check if admin user already exists
-                if (!await context.Users.AnyAsync(u => u.Email == "admin@auca.ac.rw"))
+                if (!await context.Users.AnyAsync(u => u.Email == "habiyaadolphe19@gmail.com"))
                 {
                     // Get ADMIN role
                     var adminRole = await context.Roles.FirstOrDefaultAsync(r => r.RoleName == "ADMIN");
@@ -45,8 +45,8 @@ namespace AUCAPulse.Helpers
                     await context.SaveChangesAsync();
 
                     logger.LogInformation("✅ Admin user created successfully!");
-                    logger.LogInformation("   Email: admin@auca.ac.rw");
-                    logger.LogInformation("   Password: Admin123!");
+                    logger.LogInformation("   Email: habiyaadolphe19@gmail.com");
+                    logger.LogInformation("   Password: Mugisha1234!@");
                 }
                 else
                 {

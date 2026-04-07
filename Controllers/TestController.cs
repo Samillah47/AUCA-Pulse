@@ -66,25 +66,26 @@ namespace AUCAPulse.Controllers
             try
             {
                 var admin = await _context.Users
-                    .Include(u => u.Role)
-                    .FirstOrDefaultAsync(u => u.Email == "admin@auca.ac.rw");
+                    .Where(u => u.Email == "habiyaadolphe19@gmail.com")
+                    .Select(u => new
+                    {
+                        id = u.Id,
+                        name = u.Name,
+                        email = u.Email,
+                        role = u.Role.RoleName,
+                        status = u.Status.ToString(),
+                        identificationNumber = u.IdentificationNumber,
+                        department = u.Department,
+                        createdAt = u.CreatedAt
+                    })
+                    .FirstOrDefaultAsync();
 
                 if (admin == null)
                 {
                     return NotFound(new { message = "Admin user not found" });
                 }
 
-                return Ok(new
-                {
-                    id = admin.Id,
-                    name = admin.Name,
-                    email = admin.Email,
-                    role = admin.Role.RoleName,
-                    status = admin.Status.ToString(),
-                    identificationNumber = admin.IdentificationNumber,
-                    department = admin.Department,
-                    createdAt = admin.CreatedAt
-                });
+                return Ok(admin);
             }
             catch (Exception ex)
             {
@@ -114,8 +115,17 @@ namespace AUCAPulse.Controllers
             try
             {
                 var locations = await _context.Locations
-                    .OrderBy(l => l.Type)
-                    .ThenBy(l => l.Name)
+                    .Select(l => new
+                    {
+                        id = l.Id,
+                        name = l.Name,
+                        code = l.Code,
+                        type = l.Type.ToString(),
+                        parentId = l.ParentId,
+                        createdAt = l.CreatedAt
+                    })
+                    .OrderBy(l => l.type)
+                    .ThenBy(l => l.name)
                     .ToListAsync();
                 return Ok(locations);
             }
@@ -131,7 +141,23 @@ namespace AUCAPulse.Controllers
         {
             try
             {
-                var rooms = await _context.Rooms.ToListAsync();
+                var rooms = await _context.Rooms
+                    .Select(r => new
+                    {
+                        id = r.Id,
+                        roomNumber = r.RoomNumber,
+                        roomName = r.RoomName,
+                        capacity = r.Capacity,
+                        building = r.Building,
+                        floor = r.Floor,
+                        roomType = r.RoomType.ToString(),
+                        status = r.Status.ToString(),
+                        currentLecturerId = r.CurrentLecturerId,
+                        occupiedAt = r.OccupiedAt,
+                        occupiedUntil = r.OccupiedUntil,
+                        createdAt = r.CreatedAt
+                    })
+                    .ToListAsync();
                 return Ok(rooms);
             }
             catch (Exception ex)

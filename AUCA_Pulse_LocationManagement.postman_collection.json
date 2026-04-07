@@ -1,0 +1,222 @@
+{
+	"info": {
+		"name": "AUCA Pulse - Location Management",
+		"description": "Location Management API endpoints with hierarchical structure",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Create Location (Admin)",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{jwt_token}}",
+						"type": "text"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"name\": \"Kigali City\",\n  \"code\": \"KGL\",\n  \"type\": \"PROVINCE\",\n  \"parentId\": null\n}"
+				},
+				"url": {
+					"raw": "{{baseUrl}}/api/location",
+					"host": ["{{baseUrl}}"],
+					"path": ["api", "location"]
+				},
+				"description": "Create a new location. Requires ADMIN role. Types: PROVINCE, DISTRICT, SECTOR, CELL, VILLAGE. Hierarchy: PROVINCE → DISTRICT → SECTOR → CELL → VILLAGE"
+			},
+			"response": []
+		},
+		{
+			"name": "Get Location by ID",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{jwt_token}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{baseUrl}}/api/location/:id",
+					"host": ["{{baseUrl}}"],
+					"path": ["api", "location", ":id"],
+					"variable": [
+						{
+							"key": "id",
+							"value": "1",
+							"description": "Location ID"
+						}
+					]
+				},
+				"description": "Get location details by ID."
+			},
+			"response": []
+		},
+		{
+			"name": "Get All Locations",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{jwt_token}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{baseUrl}}/api/location",
+					"host": ["{{baseUrl}}"],
+					"path": ["api", "location"]
+				},
+				"description": "Get all locations ordered by type and name."
+			},
+			"response": []
+		},
+		{
+			"name": "Get Locations by Type",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{jwt_token}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{baseUrl}}/api/location/type/:type",
+					"host": ["{{baseUrl}}"],
+					"path": ["api", "location", "type", ":type"],
+					"variable": [
+						{
+							"key": "type",
+							"value": "PROVINCE",
+							"description": "Location type: PROVINCE, DISTRICT, SECTOR, CELL, VILLAGE"
+						}
+					]
+				},
+				"description": "Get all locations of a specific type."
+			},
+			"response": []
+		},
+		{
+			"name": "Get Locations by Parent ID",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{jwt_token}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{baseUrl}}/api/location/parent/:parentId",
+					"host": ["{{baseUrl}}"],
+					"path": ["api", "location", "parent", ":parentId"],
+					"variable": [
+						{
+							"key": "parentId",
+							"value": "1",
+							"description": "Parent Location ID"
+						}
+					]
+				},
+				"description": "Get all child locations of a parent location."
+			},
+			"response": []
+		},
+		{
+			"name": "Get Root Locations (Provinces)",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{jwt_token}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{baseUrl}}/api/location/roots",
+					"host": ["{{baseUrl}}"],
+					"path": ["api", "location", "roots"]
+				},
+				"description": "Get all root locations (provinces) with their complete hierarchy tree."
+			},
+			"response": []
+		},
+		{
+			"name": "Update Location (Admin)",
+			"request": {
+				"method": "PUT",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{jwt_token}}",
+						"type": "text"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"name\": \"Kigali City Updated\",\n  \"code\": \"KGL\",\n  \"type\": \"PROVINCE\",\n  \"parentId\": null\n}"
+				},
+				"url": {
+					"raw": "{{baseUrl}}/api/location/:id",
+					"host": ["{{baseUrl}}"],
+					"path": ["api", "location", ":id"],
+					"variable": [
+						{
+							"key": "id",
+							"value": "1",
+							"description": "Location ID"
+						}
+					]
+				},
+				"description": "Update location. Requires ADMIN role. Validates hierarchy and prevents circular references."
+			},
+			"response": []
+		},
+		{
+			"name": "Delete Location (Admin)",
+			"request": {
+				"method": "DELETE",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{jwt_token}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{baseUrl}}/api/location/:id",
+					"host": ["{{baseUrl}}"],
+					"path": ["api", "location", ":id"],
+					"variable": [
+						{
+							"key": "id",
+							"value": "1",
+							"description": "Location ID"
+						}
+					]
+				},
+				"description": "Delete location. Requires ADMIN role. Cannot delete if location has children or is used by users."
+			},
+			"response": []
+		}
+	]
+}
