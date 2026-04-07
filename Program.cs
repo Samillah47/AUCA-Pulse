@@ -69,12 +69,14 @@ builder.Services.AddScoped<JwtHelper>();
 // Add HttpClient for API calls
 builder.Services.AddHttpClient();
 
-// Add session support
+// Add session support with persistent cookies
 builder.Services.AddSession(options =>
 {
-    options.IdleTimeout = TimeSpan.FromMinutes(30);
+    options.IdleTimeout = TimeSpan.FromDays(7); // Session lasts 7 days
     options.Cookie.HttpOnly = true;
     options.Cookie.IsEssential = true;
+    options.Cookie.Name = ".AUCAPulse.Session";
+    options.Cookie.MaxAge = TimeSpan.FromDays(7); // Cookie persists for 7 days
 });
 
 // Add distributed memory cache for session
