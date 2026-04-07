@@ -39,10 +39,7 @@ namespace AUCAPulse.Pages.RoomDetails
                 if (response.IsSuccessStatusCode)
                 {
                     var content = await response.Content.ReadAsStringAsync();
-                    var result = JsonSerializer.Deserialize<JsonElement>(content);
-                    var roomData = result.GetProperty("data");
-
-                    Room = JsonSerializer.Deserialize<RoomDetailDto>(roomData.GetRawText(), new JsonSerializerOptions
+                    Room = JsonSerializer.Deserialize<RoomDetailDto>(content, new JsonSerializerOptions
                     {
                         PropertyNameCaseInsensitive = true
                     });

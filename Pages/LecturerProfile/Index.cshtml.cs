@@ -41,10 +41,7 @@ namespace AUCAPulse.Pages.LecturerProfile
                 if (userResponse.IsSuccessStatusCode)
                 {
                     var content = await userResponse.Content.ReadAsStringAsync();
-                    var result = JsonSerializer.Deserialize<JsonElement>(content);
-                    var userData = result.GetProperty("data");
-
-                    Lecturer = JsonSerializer.Deserialize<LecturerDetailDto>(userData.GetRawText(), new JsonSerializerOptions
+                    Lecturer = JsonSerializer.Deserialize<LecturerDetailDto>(content, new JsonSerializerOptions
                     {
                         PropertyNameCaseInsensitive = true
                     });
@@ -57,8 +54,7 @@ namespace AUCAPulse.Pages.LecturerProfile
                     if (statusResponse.IsSuccessStatusCode)
                     {
                         var statusContent = await statusResponse.Content.ReadAsStringAsync();
-                        var statusResult = JsonSerializer.Deserialize<JsonElement>(statusContent);
-                        var statusData = statusResult.GetProperty("data");
+                        var statusData = JsonSerializer.Deserialize<JsonElement>(statusContent);
                         CurrentStatus = statusData.GetProperty("status").GetString();
                     }
                 }
@@ -71,10 +67,7 @@ namespace AUCAPulse.Pages.LecturerProfile
                     if (officeResponse.IsSuccessStatusCode)
                     {
                         var officeContent = await officeResponse.Content.ReadAsStringAsync();
-                        var officeResult = JsonSerializer.Deserialize<JsonElement>(officeContent);
-                        var officeData = officeResult.GetProperty("data");
-
-                        Office = JsonSerializer.Deserialize<OfficeDto>(officeData.GetRawText(), new JsonSerializerOptions
+                        Office = JsonSerializer.Deserialize<OfficeDto>(officeContent, new JsonSerializerOptions
                         {
                             PropertyNameCaseInsensitive = true
                         });
@@ -89,10 +82,7 @@ namespace AUCAPulse.Pages.LecturerProfile
                     if (scheduleResponse.IsSuccessStatusCode)
                     {
                         var scheduleContent = await scheduleResponse.Content.ReadAsStringAsync();
-                        var scheduleResult = JsonSerializer.Deserialize<JsonElement>(scheduleContent);
-                        var scheduleData = scheduleResult.GetProperty("data");
-
-                        Schedules = JsonSerializer.Deserialize<List<ScheduleDto>>(scheduleData.GetRawText(), new JsonSerializerOptions
+                        Schedules = JsonSerializer.Deserialize<List<ScheduleDto>>(scheduleContent, new JsonSerializerOptions
                         {
                             PropertyNameCaseInsensitive = true
                         }) ?? new List<ScheduleDto>();
@@ -107,10 +97,7 @@ namespace AUCAPulse.Pages.LecturerProfile
                     if (historyResponse.IsSuccessStatusCode)
                     {
                         var historyContent = await historyResponse.Content.ReadAsStringAsync();
-                        var historyResult = JsonSerializer.Deserialize<JsonElement>(historyContent);
-                        var historyData = historyResult.GetProperty("data");
-
-                        StatusHistory = JsonSerializer.Deserialize<List<StatusHistoryDto>>(historyData.GetRawText(), new JsonSerializerOptions
+                        StatusHistory = JsonSerializer.Deserialize<List<StatusHistoryDto>>(historyContent, new JsonSerializerOptions
                         {
                             PropertyNameCaseInsensitive = true
                         }) ?? new List<StatusHistoryDto>();

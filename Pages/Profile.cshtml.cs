@@ -42,10 +42,7 @@ namespace AUCAPulse.Pages
                 if (response.IsSuccessStatusCode)
                 {
                     var content = await response.Content.ReadAsStringAsync();
-                    var result = JsonSerializer.Deserialize<JsonElement>(content);
-                    var userData = result.GetProperty("data");
-
-                    User = JsonSerializer.Deserialize<UserProfileDto>(userData.GetRawText(), new JsonSerializerOptions
+                    User = JsonSerializer.Deserialize<UserProfileDto>(content, new JsonSerializerOptions
                     {
                         PropertyNameCaseInsensitive = true
                     });

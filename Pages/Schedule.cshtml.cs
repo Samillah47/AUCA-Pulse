@@ -48,10 +48,7 @@ namespace AUCAPulse.Pages
                 if (scheduleResponse.IsSuccessStatusCode)
                 {
                     var content = await scheduleResponse.Content.ReadAsStringAsync();
-                    var result = JsonSerializer.Deserialize<JsonElement>(content);
-                    var scheduleData = result.GetProperty("data");
-
-                    Schedules = JsonSerializer.Deserialize<List<ScheduleItemDto>>(scheduleData.GetRawText(), new JsonSerializerOptions
+                    Schedules = JsonSerializer.Deserialize<List<ScheduleItemDto>>(content, new JsonSerializerOptions
                     {
                         PropertyNameCaseInsensitive = true
                     }) ?? new List<ScheduleItemDto>();
@@ -64,8 +61,7 @@ namespace AUCAPulse.Pages
                     if (statusResponse.IsSuccessStatusCode)
                     {
                         var statusContent = await statusResponse.Content.ReadAsStringAsync();
-                        var statusResult = JsonSerializer.Deserialize<JsonElement>(statusContent);
-                        var statusData = statusResult.GetProperty("data");
+                        var statusData = JsonSerializer.Deserialize<JsonElement>(statusContent);
                         CurrentStatus = statusData.GetProperty("status").GetString();
                     }
                 }

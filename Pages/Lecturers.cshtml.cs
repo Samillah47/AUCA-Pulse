@@ -42,10 +42,7 @@ namespace AUCAPulse.Pages
                 if (response.IsSuccessStatusCode)
                 {
                     var content = await response.Content.ReadAsStringAsync();
-                    var result = JsonSerializer.Deserialize<JsonElement>(content);
-                    var usersArray = result.GetProperty("data");
-
-                    var allUsers = JsonSerializer.Deserialize<List<LecturerDto>>(usersArray.GetRawText(), new JsonSerializerOptions
+                    var allUsers = JsonSerializer.Deserialize<List<LecturerDto>>(content, new JsonSerializerOptions
                     {
                         PropertyNameCaseInsensitive = true
                     }) ?? new List<LecturerDto>();
@@ -72,8 +69,7 @@ namespace AUCAPulse.Pages
                             if (statusResponse.IsSuccessStatusCode)
                             {
                                 var statusContent = await statusResponse.Content.ReadAsStringAsync();
-                                var statusResult = JsonSerializer.Deserialize<JsonElement>(statusContent);
-                                var statusData = statusResult.GetProperty("data");
+                                var statusData = JsonSerializer.Deserialize<JsonElement>(statusContent);
                                 lecturer.CurrentStatus = statusData.GetProperty("status").GetString();
                             }
                         }
