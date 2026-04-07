@@ -51,26 +51,30 @@
                     <tbody>
                         @foreach (var user in Model.Users)
                         {
-                            <tr data-role="@user.RoleName">
+                            <tr data-role="@user.Role">
                                 <td>@user.Name</td>
                                 <td>@user.Email</td>
-                                <td>@user.Phone</td>
-                                <td>@user.Department</td>
-                                <td><span class="badge bg-secondary">@user.RoleName</span></td>
+                                <td>@(user.PhoneNumber ?? "N/A")</td>
+                                <td>@(user.Department ?? "N/A")</td>
+                                <td><span class="badge bg-secondary">@user.Role</span></td>
                                 <td>
-                                    @if (user.IsApproved)
+                                    @if (user.Status == "APPROVED")
                                     {
                                         <span class="badge bg-success">Approved</span>
                                     }
-                                    else
+                                    else if (user.Status == "PENDING")
                                     {
                                         <span class="badge bg-warning text-dark">Pending</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-danger">Rejected</span>
                                     }
                                 </td>
                                 <td>
                                     <form method="post" class="d-inline">
                                         <input type="hidden" name="userId" value="@user.Id" />
-                                        @if (user.IsApproved)
+                                        @if (user.Status == "APPROVED")
                                         {
                                             <button type="submit" asp-page-handler="Deactivate" class="btn btn-warning btn-sm" onclick="return confirm('Deactivate this user?')">
                                                 <i class="bi bi-pause-circle"></i>

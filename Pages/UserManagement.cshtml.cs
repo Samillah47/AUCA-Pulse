@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using System.Net.Http.Headers;
+using System.Text;
 using System.Text.Json;
 
 namespace AUCAPulse.Pages
@@ -36,7 +37,7 @@ namespace AUCAPulse.Pages
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
             var baseUrl = _configuration["ApiSettings:BaseUrl"];
 
-            var response = await client.GetAsync($"{baseUrl}/users");
+            var response = await client.GetAsync($"{baseUrl}/User");
             if (response.IsSuccessStatusCode)
             {
                 var content = await response.Content.ReadAsStringAsync();
@@ -53,7 +54,10 @@ namespace AUCAPulse.Pages
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
             var baseUrl = _configuration["ApiSettings:BaseUrl"];
 
-            var response = await client.PutAsync($"{baseUrl}/users/{userId}/approve", null);
+            var response = await client.PutAsync($"{baseUrl}/User/{userId}/status", new StringContent(
+                JsonSerializer.Serialize(new { status = "APPROVED" }), 
+                System.Text.Encoding.UTF8, 
+                "application/json"));
             if (response.IsSuccessStatusCode)
             {
                 TempData["SuccessMessage"] = "User activated successfully!";
@@ -69,7 +73,10 @@ namespace AUCAPulse.Pages
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
             var baseUrl = _configuration["ApiSettings:BaseUrl"];
 
-            var response = await client.PutAsync($"{baseUrl}/users/{userId}/deactivate", null);
+            var response = await client.PutAsync($"{baseUrl}/User/{userId}/status", new StringContent(
+                JsonSerializer.Serialize(new { status = "REJECTED" }), 
+                System.Text.Encoding.UTF8, 
+                "application/json"));
             if (response.IsSuccessStatusCode)
             {
                 TempData["SuccessMessage"] = "User deactivated successfully!";
@@ -85,7 +92,7 @@ namespace AUCAPulse.Pages
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
             var baseUrl = _configuration["ApiSettings:BaseUrl"];
 
-            var response = await client.DeleteAsync($"{baseUrl}/users/{userId}");
+            var response = await client.DeleteAsync($"{baseUrl}/User/{userId}");
             if (response.IsSuccessStatusCode)
             {
                 TempData["SuccessMessage"] = "User deleted successfully!";
@@ -100,9 +107,9 @@ namespace AUCAPulse.Pages
         public int Id { get; set; }
         public string Name { get; set; } = string.Empty;
         public string Email { get; set; } = string.Empty;
-        public string Phone { get; set; } = string.Empty;
-        public string Department { get; set; } = string.Empty;
-        public string RoleName { get; set; } = string.Empty;
-        public bool IsApproved { get; set; }
+        public string? PhoneNumber { get; set; }
+        public string? Department { get; set; }
+        public string Role { get; set; } = string.Empty;
+        public string Status { get; set; } = string.Empty;
     }
 }
