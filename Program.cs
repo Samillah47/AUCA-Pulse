@@ -61,6 +61,7 @@ builder.Services.AddScoped<IRoomService, RoomService>();
 builder.Services.AddScoped<IOfficeService, OfficeService>();
 builder.Services.AddScoped<ILecturerStatusService, LecturerStatusService>();
 builder.Services.AddScoped<ILectureScheduleService, LectureScheduleService>();
+builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddScoped<JwtHelper>();
 
 // Add session support
