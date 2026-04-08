@@ -191,12 +191,23 @@ FinalProject_GroupB/
    dotnet restore
    ```
 
-4. **Apply database migrations**
+4. **Restore client-side libraries** (Bootstrap, jQuery)
+   ```bash
+   # Install LibMan CLI (one-time setup)
+   dotnet tool install -g Microsoft.Web.LibraryManager.Cli
+   
+   # Restore libraries
+   libman restore
+   ```
+   
+   **Note:** If styles are not working, see [TEAM_SETUP_GUIDE.md](TEAM_SETUP_GUIDE.md) for detailed instructions.
+
+5. **Apply database migrations**
    ```bash
    dotnet ef database update
    ```
 
-5. **Run the application**
+6. **Run the application**
    ```bash
    dotnet run
    ```
