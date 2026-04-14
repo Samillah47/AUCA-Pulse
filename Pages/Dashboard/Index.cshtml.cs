@@ -22,6 +22,7 @@ namespace AUCAPulse.Pages.Dashboard
         public int PendingRequests { get; set; }
         public int AvailableRooms { get; set; }
         public int ActiveLecturers { get; set; }
+        public List<LecturerLocationDto> LecturerLocations { get; set; } = new();
 
         public async Task<IActionResult> OnGetAsync()
         {
@@ -68,6 +69,18 @@ namespace AUCAPulse.Pages.Dashboard
                     }
                 }
 
+                // Load live lecturer locations for student dashboard
+                if (UserRole == "STUDENT" || UserRole == "ADMIN")
+                {
+                    var locResponse = await client.GetAsync($"{baseUrl}/lecturer-locations");
+                    if (locResponse.IsSuccessStatusCode)
+                    {
+                        var locContent = await locResponse.Content.ReadAsStringAsync();
+                        LecturerLocations = JsonSerializer.Deserialize<List<LecturerLocationDto>>(locContent,
+                            new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new();
+                    }
+                }
+
                 var roomsResponse = await client.GetAsync($"{baseUrl}/rooms");
                 if (roomsResponse.IsSuccessStatusCode)
                 {
@@ -85,5 +98,18 @@ namespace AUCAPulse.Pages.Dashboard
 
             return Page();
         }
+    }
+
+    public class LecturerLocationDto
+    {
+        public int LecturerId { get; set; }
+        public string LecturerName { get; set; } = string.Empty;
+        public string LecturerEmail { get; set; } = string.Empty;
+        public string? Department { get; set; }
+        public string Status { get; set; } = string.Empty;
+        public string LocationLabel { get; set; } = string.Empty;
+        public string? CourseInfo { get; set; }
+        public string? UntilTime { get; set; }
+        public string? Source { get; set; }
     }
 }
