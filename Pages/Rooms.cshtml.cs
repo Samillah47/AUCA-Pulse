@@ -52,9 +52,10 @@ namespace AUCAPulse.Pages
                     // Apply filters
                     if (!string.IsNullOrEmpty(search))
                     {
-                        Rooms = Rooms.Where(r => 
-                            r.RoomNumber.Contains(search, StringComparison.OrdinalIgnoreCase) ||
-                            r.Building.Contains(search, StringComparison.OrdinalIgnoreCase)
+                        Rooms = Rooms.Where(r =>
+                            (r.RoomNumber?.Contains(search, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                            (r.RoomName?.Contains(search, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                            (r.Building?.Contains(search, StringComparison.OrdinalIgnoreCase) ?? false)
                         ).ToList();
                     }
 
@@ -81,6 +82,7 @@ namespace AUCAPulse.Pages
     {
         public int Id { get; set; }
         public string RoomNumber { get; set; } = string.Empty;
+        public string RoomName { get; set; } = string.Empty;
         public string Building { get; set; } = string.Empty;
         public string? Floor { get; set; }
         public int Capacity { get; set; }

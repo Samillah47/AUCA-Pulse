@@ -40,16 +40,25 @@ namespace AUCAPulse.Pages.Dashboard
 
             try
             {
-                if (UserRole == "ADMIN")
+                // Single /users call — parse TotalUsers + ActiveLecturers from the same response
+                var usersResponse = await client.GetAsync($"{baseUrl}/users");
+                if (usersResponse.IsSuccessStatusCode)
                 {
-                    var usersResponse = await client.GetAsync($"{baseUrl}/users");
-                    if (usersResponse.IsSuccessStatusCode)
+                    var usersContent = await usersResponse.Content.ReadAsStringAsync();
+                    using var usersDoc = JsonDocument.Parse(usersContent);
+
+                    if (UserRole == "ADMIN")
                     {
-                        var usersContent = await usersResponse.Content.ReadAsStringAsync();
-                        using var usersDoc = JsonDocument.Parse(usersContent);
                         TotalUsers = usersDoc.RootElement.GetArrayLength();
                     }
 
+                    ActiveLecturers = usersDoc.RootElement.EnumerateArray()
+                        .Count(u => (u.TryGetProperty("role", out var r) && r.GetString()?.ToUpper() == "LECTURER")
+                                 || (u.TryGetProperty("Role", out var r2) && r2.GetString()?.ToUpper() == "LECTURER"));
+                }
+
+                if (UserRole == "ADMIN")
+                {
                     var verificationResponse = await client.GetAsync($"{baseUrl}/verificationrequests/status/PENDING");
                     if (verificationResponse.IsSuccessStatusCode)
                     {
@@ -65,18 +74,8 @@ namespace AUCAPulse.Pages.Dashboard
                     var roomsContent = await roomsResponse.Content.ReadAsStringAsync();
                     using var roomsDoc = JsonDocument.Parse(roomsContent);
                     AvailableRooms = roomsDoc.RootElement.EnumerateArray()
-                        .Count(r => (r.TryGetProperty("status", out var s) && s.GetString()?.ToUpper() == "AVAILABLE") 
+                        .Count(r => (r.TryGetProperty("status", out var s) && s.GetString()?.ToUpper() == "AVAILABLE")
                                  || (r.TryGetProperty("Status", out var s2) && s2.GetString()?.ToUpper() == "AVAILABLE"));
-                }
-
-                var lecturersResponse = await client.GetAsync($"{baseUrl}/users");
-                if (lecturersResponse.IsSuccessStatusCode)
-                {
-                    var lecturersContent = await lecturersResponse.Content.ReadAsStringAsync();
-                    using var allUsersDoc = JsonDocument.Parse(lecturersContent);
-                    ActiveLecturers = allUsersDoc.RootElement.EnumerateArray()
-                        .Count(u => (u.TryGetProperty("role", out var r) && r.GetString()?.ToUpper() == "LECTURER")
-                                 || (u.TryGetProperty("Role", out var r2) && r2.GetString()?.ToUpper() == "LECTURER"));
                 }
             }
             catch
