@@ -22,6 +22,8 @@ namespace AUCAPulse.Data
         public DbSet<VerificationRequest> VerificationRequests { get; set; }
         public DbSet<PasswordResetRequest> PasswordResetRequests { get; set; }
         public DbSet<Notification> Notifications { get; set; }
+        public DbSet<Course> Courses { get; set; }
+        public DbSet<CourseAssignment> CourseAssignments { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -162,6 +164,33 @@ namespace AUCAPulse.Data
                 entity.HasOne(e => e.User)
                     .WithMany(u => u.Notifications)
                     .HasForeignKey(e => e.UserId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            // Configure Course entity
+            modelBuilder.Entity<Course>(entity =>
+            {
+                entity.HasIndex(e => e.CourseCode).IsUnique();
+            });
+
+            // Configure CourseAssignment entity
+            modelBuilder.Entity<CourseAssignment>(entity =>
+            {
+                entity.HasIndex(e => new { e.LecturerId, e.CourseId, e.SemesterId }).IsUnique();
+
+                entity.HasOne(e => e.Lecturer)
+                    .WithMany()
+                    .HasForeignKey(e => e.LecturerId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(e => e.Course)
+                    .WithMany(c => c.CourseAssignments)
+                    .HasForeignKey(e => e.CourseId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(e => e.Semester)
+                    .WithMany()
+                    .HasForeignKey(e => e.SemesterId)
                     .OnDelete(DeleteBehavior.Cascade);
             });
 
