@@ -13,11 +13,16 @@ namespace AUCAPulse.Controllers
     public class RoomController : ControllerBase
     {
         private readonly IRoomService _roomService;
+        private readonly IRoundRobinRoomService _roundRobinRoomService;
         private readonly ILogger<RoomController> _logger;
 
-        public RoomController(IRoomService roomService, ILogger<RoomController> logger)
+        public RoomController(
+            IRoomService roomService,
+            IRoundRobinRoomService roundRobinRoomService,
+            ILogger<RoomController> logger)
         {
             _roomService = roomService;
+            _roundRobinRoomService = roundRobinRoomService;
             _logger = logger;
         }
 
@@ -102,6 +107,47 @@ namespace AUCAPulse.Controllers
             catch (Exception ex)
             {
                 _logger.LogError($"Error updating room: {ex.Message}");
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        [HttpPost("auto-assign")]
+        [Authorize(Roles = "LECTURER,STAFF,ADMIN")]
+        public async Task<IActionResult> AutoAssignRoom([FromBody] AutoAssignRoomDto request)
+        {
+            try
+            {
+                var userIdClaim = User.FindFirst(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Sub)?.Value
+                                  ?? User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value
+                                  ?? User.FindFirst("UserId")?.Value;
+
+                if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out int userId))
+                {
+                    return Unauthorized(new { message = "Invalid user token" });
+                }
+
+                RoomType? typeFilter = null;
+                if (!string.IsNullOrWhiteSpace(request.RoomType))
+                {
+                    if (!Enum.TryParse<RoomType>(request.RoomType, true, out var parsed))
+                    {
+                        return BadRequest(new { message = "Invalid room type" });
+                    }
+                    typeFilter = parsed;
+                }
+
+                var result = await _roundRobinRoomService.AssignNextAvailableRoomAsync(
+                    userId, typeFilter, request.DurationMinutes);
+
+                if (result == null)
+                {
+                    return NotFound(new { message = "No available rooms match your criteria" });
+                }
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error auto-assigning room: {ex.Message}");
                 return BadRequest(new { message = ex.Message });
             }
         }

@@ -67,6 +67,9 @@ builder.Services.AddScoped<ISemesterService, SemesterService>();
 builder.Services.AddScoped<ICourseService, CourseService>();
 builder.Services.AddScoped<ICourseAssignmentService, CourseAssignmentService>();
 builder.Services.AddScoped<ITimetableGeneratorService, TimetableGeneratorService>();
+
+// Singleton: preserves the Round Robin pointer between requests across all users
+builder.Services.AddSingleton<IRoundRobinRoomService, RoundRobinRoomService>();
 builder.Services.AddScoped<JwtHelper>();
 
 // Add HttpClient for API calls
