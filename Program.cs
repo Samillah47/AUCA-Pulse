@@ -66,6 +66,7 @@ builder.Services.AddScoped<IPasswordResetRequestService, PasswordResetRequestSer
 builder.Services.AddScoped<ISemesterService, SemesterService>();
 builder.Services.AddScoped<ICourseService, CourseService>();
 builder.Services.AddScoped<ICourseAssignmentService, CourseAssignmentService>();
+builder.Services.AddScoped<ITimetableGeneratorService, TimetableGeneratorService>();
 builder.Services.AddScoped<JwtHelper>();
 
 // Add HttpClient for API calls
