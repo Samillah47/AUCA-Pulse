@@ -78,11 +78,19 @@ namespace AUCAPulse.Services
             // Create verification request ONLY if not an auto-approved admin
             if (user.Status != UserStatus.APPROVED)
             {
+                RequestType requestType;
+                var roleTypeUpper = request.RoleType.ToUpper();
+                
+                if (roleTypeUpper == "STUDENT") requestType = RequestType.STUDENT;
+                else if (roleTypeUpper == "LECTURER") requestType = RequestType.LECTURER;
+                else if (roleTypeUpper == "STAFF") requestType = RequestType.STAFF;
+                else requestType = RequestType.STUDENT; // Default
+
                 var verificationRequest = new VerificationRequest
                 {
                     UserId = user.Id,
                     SubmittedId = request.IdentificationNumber,
-                    RequestType = Enum.Parse<RequestType>(request.RoleType.ToUpper()),
+                    RequestType = requestType,
                     Status = VerificationStatus.PENDING,
                     CreatedAt = DateTime.UtcNow
                 };

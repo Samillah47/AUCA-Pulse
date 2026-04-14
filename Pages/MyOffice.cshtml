@@ -1,0 +1,107 @@
+﻿@page
+@model AUCAPulse.Pages.MyOfficeModel
+@{
+    ViewData["Title"] = "My Office";
+}
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-8 mx-auto">
+            <div class="card shadow-sm border-0 mb-4">
+                <div class="card-header bg-white py-3">
+                    <h5 class="mb-0 text-primary">Office Information</h5>
+                </div>
+                <div class="card-body p-4">
+                    @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+                    {
+                        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                            <i class="bi bi-exclamation-triangle me-2"></i> @Model.ErrorMessage
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    }
+
+                    @if (!string.IsNullOrEmpty(Model.SuccessMessage))
+                    {
+                        <div class="alert alert-success alert-dismissible fade show" role="alert">
+                            <i class="bi bi-check-circle me-2"></i> @Model.SuccessMessage
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    }
+
+                    @if (Model.Office != null)
+                    {
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <label class="text-muted small mb-1">Office Name</label>
+                                <p class="fw-bold">@Model.Office.OfficeName</p>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="text-muted small mb-1">Office Number</label>
+                                <p class="fw-bold">@Model.Office.OfficeNumber</p>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="text-muted small mb-1">Building</label>
+                                <p>@Model.Office.Building</p>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="text-muted small mb-1">Floor</label>
+                                <p>@Model.Office.Floor</p>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="text-muted small mb-1">Department</label>
+                                <p>@(Model.Office.Department ?? "Not specified")</p>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="text-muted small mb-1">Phone Extension</label>
+                                <p>@(Model.Office.PhoneExtension ?? "None")</p>
+                            </div>
+                        </div>
+
+                        <hr />
+
+                        <div class="mt-4">
+                            <h6 class="mb-3">Update Current Availability</h6>
+                            <div class="d-flex flex-wrap gap-2">
+                                <form method="post" asp-page-handler="UpdateStatus">
+                                    <input type="hidden" name="status" value="AVAILABLE" />
+                                    <button type="submit" class="btn @(Model.Office.AvailabilityStatus == "AVAILABLE" ? "btn-success" : "btn-outline-success") px-4">
+                                        <i class="bi bi-check-circle me-2"></i> Available
+                                    </button>
+                                </form>
+
+                                <form method="post" asp-page-handler="UpdateStatus">
+                                    <input type="hidden" name="status" value="BUSY" />
+                                    <button type="submit" class="btn @(Model.Office.AvailabilityStatus == "BUSY" ? "btn-warning" : "btn-outline-warning") px-4 text-dark">
+                                        <i class="bi bi-clock me-2"></i> Busy
+                                    </button>
+                                </form>
+
+                                <form method="post" asp-page-handler="UpdateStatus">
+                                    <input type="hidden" name="status" value="AWAY" />
+                                    <button type="submit" class="btn @(Model.Office.AvailabilityStatus == "AWAY" ? "btn-info" : "btn-outline-info") px-4">
+                                        <i class="bi bi-person-dash me-2"></i> Away
+                                    </button>
+                                </form>
+
+                                <form method="post" asp-page-handler="UpdateStatus">
+                                    <input type="hidden" name="status" value="CLOSED" />
+                                    <button type="submit" class="btn @(Model.Office.AvailabilityStatus == "CLOSED" ? "btn-danger" : "btn-outline-danger") px-4">
+                                        <i class="bi bi-x-circle me-2"></i> Closed
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    }
+                    else if (string.IsNullOrEmpty(Model.ErrorMessage))
+                    {
+                        <div class="text-center py-5">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

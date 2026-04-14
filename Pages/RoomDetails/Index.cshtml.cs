@@ -67,23 +67,22 @@ namespace AUCAPulse.Pages.RoomDetails
 
             try
             {
+                var userId = int.Parse(HttpContext.Session.GetString("UserId") ?? "0");
+                // Token is already retrieved at line 62
+
                 var client = _httpClientFactory.CreateClient();
                 client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
                 var apiUrl = _configuration["ApiSettings:BaseUrl"] ?? "https://localhost:5204/api";
 
-                var userId = int.Parse(HttpContext.Session.GetString("UserId") ?? "0");
-
                 var occupyRequest = new
                 {
-                    roomId = roomId,
-                    userId = userId,
-                    occupyUntil = occupyUntil
+                    occupiedUntil = occupyUntil
                 };
 
                 var json = JsonSerializer.Serialize(occupyRequest);
                 var content = new StringContent(json, Encoding.UTF8, "application/json");
 
-                var response = await client.PostAsync($"{apiUrl}/Room/occupy", content);
+                var response = await client.PostAsync($"{apiUrl}/Room/{roomId}/occupy", content);
 
                 if (response.IsSuccessStatusCode)
                 {

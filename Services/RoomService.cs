@@ -158,6 +158,19 @@ namespace AUCAPulse.Services
             room.OccupiedAt = DateTime.UtcNow;
             room.OccupiedUntil = request.OccupiedUntil;
 
+            // Also create a lecture schedule entry
+            var schedule = new LectureSchedule
+            {
+                LecturerId = lecturerId,
+                RoomNumber = room.RoomNumber,
+                DayOfWeek = DateTime.UtcNow.DayOfWeek.ToString().ToUpper(),
+                StartTime = DateTime.UtcNow.TimeOfDay,
+                EndTime = request.OccupiedUntil.TimeOfDay,
+                CourseName = "Manual Occupation",
+                CreatedAt = DateTime.UtcNow
+            };
+            _context.LectureSchedules.Add(schedule);
+
             await _context.SaveChangesAsync();
 
             return await GetRoomByIdAsync(roomId);

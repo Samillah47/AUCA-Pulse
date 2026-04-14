@@ -1,0 +1,219 @@
+﻿@page
+@model AUCAPulse.Pages.Reports.IndexModel
+@{
+    ViewData["Title"] = "System Reports";
+}
+
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="display-6">System Reports</h1>
+            <p class="text-muted">Visual representation of system data</p>
+        </div>
+        <button onclick="window.print()" class="btn btn-outline-primary d-print-none">
+            <i class="bi bi-file-earmark-pdf me-2"></i>Download PDF Report
+        </button>
+    </div>
+
+    @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+    {
+        <div class="alert alert-danger" role="alert">
+            @Model.ErrorMessage
+        </div>
+    }
+
+    <div class="row mb-4">
+        <!-- Summary Cards -->
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm bg-primary text-white mb-3">
+                <div class="card-body">
+                    <h5 class="card-title opacity-75">Total Users</h5>
+                    <h2 class="mb-0">@Model.Data.TotalUsers</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm bg-success text-white mb-3">
+                <div class="card-body">
+                    <h5 class="card-title opacity-75">Total Rooms</h5>
+                    <h2 class="mb-0">@Model.Data.TotalRooms</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm bg-info text-white mb-3">
+                <div class="card-body">
+                    <h5 class="card-title opacity-75">Students</h5>
+                    <h2 class="mb-0">@Model.Data.StudentsCount</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm bg-warning text-dark mb-3">
+                <div class="card-body">
+                    <h5 class="card-title opacity-75">Lecturers</h5>
+                    <h2 class="mb-0">@Model.Data.LecturersCount</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Role Distribution Chart -->
+        <div class="col-lg-6 mb-4">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0">User Role Distribution</h5>
+                </div>
+                <div class="card-body">
+                    <div style="height: 300px;">
+                        <canvas id="userRoleChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Room Status Chart -->
+        <div class="col-lg-6 mb-4">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0">Room Status Distribution</h5>
+                </div>
+                <div class="card-body">
+                    <div style="height: 300px;">
+                        <canvas id="roomStatusChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Data Table Summary -->
+    <div class="card border-0 shadow-sm mt-2">
+        <div class="card-header bg-white">
+            <h5 class="mb-0">Data Summary Table</h5>
+        </div>
+        <div class="card-body p-0">
+            <table class="table table-hover mb-0">
+                <thead class="bg-light">
+                    <tr>
+                        <th>Category</th>
+                        <th>Metric</th>
+                        <th>Value</th>
+                        <th>Percentage</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Users</td>
+                        <td>Students</td>
+                        <td>@Model.Data.StudentsCount</td>
+                        <td>@(Model.Data.TotalUsers > 0 ? (Model.Data.StudentsCount * 100 / Model.Data.TotalUsers) : 0)%</td>
+                    </tr>
+                    <tr>
+                        <td>Users</td>
+                        <td>Lecturers</td>
+                        <td>@Model.Data.LecturersCount</td>
+                        <td>@(Model.Data.TotalUsers > 0 ? (Model.Data.LecturersCount * 100 / Model.Data.TotalUsers) : 0)%</td>
+                    </tr>
+                    <tr>
+                        <td>Users</td>
+                        <td>Staff</td>
+                        <td>@Model.Data.StaffCount</td>
+                        <td>@(Model.Data.TotalUsers > 0 ? (Model.Data.StaffCount * 100 / Model.Data.TotalUsers) : 0)%</td>
+                    </tr>
+                    <tr class="table-group-divider">
+                        <td>Rooms</td>
+                        <td>Available</td>
+                        <td>@Model.Data.AvailableRooms</td>
+                        <td>@(Model.Data.TotalRooms > 0 ? (Model.Data.AvailableRooms * 100 / Model.Data.TotalRooms) : 0)%</td>
+                    </tr>
+                    <tr>
+                        <td>Rooms</td>
+                        <td>Occupied</td>
+                        <td>@Model.Data.OccupiedRooms</td>
+                        <td>@(Model.Data.TotalRooms > 0 ? (Model.Data.OccupiedRooms * 100 / Model.Data.TotalRooms) : 0)%</td>
+                    </tr>
+                    <tr>
+                        <td>Rooms</td>
+                        <td>Maintenance</td>
+                        <td>@Model.Data.MaintenanceRooms</td>
+                        <td>@(Model.Data.TotalRooms > 0 ? (Model.Data.MaintenanceRooms * 100 / Model.Data.TotalRooms) : 0)%</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        // User Role Chart
+        const userCtx = document.getElementById('userRoleChart').getContext('2d');
+        new Chart(userCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Students', 'Lecturers', 'Staff'],
+                datasets: [{
+                    data: [@Model.Data.StudentsCount, @Model.Data.LecturersCount, @Model.Data.StaffCount],
+                    backgroundColor: ['#667eea', '#ecc94b', '#48bb78'],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
+                }
+            }
+        });
+
+        // Room Status Chart
+        const roomCtx = document.getElementById('roomStatusChart').getContext('2d');
+        new Chart(roomCtx, {
+            type: 'bar',
+            data: {
+                labels: ['Available', 'Occupied', 'Maintenance'],
+                datasets: [{
+                    label: 'Number of Rooms',
+                    data: [@Model.Data.AvailableRooms, @Model.Data.OccupiedRooms, @Model.Data.MaintenanceRooms],
+                    backgroundColor: ['#48bb78', '#f56565', '#ed8936'],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            stepSize: 1
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                }
+            }
+        });
+    </script>
+}
+
+<style media="print">
+    .sidebar, .topbar, .btn-outline-primary, .d-print-none {
+        display: none !important;
+    }
+    .main-content {
+        margin-left: 0 !important;
+        padding: 0 !important;
+    }
+    .card {
+        box-shadow: none !important;
+        border: 1px solid #dee2e6 !important;
+    }
+</style>

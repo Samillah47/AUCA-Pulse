@@ -46,16 +46,16 @@ namespace AUCAPulse.Pages.Dashboard
                     if (usersResponse.IsSuccessStatusCode)
                     {
                         var usersContent = await usersResponse.Content.ReadAsStringAsync();
-                        var users = JsonSerializer.Deserialize<List<JsonElement>>(usersContent, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-                        TotalUsers = users?.Count ?? 0;
+                        using var usersDoc = JsonDocument.Parse(usersContent);
+                        TotalUsers = usersDoc.RootElement.GetArrayLength();
                     }
 
-                    var verificationResponse = await client.GetAsync($"{baseUrl}/verificationrequests/pending");
+                    var verificationResponse = await client.GetAsync($"{baseUrl}/verificationrequests/status/PENDING");
                     if (verificationResponse.IsSuccessStatusCode)
                     {
                         var verificationContent = await verificationResponse.Content.ReadAsStringAsync();
-                        var requests = JsonSerializer.Deserialize<List<JsonElement>>(verificationContent, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-                        PendingRequests = requests?.Count ?? 0;
+                        using var verificationDoc = JsonDocument.Parse(verificationContent);
+                        PendingRequests = verificationDoc.RootElement.GetArrayLength();
                     }
                 }
 
@@ -63,16 +63,20 @@ namespace AUCAPulse.Pages.Dashboard
                 if (roomsResponse.IsSuccessStatusCode)
                 {
                     var roomsContent = await roomsResponse.Content.ReadAsStringAsync();
-                    var rooms = JsonSerializer.Deserialize<List<JsonElement>>(roomsContent, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-                    AvailableRooms = rooms?.Count(r => r.GetProperty("status").GetString() == "AVAILABLE") ?? 0;
+                    using var roomsDoc = JsonDocument.Parse(roomsContent);
+                    AvailableRooms = roomsDoc.RootElement.EnumerateArray()
+                        .Count(r => (r.TryGetProperty("status", out var s) && s.GetString()?.ToUpper() == "AVAILABLE") 
+                                 || (r.TryGetProperty("Status", out var s2) && s2.GetString()?.ToUpper() == "AVAILABLE"));
                 }
 
                 var lecturersResponse = await client.GetAsync($"{baseUrl}/users");
                 if (lecturersResponse.IsSuccessStatusCode)
                 {
                     var lecturersContent = await lecturersResponse.Content.ReadAsStringAsync();
-                    var allUsers = JsonSerializer.Deserialize<List<JsonElement>>(lecturersContent, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-                    ActiveLecturers = allUsers?.Count(u => u.GetProperty("roleName").GetString() == "LECTURER") ?? 0;
+                    using var allUsersDoc = JsonDocument.Parse(lecturersContent);
+                    ActiveLecturers = allUsersDoc.RootElement.EnumerateArray()
+                        .Count(u => (u.TryGetProperty("role", out var r) && r.GetString()?.ToUpper() == "LECTURER")
+                                 || (u.TryGetProperty("Role", out var r2) && r2.GetString()?.ToUpper() == "LECTURER"));
                 }
             }
             catch

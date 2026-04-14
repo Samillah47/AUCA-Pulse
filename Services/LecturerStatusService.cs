@@ -78,6 +78,22 @@ namespace AUCAPulse.Services
                 .OrderByDescending(s => s.CreatedAt)
                 .FirstOrDefaultAsync();
 
+            if (status == null)
+            {
+                var lecturer = await _context.Users.FindAsync(lecturerId);
+                if (lecturer != null)
+                {
+                    return new LecturerStatusResponse
+                    {
+                        LecturerId = lecturerId,
+                        LecturerName = lecturer.Name,
+                        LecturerEmail = lecturer.Email,
+                        Status = "AVAILABLE",
+                        CreatedAt = DateTime.UtcNow
+                    };
+                }
+            }
+
             return status == null ? null : MapToResponse(status);
         }
 
