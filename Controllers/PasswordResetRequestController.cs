@@ -9,6 +9,7 @@ namespace AUCAPulse.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [Route("api/passwordresetrequests")]
     public class PasswordResetRequestController : ControllerBase
     {
         private readonly IPasswordResetRequestService _service;

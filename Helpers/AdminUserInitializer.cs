@@ -18,7 +18,7 @@ namespace AUCAPulse.Helpers
                 await context.Database.MigrateAsync();
 
                 // Check if admin user already exists
-                if (!await context.Users.AnyAsync(u => u.Email == "habiyaadolphe19@gmail.com"))
+                if (!await context.Users.AnyAsync(u => u.Email == "samillah.mutoni@gmail.com"))
                 {
                     // Get ADMIN role
                     var adminRole = await context.Roles.FirstOrDefaultAsync(r => r.RoleName == "ADMIN");
@@ -32,8 +32,8 @@ namespace AUCAPulse.Helpers
                     var admin = new User
                     {
                         Name = "System Admin",
-                        Email = "habiyaadolphe19@gmail.com",
-                        PasswordHash = BCrypt.Net.BCrypt.HashPassword("Mugisha1234!@"),
+                        Email = "samillah.mutoni@gmail.com",
+                        PasswordHash = BCrypt.Net.BCrypt.HashPassword("Saliim47"),
                         IdentificationNumber = "ADMIN001",
                         Status = UserStatus.APPROVED,
                         RoleId = adminRole.Id,
@@ -45,8 +45,8 @@ namespace AUCAPulse.Helpers
                     await context.SaveChangesAsync();
 
                     logger.LogInformation("✅ Admin user created successfully!");
-                    logger.LogInformation("   Email: habiyaadolphe19@gmail.com");
-                    logger.LogInformation("   Password: Mugisha1234!@");
+                    logger.LogInformation("   Email: samillah.mutoni@gmail.com");
+                    logger.LogInformation("   Password: Saliim47");
                 }
                 else
                 {

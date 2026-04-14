@@ -8,6 +8,7 @@ namespace AUCAPulse.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [Route("api/rooms")]
     [Authorize]
     public class RoomController : ControllerBase
     {
@@ -111,7 +112,10 @@ namespace AUCAPulse.Controllers
         {
             try
             {
-                var userIdClaim = User.FindFirst("UserId")?.Value;
+                var userIdClaim = User.FindFirst(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Sub)?.Value 
+                                  ?? User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value
+                                  ?? User.FindFirst("UserId")?.Value;
+
                 if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out int lecturerId))
                 {
                     return Unauthorized(new { message = "Invalid user token" });
@@ -137,7 +141,10 @@ namespace AUCAPulse.Controllers
         {
             try
             {
-                var userIdClaim = User.FindFirst("UserId")?.Value;
+                var userIdClaim = User.FindFirst(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Sub)?.Value 
+                                  ?? User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value
+                                  ?? User.FindFirst("UserId")?.Value;
+
                 if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out int lecturerId))
                 {
                     return Unauthorized(new { message = "Invalid user token" });

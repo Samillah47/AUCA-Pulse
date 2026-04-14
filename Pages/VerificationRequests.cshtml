@@ -46,10 +46,9 @@
                             </div>
                             <p class="card-text">
                                 <strong>Email:</strong> @request.UserEmail<br>
-                                <strong>Phone:</strong> @request.UserPhone<br>
-                                <strong>Department:</strong> @request.UserDepartment<br>
-                                <strong>Role:</strong> <span class="badge bg-secondary">@request.RequestedRole</span><br>
-                                <strong>Requested:</strong> @request.RequestedAt.ToString("MMM dd, yyyy HH:mm")
+                                <strong>Identification:</strong> @request.SubmittedId<br>
+                                <strong>Request Type:</strong> <span class="badge bg-secondary">@request.RequestType</span><br>
+                                <strong>Requested:</strong> @request.CreatedAt.ToString("MMM dd, yyyy HH:mm")
                             </p>
                         </div>
                         <div class="card-footer bg-transparent">

@@ -8,6 +8,7 @@ namespace AUCAPulse.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [Route("api/users")]
     [Authorize]
     public class UserController : ControllerBase
     {
@@ -82,8 +83,9 @@ namespace AUCAPulse.Controllers
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateUser(int id, [FromBody] UpdateUserRequest request)
         {
-            var userIdClaim = User.FindFirst("UserId")?.Value;
-            var userRole = User.FindFirst("Role")?.Value;
+            var userIdClaim = User.FindFirst(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Sub)?.Value 
+                              ?? User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            var userRole = User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value;
 
             // Users can only update their own profile unless they are admin
             if (userRole != "ADMIN" && userIdClaim != id.ToString())

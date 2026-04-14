@@ -54,8 +54,9 @@ namespace AUCAPulse.Pages
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
             var baseUrl = _configuration["ApiSettings:BaseUrl"];
 
+            var jsonOptions = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
             var response = await client.PutAsync($"{baseUrl}/User/{userId}/status", new StringContent(
-                JsonSerializer.Serialize(new { status = "APPROVED" }), 
+                JsonSerializer.Serialize(new { status = "APPROVED" }, jsonOptions), 
                 System.Text.Encoding.UTF8, 
                 "application/json"));
             if (response.IsSuccessStatusCode)
@@ -73,8 +74,9 @@ namespace AUCAPulse.Pages
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
             var baseUrl = _configuration["ApiSettings:BaseUrl"];
 
+            var jsonOptions = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
             var response = await client.PutAsync($"{baseUrl}/User/{userId}/status", new StringContent(
-                JsonSerializer.Serialize(new { status = "REJECTED" }), 
+                JsonSerializer.Serialize(new { status = "REJECTED" }, jsonOptions), 
                 System.Text.Encoding.UTF8, 
                 "application/json"));
             if (response.IsSuccessStatusCode)

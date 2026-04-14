@@ -76,6 +76,13 @@
                         <i class="bi bi-person me-2"></i> Profile
                     </a>
 
+                    @if (userRole == "STAFF")
+                    {
+                        <a class="nav-link" href="/MyOffice">
+                            <i class="bi bi-building me-2"></i> My Office
+                        </a>
+                    }
+
                     @if (userRole == "ADMIN")
                     {
                         <hr class="my-3 border-white-50" />
@@ -85,6 +92,9 @@
                         </a>
                         <a class="nav-link" href="/UserManagement">
                             <i class="bi bi-people me-2"></i> Users
+                        </a>
+                        <a class="nav-link" href="/Reports">
+                            <i class="bi bi-bar-chart me-2"></i> Reports
                         </a>
                         <a class="nav-link" href="/PasswordResets">
                             <i class="bi bi-key me-2"></i> Password Resets

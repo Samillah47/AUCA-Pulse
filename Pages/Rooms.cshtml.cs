@@ -18,6 +18,7 @@ namespace AUCAPulse.Pages
 
         public List<RoomDto> Rooms { get; set; } = new();
         public string? SearchQuery { get; set; }
+        public string? SelectedStatus { get; set; }
         public string? ErrorMessage { get; set; }
 
         public async Task<IActionResult> OnGetAsync(string? search, string? status)
@@ -30,6 +31,7 @@ namespace AUCAPulse.Pages
             }
 
             SearchQuery = search;
+            SelectedStatus = status;
 
             try
             {
@@ -58,7 +60,7 @@ namespace AUCAPulse.Pages
 
                     if (!string.IsNullOrEmpty(status))
                     {
-                        Rooms = Rooms.Where(r => r.Status == status).ToList();
+                        Rooms = Rooms.Where(r => r.Status.Equals(status, StringComparison.OrdinalIgnoreCase)).ToList();
                     }
                 }
                 else
