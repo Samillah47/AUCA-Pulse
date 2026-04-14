@@ -71,6 +71,9 @@ builder.Services.AddScoped<ILecturerLocationService, LecturerLocationService>();
 
 // Singleton: preserves the Round Robin pointer between requests across all users
 builder.Services.AddSingleton<IRoundRobinRoomService, RoundRobinRoomService>();
+
+// Background service: auto-releases rooms whose OccupiedUntil has passed
+builder.Services.AddHostedService<RoomAutoReleaseService>();
 builder.Services.AddScoped<JwtHelper>();
 
 // Add HttpClient for API calls
