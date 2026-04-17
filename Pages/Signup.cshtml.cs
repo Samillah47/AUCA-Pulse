@@ -38,13 +38,19 @@ namespace AUCAPulse.Pages
 
         [BindProperty]
         [Required(ErrorMessage = "Password is required")]
-        [StringLength(100, MinimumLength = 6, ErrorMessage = "Password must be at least 6 characters")]
+        [StringLength(100, MinimumLength = 8, ErrorMessage = "Password must be at least 8 characters")]
+        [DataType(DataType.Password)]
         public string Password { get; set; } = string.Empty;
 
         [BindProperty]
         [Required(ErrorMessage = "Please confirm your password")]
         [Compare("Password", ErrorMessage = "Passwords do not match")]
+        [DataType(DataType.Password)]
         public string ConfirmPassword { get; set; } = string.Empty;
+
+        [BindProperty]
+        [Required(ErrorMessage = "Please select your role")]
+        public string RoleType { get; set; } = "STUDENT";
 
         public string? ErrorMessage { get; set; }
         public string? SuccessMessage { get; set; }
@@ -72,7 +78,8 @@ namespace AUCAPulse.Pages
                     identificationNumber = IdentificationNumber,
                     phoneNumber = PhoneNumber,
                     department = Department,
-                    password = Password
+                    password = Password,
+                    roleType = RoleType
                 };
 
                 var json = JsonSerializer.Serialize(registerRequest);

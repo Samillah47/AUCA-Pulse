@@ -22,6 +22,89 @@ namespace AUCAPulse.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("AUCAPulse.Models.Course", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("CourseCode")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("course_code");
+
+                    b.Property<string>("CourseName")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("course_name");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<int>("Credits")
+                        .HasColumnType("integer")
+                        .HasColumnName("credits");
+
+                    b.Property<string>("Department")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("department");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("text")
+                        .HasColumnName("description");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CourseCode")
+                        .IsUnique();
+
+                    b.ToTable("courses");
+                });
+
+            modelBuilder.Entity("AUCAPulse.Models.CourseAssignment", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("AssignedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("assigned_at");
+
+                    b.Property<int>("CourseId")
+                        .HasColumnType("integer")
+                        .HasColumnName("course_id");
+
+                    b.Property<int>("LecturerId")
+                        .HasColumnType("integer")
+                        .HasColumnName("lecturer_id");
+
+                    b.Property<int>("SemesterId")
+                        .HasColumnType("integer")
+                        .HasColumnName("semester_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CourseId");
+
+                    b.HasIndex("SemesterId");
+
+                    b.HasIndex("LecturerId", "CourseId", "SemesterId")
+                        .IsUnique();
+
+                    b.ToTable("course_assignments");
+                });
+
             modelBuilder.Entity("AUCAPulse.Models.LectureSchedule", b =>
                 {
                     b.Property<int>("Id")
@@ -866,6 +949,33 @@ namespace AUCAPulse.Migrations
                     b.ToTable("verification_requests");
                 });
 
+            modelBuilder.Entity("AUCAPulse.Models.CourseAssignment", b =>
+                {
+                    b.HasOne("AUCAPulse.Models.Course", "Course")
+                        .WithMany("CourseAssignments")
+                        .HasForeignKey("CourseId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("AUCAPulse.Models.User", "Lecturer")
+                        .WithMany()
+                        .HasForeignKey("LecturerId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("AUCAPulse.Models.Semester", "Semester")
+                        .WithMany()
+                        .HasForeignKey("SemesterId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Course");
+
+                    b.Navigation("Lecturer");
+
+                    b.Navigation("Semester");
+                });
+
             modelBuilder.Entity("AUCAPulse.Models.LectureSchedule", b =>
                 {
                     b.HasOne("AUCAPulse.Models.User", "Lecturer")
@@ -974,6 +1084,11 @@ namespace AUCAPulse.Migrations
                         .IsRequired();
 
                     b.Navigation("User");
+                });
+
+            modelBuilder.Entity("AUCAPulse.Models.Course", b =>
+                {
+                    b.Navigation("CourseAssignments");
                 });
 
             modelBuilder.Entity("AUCAPulse.Models.Location", b =>

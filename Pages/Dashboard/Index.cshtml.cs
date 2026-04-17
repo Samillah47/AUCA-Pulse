@@ -22,6 +22,7 @@ namespace AUCAPulse.Pages.Dashboard
         public int PendingRequests { get; set; }
         public int AvailableRooms { get; set; }
         public int ActiveLecturers { get; set; }
+        public List<LecturerLocationDto> LecturerLocations { get; set; } = new();
 
         public async Task<IActionResult> OnGetAsync()
         {
@@ -40,22 +41,43 @@ namespace AUCAPulse.Pages.Dashboard
 
             try
             {
-                if (UserRole == "ADMIN")
+                // Single /users call — parse TotalUsers + ActiveLecturers from the same response
+                var usersResponse = await client.GetAsync($"{baseUrl}/users");
+                if (usersResponse.IsSuccessStatusCode)
                 {
-                    var usersResponse = await client.GetAsync($"{baseUrl}/users");
-                    if (usersResponse.IsSuccessStatusCode)
+                    var usersContent = await usersResponse.Content.ReadAsStringAsync();
+                    using var usersDoc = JsonDocument.Parse(usersContent);
+
+                    if (UserRole == "ADMIN")
                     {
-                        var usersContent = await usersResponse.Content.ReadAsStringAsync();
-                        var users = JsonSerializer.Deserialize<List<JsonElement>>(usersContent, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-                        TotalUsers = users?.Count ?? 0;
+                        TotalUsers = usersDoc.RootElement.GetArrayLength();
                     }
 
-                    var verificationResponse = await client.GetAsync($"{baseUrl}/verificationrequests/pending");
+                    ActiveLecturers = usersDoc.RootElement.EnumerateArray()
+                        .Count(u => (u.TryGetProperty("role", out var r) && r.GetString()?.ToUpper() == "LECTURER")
+                                 || (u.TryGetProperty("Role", out var r2) && r2.GetString()?.ToUpper() == "LECTURER"));
+                }
+
+                if (UserRole == "ADMIN")
+                {
+                    var verificationResponse = await client.GetAsync($"{baseUrl}/verificationrequests/status/PENDING");
                     if (verificationResponse.IsSuccessStatusCode)
                     {
                         var verificationContent = await verificationResponse.Content.ReadAsStringAsync();
-                        var requests = JsonSerializer.Deserialize<List<JsonElement>>(verificationContent, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-                        PendingRequests = requests?.Count ?? 0;
+                        using var verificationDoc = JsonDocument.Parse(verificationContent);
+                        PendingRequests = verificationDoc.RootElement.GetArrayLength();
+                    }
+                }
+
+                // Load live lecturer locations for student dashboard
+                if (UserRole == "STUDENT" || UserRole == "ADMIN")
+                {
+                    var locResponse = await client.GetAsync($"{baseUrl}/lecturer-locations");
+                    if (locResponse.IsSuccessStatusCode)
+                    {
+                        var locContent = await locResponse.Content.ReadAsStringAsync();
+                        LecturerLocations = JsonSerializer.Deserialize<List<LecturerLocationDto>>(locContent,
+                            new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new();
                     }
                 }
 
@@ -63,16 +85,10 @@ namespace AUCAPulse.Pages.Dashboard
                 if (roomsResponse.IsSuccessStatusCode)
                 {
                     var roomsContent = await roomsResponse.Content.ReadAsStringAsync();
-                    var rooms = JsonSerializer.Deserialize<List<JsonElement>>(roomsContent, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-                    AvailableRooms = rooms?.Count(r => r.GetProperty("status").GetString() == "AVAILABLE") ?? 0;
-                }
-
-                var lecturersResponse = await client.GetAsync($"{baseUrl}/users");
-                if (lecturersResponse.IsSuccessStatusCode)
-                {
-                    var lecturersContent = await lecturersResponse.Content.ReadAsStringAsync();
-                    var allUsers = JsonSerializer.Deserialize<List<JsonElement>>(lecturersContent, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-                    ActiveLecturers = allUsers?.Count(u => u.GetProperty("roleName").GetString() == "LECTURER") ?? 0;
+                    using var roomsDoc = JsonDocument.Parse(roomsContent);
+                    AvailableRooms = roomsDoc.RootElement.EnumerateArray()
+                        .Count(r => (r.TryGetProperty("status", out var s) && s.GetString()?.ToUpper() == "AVAILABLE")
+                                 || (r.TryGetProperty("Status", out var s2) && s2.GetString()?.ToUpper() == "AVAILABLE"));
                 }
             }
             catch
@@ -82,5 +98,18 @@ namespace AUCAPulse.Pages.Dashboard
 
             return Page();
         }
+    }
+
+    public class LecturerLocationDto
+    {
+        public int LecturerId { get; set; }
+        public string LecturerName { get; set; } = string.Empty;
+        public string LecturerEmail { get; set; } = string.Empty;
+        public string? Department { get; set; }
+        public string Status { get; set; } = string.Empty;
+        public string LocationLabel { get; set; } = string.Empty;
+        public string? CourseInfo { get; set; }
+        public string? UntilTime { get; set; }
+        public string? Source { get; set; }
     }
 }

@@ -1,0 +1,123 @@
+@page
+@model AUCAPulse.Pages.CourseAssignmentModel
+@{
+    ViewData["Title"] = "Assign Courses to Lecturers";
+}
+
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-journal-check me-2"></i>Assign Courses to Lecturers</h2>
+        <span class="badge bg-primary fs-6">@Model.Assignments.Count Assignments</span>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show">
+            @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show">
+            @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+    @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+    {
+        <div class="alert alert-danger">@Model.ErrorMessage</div>
+    }
+
+    <div class="card mb-4">
+        <div class="card-header"><strong>New Assignment</strong></div>
+        <div class="card-body">
+            <form method="post" asp-page-handler="Assign" class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label">Lecturer</label>
+                    <select asp-for="LecturerId" class="form-select" required>
+                        <option value="">-- Select Lecturer --</option>
+                        @foreach (var l in Model.Lecturers)
+                        {
+                            <option value="@l.Id">@l.Name (@l.Email)</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Course</label>
+                    <select asp-for="CourseId" class="form-select" required>
+                        <option value="">-- Select Course --</option>
+                        @foreach (var c in Model.Courses)
+                        {
+                            <option value="@c.Id">@c.CourseCode — @c.CourseName</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Semester</label>
+                    <select asp-for="SemesterId" class="form-select" required>
+                        <option value="">-- Select Semester --</option>
+                        @foreach (var s in Model.Semesters)
+                        {
+                            <option value="@s.Id">@s.Name @(s.IsCurrent ? "(Current)" : "")</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-1 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100">Assign</button>
+                </div>
+            </form>
+            @if (!Model.Lecturers.Any() || !Model.Courses.Any() || !Model.Semesters.Any())
+            {
+                <div class="alert alert-warning mt-3 mb-0">
+                    <i class="bi bi-exclamation-triangle me-1"></i>
+                    You need at least one approved Lecturer, one Course, and one Semester before you can assign.
+                </div>
+            }
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header"><strong>Current Assignments</strong></div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Lecturer</th>
+                            <th>Course</th>
+                            <th>Credits</th>
+                            <th>Semester</th>
+                            <th>Assigned</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (!Model.Assignments.Any())
+                        {
+                            <tr><td colspan="6" class="text-center text-muted">No assignments yet.</td></tr>
+                        }
+                        @foreach (var a in Model.Assignments)
+                        {
+                            <tr>
+                                <td>@a.LecturerName<br /><small class="text-muted">@a.LecturerEmail</small></td>
+                                <td><strong>@a.CourseCode</strong> — @a.CourseName</td>
+                                <td>@a.Credits</td>
+                                <td>@a.SemesterName</td>
+                                <td>@a.AssignedAt.ToString("yyyy-MM-dd")</td>
+                                <td>
+                                    <form method="post" class="d-inline">
+                                        <input type="hidden" name="assignmentId" value="@a.Id" />
+                                        <button type="submit" asp-page-handler="Delete" class="btn btn-danger btn-sm" onclick="return confirm('Remove this assignment?')">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>

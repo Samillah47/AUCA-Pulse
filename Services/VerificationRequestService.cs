@@ -94,6 +94,26 @@ namespace AUCAPulse.Services
             verificationRequest.ReviewedBy = adminId;
             verificationRequest.ReviewedAt = DateTime.UtcNow;
 
+            // If approved, also update user status
+            if (request.Status == VerificationStatus.APPROVED)
+            {
+                var user = await _context.Users.FindAsync(verificationRequest.UserId);
+                if (user != null)
+                {
+                    user.Status = UserStatus.APPROVED;
+                    user.UpdatedAt = DateTime.UtcNow;
+                }
+            }
+            else if (request.Status == VerificationStatus.REJECTED)
+            {
+                var user = await _context.Users.FindAsync(verificationRequest.UserId);
+                if (user != null)
+                {
+                    user.Status = UserStatus.REJECTED;
+                    user.UpdatedAt = DateTime.UtcNow;
+                }
+            }
+
             await _context.SaveChangesAsync();
 
             // Create notification for user

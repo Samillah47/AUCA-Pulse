@@ -64,6 +64,16 @@ builder.Services.AddScoped<ILectureScheduleService, LectureScheduleService>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddScoped<IPasswordResetRequestService, PasswordResetRequestService>();
 builder.Services.AddScoped<ISemesterService, SemesterService>();
+builder.Services.AddScoped<ICourseService, CourseService>();
+builder.Services.AddScoped<ICourseAssignmentService, CourseAssignmentService>();
+builder.Services.AddScoped<ITimetableGeneratorService, TimetableGeneratorService>();
+builder.Services.AddScoped<ILecturerLocationService, LecturerLocationService>();
+
+// Singleton: preserves the Round Robin pointer between requests across all users
+builder.Services.AddSingleton<IRoundRobinRoomService, RoundRobinRoomService>();
+
+// Background service: auto-releases rooms whose OccupiedUntil has passed
+builder.Services.AddHostedService<RoomAutoReleaseService>();
 builder.Services.AddScoped<JwtHelper>();
 
 // Add HttpClient for API calls

@@ -8,6 +8,7 @@ namespace AUCAPulse.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [Route("api/verificationrequests")]
     [Authorize]
     public class VerificationRequestController : ControllerBase
     {
@@ -25,7 +26,8 @@ namespace AUCAPulse.Controllers
         {
             try
             {
-                var userIdClaim = User.FindFirst("UserId")?.Value;
+                var userIdClaim = User.FindFirst(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Sub)?.Value 
+                                  ?? User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
                 if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out int userId))
                 {
                     return Unauthorized(new { message = "Invalid user token" });
@@ -50,8 +52,9 @@ namespace AUCAPulse.Controllers
                 return NotFound(new { message = "Verification request not found" });
             }
 
-            var userIdClaim = User.FindFirst("UserId")?.Value;
-            var userRole = User.FindFirst("Role")?.Value;
+            var userIdClaim = User.FindFirst(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Sub)?.Value 
+                              ?? User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            var userRole = User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value;
 
             // Users can only view their own requests unless they are admin
             if (userRole != "ADMIN" && userIdClaim != request.UserId.ToString())
@@ -73,8 +76,9 @@ namespace AUCAPulse.Controllers
         [HttpGet("user/{userId}")]
         public async Task<IActionResult> GetRequestsByUserId(int userId)
         {
-            var userIdClaim = User.FindFirst("UserId")?.Value;
-            var userRole = User.FindFirst("Role")?.Value;
+            var userIdClaim = User.FindFirst(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Sub)?.Value 
+                              ?? User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            var userRole = User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value;
 
             // Users can only view their own requests unless they are admin
             if (userRole != "ADMIN" && userIdClaim != userId.ToString())
@@ -89,7 +93,8 @@ namespace AUCAPulse.Controllers
         [HttpGet("my-requests")]
         public async Task<IActionResult> GetMyRequests()
         {
-            var userIdClaim = User.FindFirst("UserId")?.Value;
+            var userIdClaim = User.FindFirst(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Sub)?.Value 
+                              ?? User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
             if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out int userId))
             {
                 return Unauthorized(new { message = "Invalid user token" });
@@ -116,7 +121,9 @@ namespace AUCAPulse.Controllers
         [Authorize(Roles = "ADMIN")]
         public async Task<IActionResult> UpdateRequestStatus(int id, [FromBody] UpdateVerificationRequestDto request)
         {
-            var adminIdClaim = User.FindFirst("UserId")?.Value;
+            var adminIdClaim = User.FindFirst(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Sub)?.Value 
+                               ?? User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+
             if (string.IsNullOrEmpty(adminIdClaim) || !int.TryParse(adminIdClaim, out int adminId))
             {
                 return Unauthorized(new { message = "Invalid admin token" });

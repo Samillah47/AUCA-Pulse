@@ -6,30 +6,67 @@
 
 <div class="container-fluid">
     <div class="row mb-4">
-        <div class="col-12">
-            <h1 class="display-6">Available Rooms</h1>
-            <p class="text-muted">Find and book available rooms across campus</p>
+        <div class="col-12 d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div>
+                <h1 class="display-6 mb-1">Available Rooms</h1>
+                <p class="text-muted mb-0">Find and book available rooms across campus</p>
+            </div>
+            @if (Model.UserRole == "LECTURER" || Model.UserRole == "STAFF" || Model.UserRole == "ADMIN")
+            {
+                <form method="post" asp-page-handler="AutoAssign" class="d-flex gap-2 align-items-center">
+                    <select name="RoomTypeFilter" class="form-select form-select-sm" style="width: auto;">
+                        <option value="">Any type</option>
+                        <option value="LECTURE_HALL">Lecture Hall</option>
+                        <option value="LAB">Lab</option>
+                        <option value="MEETING_ROOM">Meeting Room</option>
+                        <option value="OFFICE">Office</option>
+                    </select>
+                    <input type="number" name="DurationMinutes" value="120" min="15" max="480" class="form-control form-control-sm" style="width: 90px;" title="Duration (min)" />
+                    <button type="submit" class="btn btn-success btn-sm">
+                        <i class="bi bi-lightning-charge me-1"></i>Auto-Assign Me a Room
+                    </button>
+                </form>
+            }
         </div>
     </div>
 
+    @if (TempData["AutoAssignSuccess"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show">
+            <i class="bi bi-check-circle me-1"></i> @TempData["AutoAssignSuccess"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+    @if (TempData["AutoAssignError"] != null)
+    {
+        <div class="alert alert-warning alert-dismissible fade show">
+            <i class="bi bi-exclamation-triangle me-1"></i> @TempData["AutoAssignError"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
     <!-- Search and Filter -->
     <div class="row mb-4">
-        <div class="col-md-8">
-            <form method="get" class="d-flex gap-2">
-                <input type="text" name="search" class="form-control" placeholder="Search by room number or building..." value="@Model.SearchQuery" />
-                <button type="submit" class="btn btn-primary">
-                    <i class="bi bi-search"></i> Search
-                </button>
+        <div class="col-md-12">
+            <form method="get" class="row g-3">
+                <div class="col-md-8">
+                    <div class="input-group">
+                        <input type="text" name="search" class="form-control" placeholder="Search by room number or building..." value="@Model.SearchQuery" />
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-search"></i> Search
+                        </button>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <select name="status" class="form-select" onchange="this.form.submit()">
+                        <option value="">All Statuses</option>
+                        <option value="AVAILABLE" selected="@(Model.SelectedStatus == "AVAILABLE")">Available</option>
+                        <option value="OCCUPIED" selected="@(Model.SelectedStatus == "OCCUPIED")">Occupied</option>
+                        <option value="MAINTENANCE" selected="@(Model.SelectedStatus == "MAINTENANCE")">Maintenance</option>
+                        <option value="RESERVED" selected="@(Model.SelectedStatus == "RESERVED")">Reserved</option>
+                    </select>
+                </div>
             </form>
-        </div>
-        <div class="col-md-4">
-            <select name="status" class="form-select" onchange="this.form.submit()">
-                <option value="">All Statuses</option>
-                <option value="AVAILABLE">Available</option>
-                <option value="OCCUPIED">Occupied</option>
-                <option value="MAINTENANCE">Maintenance</option>
-                <option value="RESERVED">Reserved</option>
-            </select>
         </div>
     </div>
 
@@ -85,21 +122,21 @@
 
                             @if (room.Status == "AVAILABLE")
                             {
-                                <a href="/Rooms/@room.Id" class="btn btn-primary btn-sm w-100">
+                                <a href="/RoomDetails/@room.Id" class="btn btn-primary btn-sm w-100">
                                     <i class="bi bi-door-open me-1"></i> View Details
                                 </a>
                             }
                             else if (room.Status == "OCCUPIED")
                             {
-                                <button class="btn btn-secondary btn-sm w-100" disabled>
+                                <a href="/RoomDetails/@room.Id" class="btn btn-secondary btn-sm w-100">
                                     <i class="bi bi-lock me-1"></i> Currently Occupied
-                                </button>
+                                </a>
                             }
                             else
                             {
-                                <button class="btn btn-outline-secondary btn-sm w-100" disabled>
+                                <a href="/RoomDetails/@room.Id" class="btn btn-outline-secondary btn-sm w-100">
                                     @room.Status
-                                </button>
+                                </a>
                             }
                         </div>
                     </div>

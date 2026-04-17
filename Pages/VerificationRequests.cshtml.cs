@@ -37,7 +37,7 @@ namespace AUCAPulse.Pages
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
             var baseUrl = _configuration["ApiSettings:BaseUrl"];
 
-            var response = await client.GetAsync($"{baseUrl}/verificationrequests/pending");
+            var response = await client.GetAsync($"{baseUrl}/verificationrequests/status/PENDING");
             if (response.IsSuccessStatusCode)
             {
                 var content = await response.Content.ReadAsStringAsync();
@@ -50,18 +50,25 @@ namespace AUCAPulse.Pages
         public async Task<IActionResult> OnPostApproveAsync(int requestId)
         {
             var token = HttpContext.Session.GetString("Token");
+            if (string.IsNullOrEmpty(token)) return RedirectToPage("/Login");
+
             var client = _httpClientFactory.CreateClient();
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
             var baseUrl = _configuration["ApiSettings:BaseUrl"];
 
-            var response = await client.PostAsync($"{baseUrl}/verificationrequests/{requestId}/approve", null);
+            var updateDto = new { status = "APPROVED" };
+            var jsonOptions = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
+            var content = new StringContent(JsonSerializer.Serialize(updateDto, jsonOptions), Encoding.UTF8, "application/json");
+
+            var response = await client.PutAsync($"{baseUrl}/verificationrequests/{requestId}", content);
             if (response.IsSuccessStatusCode)
             {
                 TempData["SuccessMessage"] = "User approved successfully!";
             }
             else
             {
-                TempData["ErrorMessage"] = "Failed to approve user.";
+                var errorContent = await response.Content.ReadAsStringAsync();
+                TempData["ErrorMessage"] = $"Failed to approve user. API says: {response.StatusCode}";
             }
 
             return RedirectToPage();
@@ -70,18 +77,25 @@ namespace AUCAPulse.Pages
         public async Task<IActionResult> OnPostRejectAsync(int requestId)
         {
             var token = HttpContext.Session.GetString("Token");
+            if (string.IsNullOrEmpty(token)) return RedirectToPage("/Login");
+
             var client = _httpClientFactory.CreateClient();
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
             var baseUrl = _configuration["ApiSettings:BaseUrl"];
 
-            var response = await client.PostAsync($"{baseUrl}/verificationrequests/{requestId}/reject", null);
+            var updateDto = new { status = "REJECTED", rejectionReason = "User does not meet criteria." };
+            var jsonOptions = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
+            var content = new StringContent(JsonSerializer.Serialize(updateDto, jsonOptions), Encoding.UTF8, "application/json");
+
+            var response = await client.PutAsync($"{baseUrl}/verificationrequests/{requestId}", content);
             if (response.IsSuccessStatusCode)
             {
                 TempData["SuccessMessage"] = "User rejected successfully!";
             }
             else
             {
-                TempData["ErrorMessage"] = "Failed to reject user.";
+                var errorContent = await response.Content.ReadAsStringAsync();
+                TempData["ErrorMessage"] = $"Failed to reject user. API says: {response.StatusCode}";
             }
 
             return RedirectToPage();
@@ -94,10 +108,9 @@ namespace AUCAPulse.Pages
         public int UserId { get; set; }
         public string UserName { get; set; } = string.Empty;
         public string UserEmail { get; set; } = string.Empty;
-        public string UserPhone { get; set; } = string.Empty;
-        public string UserDepartment { get; set; } = string.Empty;
-        public string RequestedRole { get; set; } = string.Empty;
+        public string SubmittedId { get; set; } = string.Empty;
+        public string RequestType { get; set; } = string.Empty;
         public string Status { get; set; } = string.Empty;
-        public DateTime RequestedAt { get; set; }
+        public DateTime CreatedAt { get; set; }
     }
 }
