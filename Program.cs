@@ -5,6 +5,7 @@ using System.Text;
 using AUCAPulse.Data;
 using AUCAPulse.Services;
 using AUCAPulse.Helpers;
+using AUCAPulse.Middleware;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -108,10 +109,13 @@ var app = builder.Build();
 // Initialize admin user
 await AdminUserInitializer.InitializeAsync(app.Services);
 
+// Global friendly exception handler (logs full error server-side, returns
+// plain-English message to the client). Must come before UseRouting.
+app.UseMiddleware<FriendlyExceptionMiddleware>();
+
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
 {
-    app.UseExceptionHandler("/Error");
     app.UseHsts();
 }
 

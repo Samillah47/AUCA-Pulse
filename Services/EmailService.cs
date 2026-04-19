@@ -138,21 +138,26 @@ Adventist University of Central Africa";
 
         public async Task SendPasswordResetEmailAsync(string toEmail, string name, string token)
         {
-            var resetUrl = $"http://localhost:5000/reset-password?token={token}";
-            var subject = "ACPulse - Password Reset Request Approved";
-            var body = $@"Dear {name},
+            var baseUrl = _configuration["ApiSettings:BaseUrl"] ?? "http://localhost:5204/api";
+            // Strip "/api" suffix if present to get the site root
+            var siteRoot = baseUrl.EndsWith("/api", StringComparison.OrdinalIgnoreCase)
+                ? baseUrl[..^4]
+                : baseUrl;
+            var resetUrl = $"{siteRoot}/ResetPassword?token={Uri.EscapeDataString(token)}";
+            var subject = "AUCA Pulse - Reset your password";
+            var body = $@"Hi {name},
 
-Your request to reset your password has been approved.
+We received a request to reset your AUCA Pulse password.
 
-Please click the link below to set a new password:
+Click the link below to choose a new password:
 {resetUrl}
 
-This link will expire in 1 hour.
+This link will expire in 30 minutes and can only be used once.
 
-If you did not request a password reset, please ignore this email or contact support.
+If you didn't request a password reset, you can safely ignore this email — your password will not be changed.
 
 Best regards,
-The ACPulse Team";
+The AUCA Pulse Team";
 
             await SendEmailAsync(toEmail, subject, body);
         }
