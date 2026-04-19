@@ -251,5 +251,6 @@ namespace AUCAPulse.Pages.Dashboard
         public string? CourseCode { get; set; }
         public string? CourseName { get; set; }
         public string? RoomNumber { get; set; }
+        public string? GroupName { get; set; }
     }
 }

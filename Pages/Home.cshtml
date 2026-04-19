@@ -80,10 +80,17 @@
                     </div>
                     <div style="font-weight:600;">@c.CourseCode @c.CourseName</div>
                     <div class="small text-muted">@c.LecturerName</div>
-                    @if (!string.IsNullOrEmpty(c.RoomNumber))
-                    {
-                        <div class="small mt-1"><span class="badge bg-secondary">Room @c.RoomNumber</span></div>
-                    }
+                    <div class="small mt-1 d-flex gap-1 flex-wrap">
+                        @if (!string.IsNullOrEmpty(c.GroupName))
+                        {
+                            <span class="badge bg-primary">Group @c.GroupName</span>
+                        }
+                        @if (!string.IsNullOrEmpty(c.RoomNumber))
+                        {
+                            <span class="badge bg-secondary">Room @c.RoomNumber</span>
+                        }
+                    </div>
+                    @{/* old single-room line replaced by grouped badges above */}
                 </div>
             }
         </div>

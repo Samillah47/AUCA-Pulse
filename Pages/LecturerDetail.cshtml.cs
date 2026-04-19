@@ -103,6 +103,7 @@ namespace AUCAPulse.Pages
         public string? CourseCode { get; set; }
         public string? CourseName { get; set; }
         public string? RoomNumber { get; set; }
+        public string? GroupName { get; set; }
         public string? SemesterName { get; set; }
     }
 }

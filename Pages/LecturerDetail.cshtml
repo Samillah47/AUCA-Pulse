@@ -120,6 +120,7 @@
                                             <tr>
                                                 <th style="width: 130px;">Time</th>
                                                 <th>Course</th>
+                                                <th style="width: 100px;">Group</th>
                                                 <th style="width: 100px;">Room</th>
                                             </tr>
                                         </thead>
@@ -137,6 +138,16 @@
                                                     @if (!string.IsNullOrWhiteSpace(e.CourseName))
                                                     {
                                                         <span class="text-muted"> — @e.CourseName</span>
+                                                    }
+                                                </td>
+                                                <td>
+                                                    @if (!string.IsNullOrWhiteSpace(e.GroupName))
+                                                    {
+                                                        <span class="badge bg-primary">Group @e.GroupName</span>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span class="text-muted">-</span>
                                                     }
                                                 </td>
                                                 <td>

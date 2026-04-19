@@ -321,10 +321,16 @@ else if (Model.UserRole == "LECTURER")
                                             @c.EndTime.Substring(0, Math.Min(5, c.EndTime.Length))
                                         </div>
                                     </div>
-                                    @if (!string.IsNullOrEmpty(c.RoomNumber))
-                                    {
-                                        <div class="small mt-1"><span class="badge bg-secondary">Room @c.RoomNumber</span></div>
-                                    }
+                                    <div class="small mt-1 d-flex gap-1 flex-wrap">
+                                        @if (!string.IsNullOrEmpty(c.GroupName))
+                                        {
+                                            <span class="badge bg-primary">Group @c.GroupName</span>
+                                        }
+                                        @if (!string.IsNullOrEmpty(c.RoomNumber))
+                                        {
+                                            <span class="badge bg-secondary">Room @c.RoomNumber</span>
+                                        }
+                                    </div>
                                 </div>
                             }
                         </div>

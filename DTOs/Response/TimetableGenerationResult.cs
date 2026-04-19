@@ -20,6 +20,7 @@ namespace AUCAPulse.DTOs.Response
         public string CourseCode { get; set; } = string.Empty;
         public string CourseName { get; set; } = string.Empty;
         public string RoomNumber { get; set; } = string.Empty;
+        public string? GroupName { get; set; }
         public string DayOfWeek { get; set; } = string.Empty;
         public string StartTime { get; set; } = string.Empty;
         public string EndTime { get; set; } = string.Empty;

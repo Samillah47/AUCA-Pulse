@@ -209,6 +209,7 @@ namespace AUCAPulse.Services
                 CourseName = schedule.CourseName,
                 CourseCode = schedule.CourseCode,
                 RoomNumber = schedule.RoomNumber,
+                GroupName = schedule.GroupName,
                 SemesterId = schedule.SemesterId,
                 SemesterName = schedule.Semester?.Name,
                 CreatedAt = schedule.CreatedAt,

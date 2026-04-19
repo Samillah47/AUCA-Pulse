@@ -52,6 +52,7 @@ namespace AUCAPulse.Services
             var assignments = await _context.CourseAssignments
                 .Include(ca => ca.Lecturer)
                 .Include(ca => ca.Course)
+                .Include(ca => ca.Group)
                 .Where(ca => ca.SemesterId == dto.SemesterId)
                 .OrderBy(ca => ca.CourseId)
                 .ThenBy(ca => ca.LecturerId)
@@ -170,6 +171,7 @@ namespace AUCAPulse.Services
                             CourseCode = assignment.Course?.CourseCode,
                             CourseName = assignment.Course?.CourseName,
                             RoomNumber = room.RoomNumber,
+                            GroupName = assignment.Group?.Name,
                             SemesterId = semester.Id,
                             CreatedAt = DateTime.UtcNow
                         };
@@ -195,6 +197,7 @@ namespace AUCAPulse.Services
                             CourseCode = assignment.Course?.CourseCode ?? string.Empty,
                             CourseName = assignment.Course?.CourseName ?? string.Empty,
                             RoomNumber = room.RoomNumber,
+                            GroupName = assignment.Group?.Name,
                             DayOfWeek = slot.Day,
                             StartTime = runStart.ToString(@"hh\:mm"),
                             EndTime = runEnd.ToString(@"hh\:mm")

@@ -5,10 +5,12 @@
     Layout = "_StudentLayout";
     var dayOrder = new[] { "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SUNDAY" };
 
-    var timeSlots = Model.Schedules
-        .Select(s => new { s.StartTime, s.EndTime })
+    // One row per distinct start time — multi-credit classes would otherwise
+    // produce duplicate rows (same start, different end).
+    var startTimes = Model.Schedules
+        .Select(s => s.StartTime)
         .Distinct()
-        .OrderBy(s => s.StartTime)
+        .OrderBy(s => s)
         .ToList();
 }
 
@@ -43,25 +45,34 @@ else
                         </tr>
                     </thead>
                     <tbody>
-                    @foreach (var slot in timeSlots)
+                    @foreach (var startTime in startTimes)
                     {
                         <tr>
                             <td class="small text-muted">
-                                @slot.StartTime.Substring(0, Math.Min(5, slot.StartTime.Length)) - @slot.EndTime.Substring(0, Math.Min(5, slot.EndTime.Length))
+                                @startTime.Substring(0, Math.Min(5, startTime.Length))
                             </td>
                             @foreach (var d in dayOrder)
                             {
-                                var entries = Model.Schedules.Where(e => e.DayOfWeek == d && e.StartTime == slot.StartTime).ToList();
+                                var entries = Model.Schedules.Where(e => e.DayOfWeek == d && e.StartTime == startTime).ToList();
                                 <td>
                                     @foreach (var e in entries)
                                     {
                                         <div class="mb-2 p-2 rounded" style="background:var(--accent-soft);border-left:3px solid var(--accent);">
+                                            <div class="small text-muted">
+                                                @e.StartTime.Substring(0, Math.Min(5, e.StartTime.Length)) - @e.EndTime.Substring(0, Math.Min(5, e.EndTime.Length))
+                                            </div>
                                             <div class="small" style="font-weight:600;">@e.CourseCode @e.CourseName</div>
                                             <div class="small text-muted">@e.LecturerName</div>
-                                            @if (!string.IsNullOrEmpty(e.RoomNumber))
-                                            {
-                                                <div class="small mt-1"><span class="badge bg-secondary">@e.RoomNumber</span></div>
-                                            }
+                                            <div class="small mt-1 d-flex gap-1 flex-wrap">
+                                                @if (!string.IsNullOrEmpty(e.GroupName))
+                                                {
+                                                    <span class="badge bg-primary">Group @e.GroupName</span>
+                                                }
+                                                @if (!string.IsNullOrEmpty(e.RoomNumber))
+                                                {
+                                                    <span class="badge bg-secondary">@e.RoomNumber</span>
+                                                }
+                                            </div>
                                         </div>
                                     }
                                 </td>
