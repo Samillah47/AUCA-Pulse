@@ -21,6 +21,22 @@ namespace AUCAPulse.Controllers
             _logger = logger;
         }
 
+        [HttpPost]
+        [Authorize(Roles = "ADMIN")]
+        public async Task<IActionResult> CreateUser([FromBody] AdminCreateUserDto request)
+        {
+            try
+            {
+                var user = await _userService.AdminCreateUserAsync(request);
+                return Ok(new { message = "User created successfully", data = user });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Admin failed to create user for email {Email}", request.Email);
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
         [HttpGet("{id}")]
         public async Task<IActionResult> GetUserById(int id)
         {
