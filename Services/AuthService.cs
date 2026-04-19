@@ -115,19 +115,23 @@ namespace AUCAPulse.Services
 
             if (user == null)
             {
-                throw new Exception("Invalid credentials");
+                throw new Exception("The email or password you entered doesn't match our records.");
             }
 
             // Verify password
             if (!BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
             {
-                throw new Exception("Invalid credentials");
+                throw new Exception("The email or password you entered doesn't match our records.");
             }
 
             // Check if user account is approved
-            if (user.Status != UserStatus.APPROVED)
+            if (user.Status == UserStatus.PENDING)
             {
-                throw new Exception($"Account is {user.Status.ToString().ToLower()}");
+                throw new Exception("Your account is pending approval. You'll be able to sign in once an administrator approves it.");
+            }
+            if (user.Status == UserStatus.REJECTED)
+            {
+                throw new Exception("Your account has been rejected. Please contact an administrator for help.");
             }
 
             // Generate and save OTP
