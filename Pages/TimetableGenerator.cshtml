@@ -92,8 +92,7 @@
                             <option value="">-- Select --</option>
                             @foreach (var s in Model.Semesters)
                             {
-                                var sel = Model.SelectedSemesterId == s.Id;
-                                <option value="@s.Id" selected="@sel">@s.Name @(s.IsCurrent ? "(Current)" : "")</option>
+                                <option value="@s.Id">@s.Name @(s.IsCurrent ? "(Current)" : "")</option>
                             }
                         </select>
                     </div>

@@ -44,11 +44,16 @@ namespace AUCAPulse.Pages
 
             await LoadReferenceData(token);
 
-            // Default selected semester = current if not set
+            // Default the filter and the generator form to the current semester
+            // so a fresh page load is already pointing at the right one.
+            var currentSem = Semesters.FirstOrDefault(s => s.IsCurrent) ?? Semesters.FirstOrDefault();
             if (!SelectedSemesterId.HasValue)
             {
-                var current = Semesters.FirstOrDefault(s => s.IsCurrent) ?? Semesters.FirstOrDefault();
-                SelectedSemesterId = current?.Id;
+                SelectedSemesterId = currentSem?.Id;
+            }
+            if (GenSemesterId == 0)
+            {
+                GenSemesterId = currentSem?.Id ?? 0;
             }
 
             if (SelectedSemesterId.HasValue)
