@@ -6,6 +6,8 @@ namespace AUCAPulse.DTOs.Request
     {
         [Required]
         public string Status { get; set; } = string.Empty;
+
+        [MaxLength(500)]
+        public string? Reason { get; set; }
     }
 }
-

@@ -11,7 +11,7 @@ namespace AUCAPulse.Services
         Task<AppointmentResponse> CreateAppointmentAsync(int studentUserId, CreateAppointmentDto request);
         Task<List<AppointmentResponse>> GetAppointmentsByStaffAsync(int staffUserId);
         Task<List<AppointmentResponse>> GetAppointmentsByStudentAsync(int studentUserId);
-        Task<AppointmentResponse?> UpdateAppointmentStatusAsync(int appointmentId, UpdateAppointmentStatusDto request);
+        Task<AppointmentResponse?> UpdateAppointmentStatusAsync(int appointmentId, UpdateAppointmentStatusDto request, int? actingStaffUserId = null);
         Task<bool> DeleteAppointmentAsync(int appointmentId);
     }
 
@@ -36,11 +36,23 @@ namespace AUCAPulse.Services
             if (staff == null)
                 throw new Exception("Staff member not found");
 
+            var normalizedAppointmentDate = NormalizeToUtc(request.AppointmentDate);
+
+            var duplicateExists = await _context.Appointments.AnyAsync(a =>
+                a.StudentUserId == studentUserId &&
+                a.StaffUserId == request.StaffUserId &&
+                a.AppointmentDate == normalizedAppointmentDate);
+
+            if (duplicateExists)
+            {
+                throw new InvalidOperationException("You already requested this exact appointment slot with this staff member.");
+            }
+
             var appointment = new Appointment
             {
                 StudentUserId = studentUserId,
                 StaffUserId = request.StaffUserId,
-                AppointmentDate = request.AppointmentDate,
+                AppointmentDate = normalizedAppointmentDate,
                 Reason = request.Reason,
                 Status = AppointmentStatus.PENDING,
                 CreatedAt = DateTime.UtcNow
@@ -78,7 +90,7 @@ namespace AUCAPulse.Services
             return appointments.Select(MapToResponse).ToList();
         }
 
-        public async Task<AppointmentResponse?> UpdateAppointmentStatusAsync(int appointmentId, UpdateAppointmentStatusDto request)
+        public async Task<AppointmentResponse?> UpdateAppointmentStatusAsync(int appointmentId, UpdateAppointmentStatusDto request, int? actingStaffUserId = null)
         {
             var appointment = await _context.Appointments
                 .Include(a => a.StudentUser)
@@ -88,9 +100,24 @@ namespace AUCAPulse.Services
             if (appointment == null)
                 return null;
 
+            // Staff can only update appointments assigned to them.
+            if (actingStaffUserId.HasValue && appointment.StaffUserId != actingStaffUserId.Value)
+            {
+                throw new UnauthorizedAccessException("You can only update appointments assigned to you.");
+            }
+
             if (Enum.TryParse<AppointmentStatus>(request.Status, true, out var status))
             {
                 appointment.Status = status;
+
+                if (status == AppointmentStatus.REJECTED && !string.IsNullOrWhiteSpace(request.Reason))
+                {
+                    var note = $"Staff response: {request.Reason.Trim()}";
+                    appointment.Reason = string.IsNullOrWhiteSpace(appointment.Reason)
+                        ? note
+                        : $"{appointment.Reason}\n\n{note}";
+                }
+
                 appointment.UpdatedAt = DateTime.UtcNow;
                 await _context.SaveChangesAsync();
 
@@ -112,6 +139,17 @@ namespace AUCAPulse.Services
 
             _logger.LogInformation($"Appointment {appointmentId} deleted");
             return true;
+        }
+
+        // PostgreSQL timestamp with time zone expects UTC values.
+        private static DateTime NormalizeToUtc(DateTime value)
+        {
+            return value.Kind switch
+            {
+                DateTimeKind.Utc => value,
+                DateTimeKind.Local => value.ToUniversalTime(),
+                _ => DateTime.SpecifyKind(value, DateTimeKind.Local).ToUniversalTime()
+            };
         }
 
         private async Task<AppointmentResponse> GetAppointmentResponseAsync(Appointment appointment)
@@ -156,4 +194,3 @@ namespace AUCAPulse.Services
         }
     }
 }
-

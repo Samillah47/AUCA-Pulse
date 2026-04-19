@@ -55,6 +55,9 @@
                     <a class="nav-link @(IsActive("/Lecturers") ? "active" : "")" href="/Lecturers">
                         <i class="bi bi-people"></i> Lecturers
                     </a>
+                    <a class="nav-link @(IsActive("/Student/MyAppointments") ? "active" : "")" href="/Student/MyAppointments">
+                        <i class="bi bi-calendar-check"></i> My Appointments
+                    </a>
                     <a class="nav-link @(IsActive("/Rooms") ? "active" : "")" href="/Rooms">
                         <i class="bi bi-door-open"></i> Rooms
                     </a>
@@ -115,20 +118,18 @@
                     </a>
                 }
                 
-                @if (userRole != "STUDENT")
+                @if (userRole != "STUDENT" && userRole != "STAFF")
                 {
                     <a class="nav-link @(IsActive("/Notifications") ? "active" : "")" href="/Notifications">
                         <i class="bi bi-bell"></i> Notifications
                     </a>
                 }
-                <a class="nav-link @(IsActive("/Profile") ? "active" : "")" href="/Profile">
-                    <i class="bi bi-person"></i> Profile
-                </a>
-
-                <hr />
-                <a class="nav-link" href="/Logout">
-                    <i class="bi bi-box-arrow-right"></i> Logout
-                </a>
+                @if (userRole != "STAFF")
+                {
+                    <a class="nav-link @(IsActive("/Profile") ? "active" : "")" href="/Profile">
+                        <i class="bi bi-person"></i> Profile
+                    </a>
+                }
             </nav>
         </aside>
 

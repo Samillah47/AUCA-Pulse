@@ -6,7 +6,7 @@
     <div class="row mb-4">
         <div class="col-md-8">
             <h2 class="fw-bold text-primary"><i class="bi bi-speedometer2"></i> Staff Dashboard</h2>
-            <p class="text-muted small">Welcome, @(Model.StaffUser as dynamic)?.Name</p>
+            <p class="text-muted small">Welcome, @((Model.StaffUser as dynamic)?.Name ?? "Staff")</p>
         </div>
     </div>
 
@@ -34,10 +34,11 @@
                     <div class="d-flex justify-content-between align-items-center">
                         <span>
                             @{
-                                var status = Model.AvailabilityStatus ?? "AWAY";
-                                var badgeClass = status == "OPEN" ? "bg-success" : 
-                                                 status == "BUSY" ? "bg-warning" :
-                                                 status == "CLOSED" ? "bg-danger" :
+                                var status = Model.AvailabilityStatus ?? "AVAILABLE";
+                                var badgeClass = status == "AVAILABLE" ? "bg-success" : 
+                                                 status == "IN_CLASS" ? "bg-info" :
+                                                 status == "IN_MEETING" ? "bg-warning" :
+                                                 status == "UNAVAILABLE" ? "bg-danger" :
                                                  "bg-secondary";
                             }
                             <span class="badge @badgeClass" style="font-size: 1rem;">@status</span>
@@ -68,11 +69,34 @@
         </div>
 
         <div class="col-md-4">
-            <div class="card shadow-sm">
+            <div class="card shadow-sm" style="cursor: pointer;" onclick="location.href='/Appointments?status=PENDING';">
                 <div class="card-body">
                     <h5 class="card-title">Pending Appointments</h5>
                     <h3 class="fw-bold text-warning">@Model.PendingAppointments.Count</h3>
-                    <p class="text-muted small">Awaiting your response</p>
+                    <p class="text-muted small">Requests awaiting your response</p>
+                    <small class="text-primary"><i class="bi bi-arrow-right"></i> View pending</small>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card shadow-sm" style="cursor: pointer;" onclick="location.href='/Appointments?status=APPROVED&filter=upcoming';">
+                <div class="card-body">
+                    <h5 class="card-title">Approved Upcoming</h5>
+                    <h3 class="fw-bold text-success">@Model.ApprovedUpcomingAppointments.Count</h3>
+                    <p class="text-muted small">Confirmed appointments coming up</p>
+                    <small class="text-primary"><i class="bi bi-arrow-right"></i> View upcoming</small>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card shadow-sm" style="cursor: pointer;" onclick="location.href='/Appointments';">
+                <div class="card-body">
+                    <h5 class="card-title">All Appointments</h5>
+                    <h3 class="fw-bold text-primary">@Model.AllAppointments.Count</h3>
+                    <p class="text-muted small">Total appointment requests</p>
+                    <small class="text-primary"><i class="bi bi-arrow-right"></i> View all</small>
                 </div>
             </div>
         </div>
@@ -103,12 +127,14 @@
                                 <td>@((apt as dynamic)?.AppointmentDate.ToString("MMM dd, yyyy HH:mm"))</td>
                                 <td>@((apt as dynamic)?.Reason ?? "N/A")</td>
                                 <td class="text-center">
-                                    <form method="post" asp-page="Appointments" asp-page-handler="Approve" asp-route-appointmentId="@((apt as dynamic)?.Id)" style="display: inline;">
+                                    <form method="post" asp-page-handler="Approve" style="display: inline;">
+                                        <input type="hidden" name="appointmentId" value="@((apt as dynamic)?.Id)" />
                                         <button type="submit" class="btn btn-sm btn-success">
                                             <i class="bi bi-check"></i> Approve
                                         </button>
                                     </form>
-                                    <form method="post" asp-page="Appointments" asp-page-handler="Reject" asp-route-appointmentId="@((apt as dynamic)?.Id)" style="display: inline;">
+                                    <form method="post" asp-page-handler="Reject" style="display: inline;">
+                                        <input type="hidden" name="appointmentId" value="@((apt as dynamic)?.Id)" />
                                         <button type="submit" class="btn btn-sm btn-danger">
                                             <i class="bi bi-x"></i> Reject
                                         </button>
@@ -136,10 +162,11 @@
                     <div class="mb-3">
                         <label class="form-label">Select Status</label>
                         <select class="form-select" name="newStatus" id="statusSelect" required>
-                            <option value="OPEN">✅ Open - Available for appointments</option>
-                            <option value="BUSY">⏳ Busy - Currently in a meeting</option>
-                            <option value="CLOSED">🔒 Closed - Office closed for the day</option>
+                            <option value="AVAILABLE">✅ Available - Ready for appointments</option>
+                            <option value="IN_CLASS">📚 In Class - Currently teaching</option>
+                            <option value="IN_MEETING">💼 In Meeting - Currently in a meeting</option>
                             <option value="AWAY">🚫 Away - Not available</option>
+                            <option value="UNAVAILABLE">🔒 Unavailable - Not accessible</option>
                         </select>
                     </div>
                 </div>
@@ -168,11 +195,3 @@
         }
     });
 </script>
-
-
-
-
-
-
-
-
