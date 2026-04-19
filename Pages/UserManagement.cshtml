@@ -41,7 +41,7 @@
     <div class="card">
         <div class="card-body">
             <div class="table-responsive">
-                <table class="table table-hover" id="usersTable">
+                <table class="table table-hover" id="usersTable" data-paginate="5">
                     <thead>
                         <tr>
                             <th>Name</th>
@@ -173,18 +173,27 @@
         function filterTable() {
             const searchValue = document.getElementById('searchInput').value.toLowerCase();
             const roleValue = document.getElementById('roleFilter').value;
-            const rows = document.querySelectorAll('#usersTable tbody tr');
+            const table = document.getElementById('usersTable');
+            const rows = table.querySelectorAll('tbody tr');
 
             rows.forEach(row => {
-                const name = row.cells[0].textContent.toLowerCase();
-                const email = row.cells[1].textContent.toLowerCase();
+                const name = row.cells[0] ? row.cells[0].textContent.toLowerCase() : '';
+                const email = row.cells[1] ? row.cells[1].textContent.toLowerCase() : '';
                 const role = row.getAttribute('data-role');
 
                 const matchesSearch = name.includes(searchValue) || email.includes(searchValue);
                 const matchesRole = !roleValue || role === roleValue;
 
-                row.style.display = matchesSearch && matchesRole ? '' : 'none';
+                if (matchesSearch && matchesRole) {
+                    row.removeAttribute('data-filtered-out');
+                } else {
+                    row.setAttribute('data-filtered-out', '');
+                }
             });
+
+            // Reset to first page after filter change and repaginate
+            table._pagerPage = 1;
+            if (window.TablePaginate) window.TablePaginate.refresh(table);
         }
     </script>
 }

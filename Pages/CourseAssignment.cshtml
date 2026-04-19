@@ -131,7 +131,7 @@
                         <div class="text-muted small mb-2">
                             Lecturers: @string.Join(", ", group.Select(a => a.LecturerName).Distinct())
                         </div>
-                        <table class="table table-sm mb-0">
+                        <table class="table table-sm mb-0" data-paginate="5">
                             <thead class="table-light">
                                 <tr>
                                     <th>Lecturer</th>

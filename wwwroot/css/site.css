@@ -590,6 +590,39 @@ a:hover { color: var(--accent-hover); text-decoration: underline; }
     flex-shrink: 0;
 }
 
+/* Table pagination */
+.table-pager {
+    padding: 0.75rem 1rem;
+    border-top: 1px solid var(--border);
+    background: var(--surface-alt);
+}
+.table-pager .pagination { margin-bottom: 0; }
+.table-pager .page-link {
+    color: var(--text-muted);
+    border: 1px solid var(--border);
+    background: var(--surface);
+    padding: 0.3125rem 0.625rem;
+    font-size: 0.8125rem;
+    margin-left: 2px;
+    border-radius: var(--radius-sm);
+}
+.table-pager .page-link:hover {
+    color: var(--accent);
+    background: var(--accent-soft);
+    border-color: var(--accent-border);
+    z-index: 1;
+}
+.table-pager .page-item.active .page-link {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+}
+.table-pager .page-item.disabled .page-link {
+    color: var(--text-faint);
+    background: var(--surface);
+    cursor: default;
+}
+
 /* Utility — 8px spacing scale helpers */
 .gap-8 { gap: 0.5rem; }
 .gap-16 { gap: 1rem; }
