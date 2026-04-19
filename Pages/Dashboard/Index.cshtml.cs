@@ -35,6 +35,9 @@ namespace AUCAPulse.Pages.Dashboard
             UserName = HttpContext.Session.GetString("UserName") ?? "User";
             UserRole = HttpContext.Session.GetString("UserRole") ?? "STUDENT";
 
+            // Students never see the admin-style dashboard
+            if (UserRole == "STUDENT") return RedirectToPage("/Home");
+
             var client = _httpClientFactory.CreateClient();
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
             var baseUrl = _configuration["ApiSettings:BaseUrl"];
