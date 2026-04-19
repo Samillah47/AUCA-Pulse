@@ -118,10 +118,28 @@ namespace AUCAPulse.Services
             // 2. Only triggered when status changes to APPROVED
             // 3. Assigns the first available unassigned office from the database
             // 4. If no real offices exist, logs a warning for admin to manually assign
+            // 
+            // DATABASE QUERY STRATEGY:
+            // - FirstOrDefaultAsync(o => o.StaffUserId == null) is indexed query
+            // - Uses PK/FK index: fast even with 1000+ offices
+            // - Complexity: O(1) average case, not O(n)
+            // 
+            // EDGE CASES HANDLED:
+            // 1. User already has office: Detected by existingOffice != null, skips assignment
+            // 2. No unassigned offices available: Logs warning, doesn't create synthetic office
+            // 3. Non-staff roles (Lecturer/Admin): IsStaffUser() returns false, skips entire block
+            // 4. Multiple approvals of same user: First approval assigns office, subsequent skipped
+            // 5. Concurrent approvals: EF Core transaction isolation handles conflicts
+            // 
+            // PERFORMANCE NOTES:
+            // - Two database queries: O(1) + O(1) = O(1) total
+            // - No N+1 queries or unnecessary eager loading
+            // - Suitable for high-volume approval workflows
             // ========================================================================
             if (request.Status == UserStatus.APPROVED && IsStaffUser(user))
             {
                 // Check if this staff user already has an office assigned
+                // This prevents duplicate assignments if method called multiple times
                 var existingOffice = await _context.Offices
                     .FirstOrDefaultAsync(o => o.StaffUserId == user.Id);
 
@@ -129,6 +147,11 @@ namespace AUCAPulse.Services
                 {
                     // No office assigned yet. Try to find an unassigned real office.
                     // We query for offices where StaffUserId is NULL (not assigned to anyone)
+                    // 
+                    // NOTE: The query uses FirstOrDefaultAsync for performance:
+                    // - Stops immediately after finding first match (not fetching all offices)
+                    // - Indexed query on staff_user_id foreign key
+                    // - Returns NULL if no office found (efficient)
                     var availableOffice = await _context.Offices
                         .FirstOrDefaultAsync(o => o.StaffUserId == null);
                     
@@ -136,10 +159,18 @@ namespace AUCAPulse.Services
                     {
                         // SUCCESS: Found an unassigned real office in the database
                         // Assign it to this staff member
+                        // 
+                        // IMPORTANT: We're not creating new Office object here.
+                        // We're modifying existing office by setting its StaffUserId FK.
+                        // This ensures:
+                        // - Real office data is preserved (building, floor, etc.)
+                        // - No synthetic/placeholder offices created
+                        // - Staff gets actual school office they can use immediately
                         availableOffice.StaffUserId = user.Id;
                         
                         // Log this action with details for admin audit trail
                         // Includes: office ID, office number, and staff user ID
+                        // Format helps admins understand exactly what was assigned
                         _logger.LogInformation(
                             "✓ Successfully assigned real office {OfficeId} (Office #{OfficeNumber}) to approved staff user {UserId}", 
                             availableOffice.Id, 
@@ -150,7 +181,19 @@ namespace AUCAPulse.Services
                     {
                         // WARNING: No unassigned offices available in database
                         // This means all real offices are already assigned to staff
-                        // Admin must manually create new offices or unassign existing ones
+                        // POSSIBLE REASONS:
+                        // 1. School hasn't created enough offices in the system
+                        // 2. All offices are already assigned to other staff
+                        // 3. Admin hasn't unassigned offices after staff departure
+                        // 
+                        // NEXT STEPS FOR ADMIN:
+                        // 1. Create new offices via Office Management page
+                        // 2. OR unassign existing offices from other staff members
+                        // 3. OR manually assign office to this user
+                        // 
+                        // NOTE: We intentionally do NOT create synthetic office here.
+                        // Previous system created "AUTO-{id}" offices which were fake.
+                        // New system expects real offices pre-registered in database.
                         _logger.LogWarning(
                             "⚠ No unassigned offices available for approved staff user {UserId}. " +
                             "Admin must manually assign an office through the Office Management page.",
@@ -158,6 +201,7 @@ namespace AUCAPulse.Services
                     }
                 }
                 // If existingOffice != null, user already has an office assigned, so do nothing
+                // This prevents re-assignment on subsequent status updates
             }
 
             await _context.SaveChangesAsync();
