@@ -15,6 +15,8 @@ namespace AUCAPulse.Services
         Task<AuthResponse> VerifyOtpAsync(VerifyOtpRequest request);
         Task ForgotPasswordAsync(string email);
         Task ResetPasswordAsync(string token, string newPassword);
+        Task RequestPasswordResetOtpAsync(string email);
+        Task<string> VerifyPasswordResetOtpAsync(string email, string otp);
     }
 
     public class AuthService : IAuthService
@@ -34,6 +36,60 @@ namespace AUCAPulse.Services
             _emailService = emailService;
             _jwtHelper = jwtHelper;
             _logger = logger;
+        }
+
+        public async Task RequestPasswordResetOtpAsync(string email)
+        {
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
+            if (user == null)
+            {
+                throw new Exception("User not found with this email");
+            }
+
+            // Generate and save OTP
+            var otp = OtpHelper.GenerateOtp();
+            user.OtpCode = otp;
+            user.OtpExpiry = OtpHelper.GetOtpExpiry(5);
+            await _context.SaveChangesAsync();
+
+            // Send OTP to user's email
+            await _emailService.SendOtpEmailAsync(user.Email, otp);
+        }
+
+        public async Task<string> VerifyPasswordResetOtpAsync(string email, string otp)
+        {
+            var user = await _context.Users
+                .FirstOrDefaultAsync(u => u.Email == email);
+
+            if (user == null)
+            {
+                throw new Exception("User not found");
+            }
+
+            if (!OtpHelper.ValidateOtp(otp, user.OtpCode ?? "", user.OtpExpiry))
+            {
+                throw new Exception("Invalid or expired OTP");
+            }
+
+            // Clear OTP
+            user.OtpCode = null;
+            user.OtpExpiry = null;
+            
+            // Create an APPROVED password reset request so it can be used immediately
+            var token = Guid.NewGuid().ToString();
+            var resetRequest = new PasswordResetRequest
+            {
+                UserId = user.Id,
+                Token = token,
+                ExpiryDate = DateTime.UtcNow.AddMinutes(15), // Short-lived token for the reset page
+                Status = RequestStatus.APPROVED,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            _context.PasswordResetRequests.Add(resetRequest);
+            await _context.SaveChangesAsync();
+
+            return token;
         }
 
         public async Task<Dictionary<string, object>> RegisterAsync(RegisterRequest request)
