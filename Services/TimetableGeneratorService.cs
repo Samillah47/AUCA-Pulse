@@ -105,26 +105,50 @@ namespace AUCAPulse.Services
 
             var newSchedules = new List<LectureSchedule>();
 
+            // Each credit is worth one base slot: a 3-credit course occupies
+            // 3 consecutive time slots on the same day. We check the whole
+            // run for lecturer / room conflicts before placing.
+            var daySlotEnd = TimeSpan.FromHours(dto.EndHour);
+
             foreach (var assignment in assignments)
             {
+                var credits = Math.Max(1, assignment.Course?.Credits ?? 1);
+                var totalSpan = TimeSpan.FromMinutes(dto.SlotDurationMinutes * credits);
+
                 var placed = false;
                 var triedSlots = 0;
                 var totalSlots = timeSlots.Count;
 
-                // Try each time slot in Round Robin order until we find one that fits
                 while (triedSlots < totalSlots && !placed)
                 {
                     var slot = timeSlots[timeSlotPointer];
                     timeSlotPointer = (timeSlotPointer + 1) % totalSlots;
                     triedSlots++;
 
-                    var key = (slot.Day, slot.Start);
-                    var lecturersAtSlot = bookedLecturers.GetValueOrDefault(key) ?? new HashSet<int>();
-                    if (lecturersAtSlot.Contains(assignment.LecturerId))
-                        continue; // lecturer already teaching at this time — try next slot
+                    // Build the list of N consecutive (day, time) slots this
+                    // placement would occupy. All must fit in the daily window
+                    // and be free of the lecturer.
+                    var runStart = slot.Start;
+                    var runEnd = runStart.Add(totalSpan);
+                    if (runEnd > daySlotEnd) continue;
 
-                    // Try each room in Round Robin order for this slot
-                    var roomsAtSlot = bookedRooms.GetValueOrDefault(key) ?? new HashSet<int>();
+                    var runKeys = new List<(string, TimeSpan)>(credits);
+                    var lecturerClash = false;
+                    for (int i = 0; i < credits; i++)
+                    {
+                        var t = runStart.Add(TimeSpan.FromMinutes(dto.SlotDurationMinutes * i));
+                        var key = (slot.Day, t);
+                        runKeys.Add(key);
+                        if ((bookedLecturers.GetValueOrDefault(key) ?? new HashSet<int>()).Contains(assignment.LecturerId))
+                        {
+                            lecturerClash = true;
+                            break;
+                        }
+                    }
+                    if (lecturerClash) continue;
+
+                    // Try each room in Round Robin order. A room fits only if
+                    // ALL N consecutive slots are free for that room.
                     var triedRooms = 0;
                     while (triedRooms < rooms.Count && !placed)
                     {
@@ -132,18 +156,17 @@ namespace AUCAPulse.Services
                         roomPointer = (roomPointer + 1) % rooms.Count;
                         triedRooms++;
 
-                        if (roomsAtSlot.Contains(room.Id))
-                            continue; // room already booked at this time — try next room
+                        var roomClash = runKeys.Any(k =>
+                            (bookedRooms.GetValueOrDefault(k) ?? new HashSet<int>()).Contains(room.Id));
+                        if (roomClash) continue;
 
-                        // Slot + room is free — place the assignment here
-                        var endTime = slot.Start.Add(TimeSpan.FromMinutes(dto.SlotDurationMinutes));
-
+                        // Place: one LectureSchedule row spanning the full run.
                         var schedule = new LectureSchedule
                         {
                             LecturerId = assignment.LecturerId,
                             DayOfWeek = slot.Day,
-                            StartTime = slot.Start,
-                            EndTime = endTime,
+                            StartTime = runStart,
+                            EndTime = runEnd,
                             CourseCode = assignment.Course?.CourseCode,
                             CourseName = assignment.Course?.CourseName,
                             RoomNumber = room.RoomNumber,
@@ -152,14 +175,18 @@ namespace AUCAPulse.Services
                         };
                         newSchedules.Add(schedule);
 
-                        // Record the booking
-                        if (!bookedLecturers.ContainsKey(key))
-                            bookedLecturers[key] = new HashSet<int>();
-                        bookedLecturers[key].Add(assignment.LecturerId);
+                        // Mark EVERY consecutive base slot as booked so the
+                        // next round-robin candidate can't overlap us.
+                        foreach (var k in runKeys)
+                        {
+                            if (!bookedLecturers.ContainsKey(k))
+                                bookedLecturers[k] = new HashSet<int>();
+                            bookedLecturers[k].Add(assignment.LecturerId);
 
-                        if (!bookedRooms.ContainsKey(key))
-                            bookedRooms[key] = new HashSet<int>();
-                        bookedRooms[key].Add(room.Id);
+                            if (!bookedRooms.ContainsKey(k))
+                                bookedRooms[k] = new HashSet<int>();
+                            bookedRooms[k].Add(room.Id);
+                        }
 
                         result.Scheduled.Add(new GeneratedScheduleEntry
                         {
@@ -169,8 +196,8 @@ namespace AUCAPulse.Services
                             CourseName = assignment.Course?.CourseName ?? string.Empty,
                             RoomNumber = room.RoomNumber,
                             DayOfWeek = slot.Day,
-                            StartTime = slot.Start.ToString(@"hh\:mm"),
-                            EndTime = endTime.ToString(@"hh\:mm")
+                            StartTime = runStart.ToString(@"hh\:mm"),
+                            EndTime = runEnd.ToString(@"hh\:mm")
                         });
 
                         placed = true;
@@ -185,7 +212,7 @@ namespace AUCAPulse.Services
                         LecturerName = assignment.Lecturer?.Name ?? string.Empty,
                         CourseCode = assignment.Course?.CourseCode ?? string.Empty,
                         CourseName = assignment.Course?.CourseName ?? string.Empty,
-                        Reason = "No conflict-free slot/room combination available. Expand time window, add more rooms, or reduce course load."
+                        Reason = $"No conflict-free {credits * dto.SlotDurationMinutes}-minute window available. Expand the day, add more rooms, or reduce course load."
                     });
                 }
             }

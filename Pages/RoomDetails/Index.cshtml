@@ -160,7 +160,7 @@
                         <h5 class="mb-0">Actions</h5>
                     </div>
                     <div class="card-body">
-                        @if (Model.Room.Status == "AVAILABLE")
+                        @if (Model.Room.Status == "AVAILABLE" && Model.CanOccupy)
                         {
                             <form method="post" asp-page-handler="Occupy">
                                 <input type="hidden" name="roomId" value="@Model.Room.Id" />
@@ -172,6 +172,13 @@
                                     <i class="bi bi-lock me-2"></i>Occupy Room
                                 </button>
                             </form>
+                        }
+                        else if (Model.Room.Status == "AVAILABLE")
+                        {
+                            <div class="text-muted small">
+                                <i class="bi bi-info-circle me-1"></i>
+                                Only lecturers can occupy a room for a class session.
+                            </div>
                         }
                         else if (Model.Room.Status == "OCCUPIED" || Model.Room.Status == "RESERVED")
                         {

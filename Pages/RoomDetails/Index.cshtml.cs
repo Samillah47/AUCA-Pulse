@@ -19,6 +19,7 @@ namespace AUCAPulse.Pages.RoomDetails
 
         public RoomDetailDto? Room { get; set; }
         public bool CanRelease { get; set; }
+        public bool CanOccupy { get; set; }
         public List<RoomScheduleEntry> Schedule { get; set; } = new();
 
         public async Task<IActionResult> OnGetAsync(int id)
@@ -47,7 +48,10 @@ namespace AUCAPulse.Pages.RoomDetails
 
                     // Check if current user can release the room
                     var userId = HttpContext.Session.GetString("UserId");
+                    var userRole = HttpContext.Session.GetString("UserRole");
                     CanRelease = Room?.CurrentLecturerId?.ToString() == userId;
+                    // Only lecturers can claim a room for a class session
+                    CanOccupy = string.Equals(userRole, "LECTURER", StringComparison.OrdinalIgnoreCase);
 
                     // Load the weekly schedule for this room
                     if (!string.IsNullOrWhiteSpace(Room?.RoomNumber))

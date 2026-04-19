@@ -153,7 +153,7 @@ namespace AUCAPulse.Controllers
         }
 
         [HttpPost("{id}/occupy")]
-        [Authorize(Roles = "LECTURER,STAFF,ADMIN")]
+        [Authorize(Roles = "LECTURER")]
         public async Task<IActionResult> OccupyRoom(int id, [FromBody] OccupyRoomDto request)
         {
             try
