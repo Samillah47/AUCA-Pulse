@@ -178,7 +178,7 @@ namespace AUCAPulse.Pages
                 // Call service to update office
                 var result = await _officeService.UpdateOfficeAsync(officeId, EditOfficeRequest);
 
-                _logger.LogInformation($"✓ Office updated successfully: {result.OfficeName}");
+                _logger.LogInformation($"✓ Office updated successfully: {result?.OfficeName}");
                 SuccessMessage = $"Office '{EditOfficeRequest.OfficeName}' updated successfully!";
 
                 // Reload all offices to show changes
