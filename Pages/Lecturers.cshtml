@@ -79,18 +79,6 @@
                                 <button type="button" class="btn btn-outline-primary btn-sm" onclick="viewProfile(@lecturer.Id)">
                                     <i class="bi bi-eye me-1"></i> View Profile
                                 </button>
-                                @if (lecturer.CurrentStatus == "AVAILABLE")
-                                {
-                                    <a href="/Messages?with=@lecturer.Id&name=@Uri.EscapeDataString(lecturer.Name)" class="btn btn-success btn-sm">
-                                        <i class="bi bi-chat-dots me-1"></i> Chat Now
-                                    </a>
-                                }
-                                else
-                                {
-                                    <button class="btn btn-outline-secondary btn-sm" disabled title="Only available when lecturer is online and status is AVAILABLE">
-                                        <i class="bi bi-chat-dots me-1"></i> Chat (Offline)
-                                    </button>
-                                }
                             </div>
                         </div>
                     </div>
@@ -254,11 +242,6 @@
                                         ${scheduleRows}
                                     </tbody>
                                 </table>
-                            </div>
-                            <div class="d-grid mt-4">
-                                <a href="/Messages?with=${id}&name=${encodeURIComponent(user.name || user.Name)}" class="btn btn-success rounded-pill ${statusData && (statusData.status || statusData.Status) === 'AVAILABLE' ? '' : 'disabled'}">
-                                    <i class="bi bi-chat-dots me-2"></i> Start Chat Now
-                                </a>
                             </div>
                         </div>
                     </div>

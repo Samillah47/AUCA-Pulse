@@ -53,9 +53,12 @@
                 <a class="nav-link @(IsActive("/Rooms") || IsActive("/RoomDetails") ? "active" : "")" href="/Rooms">
                     <i class="bi bi-door-open"></i> Rooms
                 </a>
-                <a class="nav-link @(IsActive("/Lecturers") ? "active" : "")" href="/Lecturers">
-                    <i class="bi bi-people"></i> Lecturers
-                </a>
+                @if (userRole != "LECTURER")
+                {
+                    <a class="nav-link @(IsActive("/Lecturers") ? "active" : "")" href="/Lecturers">
+                        <i class="bi bi-people"></i> Lecturers
+                    </a>
+                }
                 @if (userRole == "LECTURER")
                 {
                     <a class="nav-link @(IsActive("/Schedule") ? "active" : "")" href="/Schedule">
@@ -65,9 +68,12 @@
                 <a class="nav-link @(IsActive("/Notifications") ? "active" : "")" href="/Notifications">
                     <i class="bi bi-bell"></i> Notifications
                 </a>
-                <a class="nav-link @(IsActive("/Profile") ? "active" : "")" href="/Profile">
-                    <i class="bi bi-person"></i> Profile
-                </a>
+                @if (userRole != "LECTURER")
+                {
+                    <a class="nav-link @(IsActive("/Profile") ? "active" : "")" href="/Profile">
+                        <i class="bi bi-person"></i> Profile
+                    </a>
+                }
                 @if (userRole == "STAFF")
                 {
                     <a class="nav-link @(IsActive("/MyOffice") ? "active" : "")" href="/MyOffice">
@@ -101,10 +107,13 @@
                     </a>
                 }
 
-                <hr />
-                <a class="nav-link" href="/Logout">
-                    <i class="bi bi-box-arrow-right"></i> Logout
-                </a>
+                @if (userRole != "LECTURER")
+                {
+                    <hr />
+                    <a class="nav-link" href="/Logout">
+                        <i class="bi bi-box-arrow-right"></i> Logout
+                    </a>
+                }
             </nav>
         </aside>
 
