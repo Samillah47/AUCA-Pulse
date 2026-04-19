@@ -1,156 +1,204 @@
 @page
 @model AUCAPulse.Pages.TimetableGeneratorModel
 @{
-    ViewData["Title"] = "Generate Timetable";
+    ViewData["Title"] = "Timetable";
     var dayOrder = new[] { "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY" };
+
+    // Apply lecturer filter to the saved schedules
+    var visible = Model.SelectedLecturerId.HasValue
+        ? Model.SavedSchedules.Where(s => s.LecturerId == Model.SelectedLecturerId.Value).ToList()
+        : Model.SavedSchedules;
+
+    // Derive unique time slots from the saved schedules, sorted
+    var timeSlots = visible
+        .Select(s => new { s.StartTime, s.EndTime })
+        .Distinct()
+        .OrderBy(s => s.StartTime)
+        .ToList();
 }
 
 <div class="container-fluid">
-    <h2 class="mb-4"><i class="bi bi-calendar-week me-2"></i>Generate Timetable (Round Robin)</h2>
-
-    <div class="alert alert-info">
-        <strong>How it works:</strong> This generator uses a Round Robin algorithm to distribute
-        course assignments across time slots and rooms for the selected semester, avoiding
-        lecturer conflicts and room double-bookings.
+    <div class="d-flex justify-content-between align-items-center mb-4 no-print">
+        <h2><i class="bi bi-calendar-week me-2"></i>Timetable</h2>
+        <div class="d-flex gap-2">
+            <button type="button" class="btn btn-outline-secondary" onclick="window.print()">
+                <i class="bi bi-printer me-1"></i>Print / PDF
+            </button>
+            <button type="button" class="btn btn-primary" data-bs-toggle="collapse" data-bs-target="#generatePanel">
+                <i class="bi bi-magic me-1"></i>Generate / Regenerate
+            </button>
+        </div>
     </div>
 
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show no-print">
+            @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show no-print">
+            @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
     @if (!string.IsNullOrEmpty(Model.ErrorMessage))
     {
-        <div class="alert alert-danger">@Model.ErrorMessage</div>
+        <div class="alert alert-danger no-print">@Model.ErrorMessage</div>
     }
 
-    <div class="card mb-4">
-        <div class="card-header"><strong>Generation Parameters</strong></div>
-        <div class="card-body">
-            <form method="post" asp-page-handler="Generate" class="row g-3">
-                <div class="col-md-4">
-                    <label class="form-label">Semester *</label>
-                    <select asp-for="SemesterId" class="form-select" required>
-                        <option value="">-- Select Semester --</option>
-                        @foreach (var s in Model.Semesters)
-                        {
-                            <option value="@s.Id">@s.Name @(s.IsCurrent ? "(Current)" : "")</option>
-                        }
-                    </select>
-                </div>
-                <div class="col-md-2">
-                    <label class="form-label">Start Hour</label>
-                    <input asp-for="StartHour" type="number" min="0" max="23" class="form-control" />
-                </div>
-                <div class="col-md-2">
-                    <label class="form-label">End Hour</label>
-                    <input asp-for="EndHour" type="number" min="1" max="24" class="form-control" />
-                </div>
-                <div class="col-md-2">
-                    <label class="form-label">Slot (minutes)</label>
-                    <input asp-for="SlotDurationMinutes" type="number" min="30" max="240" step="30" class="form-control" />
-                </div>
-                <div class="col-md-2 d-flex align-items-end">
-                    <div class="form-check">
-                        <input asp-for="ReplaceExisting" class="form-check-input" type="checkbox" />
-                        <label class="form-check-label">Replace existing</label>
+    <!-- Filters -->
+    <form method="get" class="row g-2 mb-3 no-print">
+        <div class="col-md-5">
+            <label class="form-label small text-muted">Semester</label>
+            <select name="SelectedSemesterId" class="form-select" onchange="this.form.submit()">
+                @foreach (var s in Model.Semesters)
+                {
+                    var sel = Model.SelectedSemesterId == s.Id;
+                    <option value="@s.Id" selected="@sel">@s.Name @(s.IsCurrent ? "(Current)" : "")</option>
+                }
+            </select>
+        </div>
+        <div class="col-md-5">
+            <label class="form-label small text-muted">Filter by Lecturer</label>
+            <select name="SelectedLecturerId" class="form-select" onchange="this.form.submit()">
+                <option value="">-- All lecturers --</option>
+                @foreach (var l in Model.LecturersForFilter)
+                {
+                    var sel = Model.SelectedLecturerId == l.Id;
+                    <option value="@l.Id" selected="@sel">@l.Name</option>
+                }
+            </select>
+        </div>
+        <div class="col-md-2 d-flex align-items-end">
+            <a href="/TimetableGenerator" class="btn btn-outline-secondary w-100">Reset</a>
+        </div>
+    </form>
+
+    <!-- Generate panel (collapsed) -->
+    <div class="collapse mb-4 no-print" id="generatePanel">
+        <div class="card border-primary">
+            <div class="card-header bg-primary text-white">
+                <strong>Generate timetable using Round Robin</strong>
+            </div>
+            <div class="card-body">
+                <form method="post" asp-page-handler="Generate" class="row g-3"
+                      onsubmit="if (document.getElementById('ReplaceExisting').checked) { return confirm('This will overwrite the saved timetable for the selected semester. Continue?'); } return true;">
+                    <div class="col-md-4">
+                        <label class="form-label">Semester</label>
+                        <select asp-for="GenSemesterId" class="form-select" required>
+                            <option value="">-- Select --</option>
+                            @foreach (var s in Model.Semesters)
+                            {
+                                var sel = Model.SelectedSemesterId == s.Id;
+                                <option value="@s.Id" selected="@sel">@s.Name @(s.IsCurrent ? "(Current)" : "")</option>
+                            }
+                        </select>
                     </div>
-                </div>
-                <div class="col-12">
-                    <button type="submit" class="btn btn-primary">
-                        <i class="bi bi-play-fill me-1"></i>Generate Timetable
-                    </button>
-                </div>
-            </form>
+                    <div class="col-md-2">
+                        <label class="form-label">Start Hour</label>
+                        <input asp-for="StartHour" type="number" min="0" max="23" class="form-control" />
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">End Hour</label>
+                        <input asp-for="EndHour" type="number" min="1" max="24" class="form-control" />
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Slot (min)</label>
+                        <input asp-for="SlotDurationMinutes" type="number" min="30" max="240" step="30" class="form-control" />
+                    </div>
+                    <div class="col-md-2 d-flex align-items-end">
+                        <div class="form-check">
+                            <input asp-for="ReplaceExisting" class="form-check-input" type="checkbox" />
+                            <label class="form-check-label" for="ReplaceExisting">Replace existing</label>
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-play-fill me-1"></i>Run Generator
+                        </button>
+                    </div>
+                </form>
+            </div>
         </div>
     </div>
 
-    @if (Model.Result != null)
+    <!-- Weekly grid -->
+    @if (!visible.Any())
     {
-        <div class="row mb-4">
-            <div class="col-md-3">
-                <div class="card text-bg-primary"><div class="card-body">
-                    <div class="small">Total Assignments</div>
-                    <h3>@Model.Result.TotalAssignments</h3>
-                </div></div>
-            </div>
-            <div class="col-md-3">
-                <div class="card text-bg-success"><div class="card-body">
-                    <div class="small">Scheduled</div>
-                    <h3>@Model.Result.ScheduledCount</h3>
-                </div></div>
-            </div>
-            <div class="col-md-3">
-                <div class="card text-bg-warning"><div class="card-body">
-                    <div class="small">Unscheduled</div>
-                    <h3>@Model.Result.UnscheduledCount</h3>
-                </div></div>
-            </div>
-            <div class="col-md-3">
-                <div class="card text-bg-secondary"><div class="card-body">
-                    <div class="small">Semester</div>
-                    <h5 class="mb-0">@Model.Result.SemesterName</h5>
-                </div></div>
+        <div class="card">
+            <div class="card-body text-center py-5">
+                <i class="bi bi-calendar-x display-4 text-muted"></i>
+                <h5 class="mt-3">No timetable saved for this selection</h5>
+                <p class="text-muted">Click <strong>Generate / Regenerate</strong> above to create one.</p>
             </div>
         </div>
-
-        @if (Model.Result.Unscheduled.Any())
-        {
-            <div class="card mb-4 border-warning">
-                <div class="card-header bg-warning text-dark">
-                    <strong>Unscheduled Assignments</strong>
-                </div>
-                <div class="card-body">
-                    <table class="table table-sm">
-                        <thead><tr><th>Lecturer</th><th>Course</th><th>Reason</th></tr></thead>
-                        <tbody>
-                        @foreach (var u in Model.Result.Unscheduled)
-                        {
-                            <tr>
-                                <td>@u.LecturerName</td>
-                                <td><strong>@u.CourseCode</strong> — @u.CourseName</td>
-                                <td class="text-muted">@u.Reason</td>
-                            </tr>
-                        }
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        }
-
+    }
+    else
+    {
         <div class="card">
-            <div class="card-header"><strong>Generated Timetable</strong></div>
-            <div class="card-body">
-                @{
-                    var grouped = Model.Result.Scheduled
-                        .GroupBy(x => x.DayOfWeek)
-                        .OrderBy(g => Array.IndexOf(dayOrder, g.Key));
-                }
-                @foreach (var dayGroup in grouped)
-                {
-                    <h5 class="mt-3">@dayGroup.Key</h5>
-                    <table class="table table-sm table-bordered">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <strong>
+                    @(Model.Semesters.FirstOrDefault(s => s.Id == Model.SelectedSemesterId)?.Name ?? "Timetable")
+                    @if (Model.SelectedLecturerId.HasValue)
+                    {
+                        var lec = Model.LecturersForFilter.FirstOrDefault(l => l.Id == Model.SelectedLecturerId.Value);
+                        <span class="text-muted fw-normal">— @(lec?.Name ?? "")</span>
+                    }
+                </strong>
+                <span class="badge bg-info text-dark">@visible.Count entries</span>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-bordered mb-0 timetable-grid">
                         <thead class="table-light">
                             <tr>
-                                <th>Time</th>
-                                <th>Course</th>
-                                <th>Lecturer</th>
-                                <th>Room</th>
+                                <th style="width: 110px;">Time</th>
+                                @foreach (var d in dayOrder)
+                                {
+                                    <th>@d</th>
+                                }
                             </tr>
                         </thead>
                         <tbody>
-                            @foreach (var entry in dayGroup.OrderBy(e => e.StartTime))
-                            {
-                                <tr>
-                                    <td>@entry.StartTime - @entry.EndTime</td>
-                                    <td><strong>@entry.CourseCode</strong> — @entry.CourseName</td>
-                                    <td>@entry.LecturerName</td>
-                                    <td><span class="badge bg-info text-dark">@entry.RoomNumber</span></td>
-                                </tr>
-                            }
+                        @foreach (var slot in timeSlots)
+                        {
+                            <tr>
+                                <td class="text-muted small">@slot.StartTime.Substring(0, 5) - @slot.EndTime.Substring(0, 5)</td>
+                                @foreach (var d in dayOrder)
+                                {
+                                    var entries = visible.Where(e => e.DayOfWeek == d && e.StartTime == slot.StartTime).ToList();
+                                    <td>
+                                        @foreach (var e in entries)
+                                        {
+                                            <div class="mb-2 p-2 rounded" style="background:#eff6ff;border-left:3px solid #2563eb;">
+                                                <div class="small"><strong>@e.CourseCode</strong> @e.CourseName</div>
+                                                <div class="small text-muted">@e.LecturerName</div>
+                                                @if (!string.IsNullOrEmpty(e.RoomNumber))
+                                                {
+                                                    <div class="small"><span class="badge bg-secondary">@e.RoomNumber</span></div>
+                                                }
+                                            </div>
+                                        }
+                                    </td>
+                                }
+                            </tr>
+                        }
                         </tbody>
                     </table>
-                }
-                @if (!Model.Result.Scheduled.Any())
-                {
-                    <div class="text-muted">No schedules were generated.</div>
-                }
+                </div>
             </div>
         </div>
     }
 </div>
+
+<style>
+    @@media print {
+        .no-print, .sidebar, .topbar, nav, footer { display: none !important; }
+        body { background: #fff !important; }
+        .main-content { margin: 0 !important; padding: 0 !important; }
+        .timetable-grid { font-size: 10px; }
+    }
+</style>
