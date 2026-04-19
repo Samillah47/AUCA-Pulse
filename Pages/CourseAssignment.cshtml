@@ -99,9 +99,10 @@
             }
             else
             {
+                <div data-paginate-children="5">
                 @foreach (var group in groupedByCourse)
                 {
-                    <div class="mb-4">
+                    <div class="mb-4 course-assignment-block">
                         <h5 class="mb-1">
                             <span class="badge bg-info me-2">@group.Key.CourseCode</span>
                             @group.Key.CourseName
@@ -143,6 +144,7 @@
                         </div>
                     </div>
                 }
+                </div>
             }
         </div>
     </div>

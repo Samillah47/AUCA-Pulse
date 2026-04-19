@@ -135,13 +135,105 @@
         pager.appendChild(wrap);
     }
 
+    /* Container pagination: any element with data-paginate-children="N" has its
+     * direct child elements (excluding ones marked data-no-paginate) paginated
+     * as if they were rows. Useful for card lists or grouped sections. */
+    function renderContainer(container) {
+        const pageSize = Math.max(1, parseInt(container.getAttribute('data-paginate-children'), 10) || 5);
+        const items = Array.from(container.children).filter(c =>
+            !c.hasAttribute('data-no-paginate') &&
+            !c.classList.contains('container-pager')
+        );
+        const total = items.length;
+        const pageCount = Math.max(1, Math.ceil(total / pageSize));
+
+        // Locate or build pager right inside the container
+        let pager = container._pager;
+        if (!pager) {
+            pager = createEl('nav', { class: 'table-pager container-pager', 'aria-label': 'Pagination' });
+            container.appendChild(pager);
+            container._pager = pager;
+        }
+
+        if (total <= pageSize) {
+            items.forEach(i => { i.style.display = ''; });
+            pager.innerHTML = '';
+            pager.style.display = 'none';
+            return;
+        }
+
+        let currentPage = container._pagerPage || 1;
+        if (currentPage > pageCount) currentPage = pageCount;
+        if (currentPage < 1) currentPage = 1;
+        container._pagerPage = currentPage;
+
+        const start = (currentPage - 1) * pageSize;
+        const end = start + pageSize;
+        items.forEach((item, i) => {
+            item.style.display = (i >= start && i < end) ? '' : 'none';
+        });
+
+        pager.innerHTML = '';
+        pager.style.display = '';
+
+        const group = createEl('ul', { class: 'pagination pagination-sm mb-0 mt-3 justify-content-end' });
+
+        function addItem(label, page, opts) {
+            opts = opts || {};
+            const li = createEl('li', { class: 'page-item' + (opts.disabled ? ' disabled' : '') + (opts.active ? ' active' : '') });
+            const btn = createEl('button', {
+                class: 'page-link',
+                type: 'button',
+                'aria-label': opts.ariaLabel || label
+            }, label);
+            if (!opts.disabled && !opts.active) {
+                btn.addEventListener('click', () => {
+                    container._pagerPage = page;
+                    renderContainer(container);
+                });
+            } else {
+                btn.tabIndex = -1;
+            }
+            li.appendChild(btn);
+            group.appendChild(li);
+        }
+
+        addItem('‹', currentPage - 1, { disabled: currentPage === 1, ariaLabel: 'Previous page' });
+
+        const windowSize = 5;
+        let first = 1, last = pageCount;
+        if (pageCount > windowSize + 2) {
+            first = Math.max(2, currentPage - 2);
+            last = Math.min(pageCount - 1, currentPage + 2);
+            addItem('1', 1, { active: currentPage === 1 });
+            if (first > 2) addItem('…', 0, { disabled: true });
+            for (let p = first; p <= last; p++) addItem(String(p), p, { active: currentPage === p });
+            if (last < pageCount - 1) addItem('…', 0, { disabled: true });
+            addItem(String(pageCount), pageCount, { active: currentPage === pageCount });
+        } else {
+            for (let p = 1; p <= pageCount; p++) addItem(String(p), p, { active: currentPage === p });
+        }
+
+        addItem('›', currentPage + 1, { disabled: currentPage === pageCount, ariaLabel: 'Next page' });
+
+        const meta = createEl('div', { class: 'table-pager-meta text-muted small' },
+            `Showing ${start + 1}-${Math.min(end, total)} of ${total}`);
+
+        const wrap = createEl('div', { class: 'd-flex justify-content-between align-items-center flex-wrap gap-2' });
+        wrap.appendChild(meta);
+        wrap.appendChild(group);
+        pager.appendChild(wrap);
+    }
+
     function init() {
         document.querySelectorAll('table[data-paginate]').forEach(render);
+        document.querySelectorAll('[data-paginate-children]').forEach(renderContainer);
     }
 
     // Expose for pages that filter rows dynamically
     window.TablePaginate = {
         refresh: render,
+        refreshContainer: renderContainer,
         init: init
     };
 

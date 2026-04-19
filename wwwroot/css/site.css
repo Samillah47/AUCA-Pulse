@@ -596,6 +596,11 @@ a:hover { color: var(--accent-hover); text-decoration: underline; }
     border-top: 1px solid var(--border);
     background: var(--surface-alt);
 }
+.table-pager.container-pager {
+    background: transparent;
+    border-top: none;
+    padding: 0.5rem 0 0;
+}
 .table-pager .pagination { margin-bottom: 0; }
 .table-pager .page-link {
     color: var(--text-muted);
