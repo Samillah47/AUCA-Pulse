@@ -217,20 +217,50 @@ namespace AUCAPulse.Services
         /// Build the ordered list of (day, startTime) slots the Round Robin
         /// pointer will cycle through.
         ///
-        /// Crucial detail: the OUTER loop is time-of-day and the INNER loop is
-        /// day-of-week. That makes the first few slots [(Mon 08:00), (Tue 08:00),
-        /// (Wed 08:00), ..., (Sun 08:00), (Mon 08:50), (Tue 08:50), ...] so a
-        /// handful of assignments spread out across all teaching days before
-        /// piling onto one day. If we looped day-first we would fill all of
-        /// Monday before even trying Tuesday.
+        /// Two intentional tricks so the distribution feels natural:
+        ///
+        /// 1. Times of day are INTERLEAVED between the morning half and the
+        ///    afternoon/evening half. For a day window like 08:00-21:00 the
+        ///    raw times are [08:00, 08:50, 09:40, ..., 20:10]. We split them
+        ///    into early [08:00, ..., 13:30] and late [14:20, ..., 20:10] and
+        ///    zip them: [08:00, 14:20, 08:50, 15:10, 09:40, 16:00, ...].
+        ///    That way when the Round Robin comes back to the same day for a
+        ///    second class, it lands in the afternoon instead of right after
+        ///    the first one.
+        ///
+        /// 2. Days-of-week are the INNER loop for each time-of-day, so the
+        ///    first six slots are (Mon 08:00), (Tue 08:00), (Wed 08:00),
+        ///    (Thu 08:00), (Fri 08:00), (Sun 08:00) and only then does the
+        ///    pointer jump to the late-morning slot. Combined with the time
+        ///    interleave, a semester with 12 courses ends up with one morning
+        ///    and one afternoon class per teaching day.
         /// </summary>
         private static List<(string Day, TimeSpan Start)> BuildTimeSlots(
             int startHour, int endHour, int slotMinutes)
         {
-            var slots = new List<(string, TimeSpan)>();
+            // Enumerate all valid start times in the daily window.
+            var rawTimes = new List<TimeSpan>();
             for (var t = TimeSpan.FromHours(startHour);
                  t + TimeSpan.FromMinutes(slotMinutes) <= TimeSpan.FromHours(endHour);
                  t = t.Add(TimeSpan.FromMinutes(slotMinutes)))
+            {
+                rawTimes.Add(t);
+            }
+
+            // Interleave: alternate between the early half and the late half.
+            var interleavedTimes = new List<TimeSpan>(rawTimes.Count);
+            int mid = (rawTimes.Count + 1) / 2;
+            int iEarly = 0, iLate = mid;
+            while (iEarly < mid || iLate < rawTimes.Count)
+            {
+                if (iEarly < mid) interleavedTimes.Add(rawTimes[iEarly++]);
+                if (iLate < rawTimes.Count) interleavedTimes.Add(rawTimes[iLate++]);
+            }
+
+            // Cross with day-of-week (day is the inner loop so we spread
+            // across all teaching days before filling a second slot on any).
+            var slots = new List<(string, TimeSpan)>(interleavedTimes.Count * WeekDays.Length);
+            foreach (var t in interleavedTimes)
             {
                 foreach (var day in WeekDays)
                 {
