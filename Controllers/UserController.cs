@@ -118,6 +118,24 @@ namespace AUCAPulse.Controllers
             return Ok(user);
         }
 
+        [HttpPut("{id}/admin-update")]
+        [Authorize(Roles = "ADMIN")]
+        public async Task<IActionResult> AdminUpdateUser(int id, [FromBody] AdminUpdateUserRequest request)
+        {
+            try
+            {
+                var user = await _userService.AdminUpdateUserAsync(id, request);
+                if (user == null)
+                    return NotFound(new { message = "User not found" });
+                return Ok(new { message = "User updated successfully", data = user });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Admin update failed for user {UserId}", id);
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
         [HttpPut("{id}/status")]
         [Authorize(Roles = "ADMIN")]
         public async Task<IActionResult> UpdateUserStatus(int id, [FromBody] UpdateUserStatusRequest request)

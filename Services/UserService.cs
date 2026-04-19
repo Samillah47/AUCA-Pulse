@@ -76,6 +76,63 @@ namespace AUCAPulse.Services
             return created;
         }
 
+        public async Task<UserResponse?> AdminUpdateUserAsync(int userId, AdminUpdateUserRequest request)
+        {
+            var user = await _context.Users
+                .Include(u => u.Role)
+                .FirstOrDefaultAsync(u => u.Id == userId);
+            if (user == null) return null;
+
+            if (!string.IsNullOrWhiteSpace(request.Name))
+                user.Name = request.Name.Trim();
+
+            if (!string.IsNullOrWhiteSpace(request.Email) && request.Email.Trim() != user.Email)
+            {
+                var email = request.Email.Trim();
+                if (await _context.Users.AnyAsync(u => u.Id != userId && u.Email == email))
+                    throw new Exception("Another user already uses this email address.");
+                user.Email = email;
+            }
+
+            if (!string.IsNullOrWhiteSpace(request.IdentificationNumber)
+                && request.IdentificationNumber.Trim() != user.IdentificationNumber)
+            {
+                var id = request.IdentificationNumber.Trim();
+                if (await _context.Users.AnyAsync(u => u.Id != userId && u.IdentificationNumber == id))
+                    throw new Exception("Another user already uses this identification number.");
+                user.IdentificationNumber = id;
+            }
+
+            if (request.PhoneNumber != null)
+                user.PhoneNumber = string.IsNullOrWhiteSpace(request.PhoneNumber) ? null : request.PhoneNumber.Trim();
+
+            if (request.Department != null)
+                user.Department = string.IsNullOrWhiteSpace(request.Department) ? null : request.Department.Trim();
+
+            if (!string.IsNullOrWhiteSpace(request.RoleType))
+            {
+                var roleName = request.RoleType.Trim().ToUpperInvariant();
+                var allowed = new[] { "STUDENT", "LECTURER", "STAFF", "ADMIN" };
+                if (!allowed.Contains(roleName))
+                    throw new Exception("Please choose a valid role: STUDENT, LECTURER, STAFF, or ADMIN.");
+                var role = await _context.Roles.FirstOrDefaultAsync(r => r.RoleName == roleName)
+                    ?? throw new Exception("That role is not configured in the system.");
+                user.RoleId = role.Id;
+            }
+
+            if (!string.IsNullOrWhiteSpace(request.Status))
+            {
+                if (!Enum.TryParse<UserStatus>(request.Status.Trim(), true, out var newStatus))
+                    throw new Exception("Please choose a valid status: PENDING, APPROVED, or REJECTED.");
+                user.Status = newStatus;
+            }
+
+            user.UpdatedAt = DateTime.UtcNow;
+            await _context.SaveChangesAsync();
+
+            return await GetUserByIdAsync(user.Id);
+        }
+
         public async Task<UserResponse?> GetUserByIdAsync(int userId)
         {
             var user = await _context.Users

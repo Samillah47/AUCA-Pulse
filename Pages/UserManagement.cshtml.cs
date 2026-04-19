@@ -20,6 +20,7 @@ namespace AUCAPulse.Pages
         public List<UserDto> Users { get; set; } = new();
 
         [BindProperty] public CreateUserInput NewUser { get; set; } = new();
+        [BindProperty] public EditUserInput EditUser { get; set; } = new();
 
         public async Task<IActionResult> OnGetAsync()
         {
@@ -105,6 +106,52 @@ namespace AUCAPulse.Pages
             return null;
         }
 
+        public async Task<IActionResult> OnPostEditAsync()
+        {
+            var role = HttpContext.Session.GetString("UserRole");
+            if (role != "ADMIN") return RedirectToPage("/Dashboard/Index");
+
+            var token = HttpContext.Session.GetString("Token");
+            if (string.IsNullOrEmpty(token)) return RedirectToPage("/Login");
+
+            if (EditUser.Id <= 0)
+            {
+                TempData["ErrorMessage"] = "Could not find the user to update.";
+                return RedirectToPage();
+            }
+
+            var client = _httpClientFactory.CreateClient();
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+            var baseUrl = _configuration["ApiSettings:BaseUrl"];
+
+            var payload = new
+            {
+                name = EditUser.Name,
+                email = EditUser.Email,
+                identificationNumber = EditUser.IdentificationNumber,
+                phoneNumber = EditUser.PhoneNumber,
+                department = EditUser.Department,
+                roleType = EditUser.RoleType,
+                status = EditUser.Status
+            };
+            var json = JsonSerializer.Serialize(payload);
+            var response = await client.PutAsync($"{baseUrl}/User/{EditUser.Id}/admin-update",
+                new StringContent(json, Encoding.UTF8, "application/json"));
+
+            var content = await response.Content.ReadAsStringAsync();
+            if (response.IsSuccessStatusCode)
+            {
+                TempData["SuccessMessage"] = "User updated successfully.";
+            }
+            else
+            {
+                TempData["ErrorMessage"] = ExtractMessage(content)
+                    ?? "We couldn't update the user. Please check the form and try again.";
+            }
+
+            return RedirectToPage();
+        }
+
         public async Task<IActionResult> OnPostActivateAsync(int userId)
         {
             var token = HttpContext.Session.GetString("Token");
@@ -167,6 +214,7 @@ namespace AUCAPulse.Pages
         public int Id { get; set; }
         public string Name { get; set; } = string.Empty;
         public string Email { get; set; } = string.Empty;
+        public string IdentificationNumber { get; set; } = string.Empty;
         public string? PhoneNumber { get; set; }
         public string? Department { get; set; }
         public string Role { get; set; } = string.Empty;
@@ -182,5 +230,17 @@ namespace AUCAPulse.Pages
         public string RoleType { get; set; } = "STAFF";
         public string? PhoneNumber { get; set; }
         public string? Department { get; set; }
+    }
+
+    public class EditUserInput
+    {
+        public int Id { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public string Email { get; set; } = string.Empty;
+        public string IdentificationNumber { get; set; } = string.Empty;
+        public string? PhoneNumber { get; set; }
+        public string? Department { get; set; }
+        public string RoleType { get; set; } = "STUDENT";
+        public string Status { get; set; } = "APPROVED";
     }
 }
