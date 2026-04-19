@@ -65,9 +65,6 @@
                 <a class="nav-link @(IsActive("/Notifications") ? "active" : "")" href="/Notifications">
                     <i class="bi bi-bell"></i> Notifications
                 </a>
-                <a class="nav-link @(IsActive("/Profile") ? "active" : "")" href="/Profile">
-                    <i class="bi bi-person"></i> Profile
-                </a>
                 @if (userRole == "STAFF")
                 {
                     <a class="nav-link @(IsActive("/MyOffice") ? "active" : "")" href="/MyOffice">

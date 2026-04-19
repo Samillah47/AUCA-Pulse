@@ -12,7 +12,7 @@ namespace AUCAPulse.DTOs.Request
         public int EndHour { get; set; } = 18;
 
         // Duration of each lecture slot in minutes.
-        public int SlotDurationMinutes { get; set; } = 120;
+        public int SlotDurationMinutes { get; set; } = 50;
 
         // Whether to clear any existing schedules for the semester before generating.
         public bool ReplaceExisting { get; set; } = true;

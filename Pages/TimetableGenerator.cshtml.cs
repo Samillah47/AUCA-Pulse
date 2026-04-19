@@ -31,7 +31,7 @@ namespace AUCAPulse.Pages
         [BindProperty] public int GenSemesterId { get; set; }
         [BindProperty] public int StartHour { get; set; } = 8;
         [BindProperty] public int EndHour { get; set; } = 18;
-        [BindProperty] public int SlotDurationMinutes { get; set; } = 120;
+        [BindProperty] public int SlotDurationMinutes { get; set; } = 50;
         [BindProperty] public bool ReplaceExisting { get; set; } = true;
 
         public async Task<IActionResult> OnGetAsync()
