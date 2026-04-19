@@ -105,28 +105,61 @@ namespace AUCAPulse.Services
                     user.Status = UserStatus.APPROVED;
                     user.UpdatedAt = DateTime.UtcNow;
 
-                    // Keep staff onboarding consistent: approved staff users should always have an office.
+                    // ====================================================================
+                    // STAFF OFFICE ASSIGNMENT DURING VERIFICATION APPROVAL
+                    // ====================================================================
+                    // When a staff user's verification request is APPROVED, they should
+                    // immediately get access to an office for the "My Office" feature.
+                    // This mirrors the logic in UserService.UpdateUserStatusAsync()
+                    // to keep staff onboarding consistent across approval workflows.
+                    //
+                    // NOTE: This is a PARALLEL workflow to UserService.UpdateUserStatusAsync()
+                    // Both methods handle office assignment because staff can be approved via:
+                    // - Verification Request flow (here) OR
+                    // - Direct user status update (UserService)
+                    //
+                    // Current implementation assigns REAL offices from the database,
+                    // not synthetic placeholder offices. This ensures staff get actual
+                    // school offices that were pre-registered in the system.
+                    // ====================================================================
                     if (user.Role.RoleName.Equals("STAFF", StringComparison.OrdinalIgnoreCase))
                     {
-                        var existingOffice = await _context.Offices.FirstOrDefaultAsync(o => o.StaffUserId == user.Id);
+                        // First, check if this staff member already has an office assigned
+                        var existingOffice = await _context.Offices
+                            .FirstOrDefaultAsync(o => o.StaffUserId == user.Id);
+
                         if (existingOffice == null)
                         {
-                            var autoOffice = new Office
-                            {
-                                OfficeName = $"{user.Name} Office",
-                                OfficeNumber = $"AUTO-{user.Id}",
-                                Department = user.Department,
-                                Building = "Main Building",
-                                Floor = "1",
-                                AvailabilityStatus = AvailabilityStatus.CLOSED,
-                                StaffUserId = user.Id,
-                                StatusUpdatedAt = DateTime.UtcNow,
-                                CreatedAt = DateTime.UtcNow
-                            };
+                            // No office assigned yet. Search database for an unassigned real office.
+                            // We look for offices with StaffUserId = NULL (not currently assigned to anyone)
+                            var availableOffice = await _context.Offices
+                                .FirstOrDefaultAsync(o => o.StaffUserId == null);
 
-                            _context.Offices.Add(autoOffice);
-                            _logger.LogInformation("Auto office created after verification approval for staff user {UserId}", user.Id);
+                            if (availableOffice != null)
+                            {
+                                // SUCCESS: Found an unassigned real office in the database
+                                // Assign it to this newly verified staff member
+                                availableOffice.StaffUserId = user.Id;
+
+                                // Log this important action with full details for audit trail
+                                _logger.LogInformation(
+                                    "✓ Successfully assigned real office {OfficeId} (Office #{OfficeNumber}) to verified staff user {UserId}",
+                                    availableOffice.Id,
+                                    availableOffice.OfficeNumber,
+                                    user.Id);
+                            }
+                            else
+                            {
+                                // WARNING: No unassigned offices available in database
+                                // All real offices are already assigned to other staff members
+                                // Admin intervention required to add more offices or unassign existing ones
+                                _logger.LogWarning(
+                                    "⚠ No unassigned offices available for verified staff user {UserId}. " +
+                                    "Admin must manually assign an office through the Office Management page.",
+                                    user.Id);
+                            }
                         }
+                        // If existingOffice != null, user already has an office, so do nothing
                     }
                 }
             }
