@@ -13,6 +13,7 @@ namespace AUCAPulse.Services
         Task<List<UserResponse>> GetUsersByRoleAsync(int roleId);
         Task<UserResponse?> UpdateUserAsync(int userId, UpdateUserRequest request);
         Task<UserResponse?> UpdateUserStatusAsync(int userId, UpdateUserStatusRequest request);
+        Task<UserResponse?> UpdateUserAvailabilityStatusAsync(int userId, AvailabilityStatus newStatus);
         Task<bool> DeleteUserAsync(int userId);
     }
 }

@@ -268,5 +268,17 @@ namespace AUCAPulse.Services
                 UpdatedAt = user.UpdatedAt
             };
         }
+
+        public async Task<UserResponse?> UpdateUserAvailabilityStatusAsync(int userId, AvailabilityStatus newStatus)
+        {
+            var user = await _context.Users.FindAsync(userId);
+            if (user == null) return null;
+
+            user.AvailabilityStatus = newStatus;
+            user.UpdatedAt = DateTime.UtcNow;
+            await _context.SaveChangesAsync();
+
+            return await GetUserByIdAsync(userId);
+        }
     }
 }

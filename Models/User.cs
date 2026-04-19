@@ -61,6 +61,10 @@ namespace AUCAPulse.Models
         [Column("otp_expiry")]
         public DateTime? OtpExpiry { get; set; }
 
+        // Staff Availability Status (for staff members only)
+        [Column("availability_status")]
+        public AvailabilityStatus AvailabilityStatus { get; set; } = AvailabilityStatus.AWAY;
+
         // Foreign Keys
         [Required]
         [Column("role_id")]
