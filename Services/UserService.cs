@@ -119,8 +119,7 @@ namespace AUCAPulse.Services
             // 3. Assigns the first available unassigned office from the database
             // 4. If no real offices exist, logs a warning for admin to manually assign
             // ========================================================================
-            if (request.Status == UserStatus.APPROVED &&
-                user.Role.RoleName.Equals("STAFF", StringComparison.OrdinalIgnoreCase))
+            if (request.Status == UserStatus.APPROVED && IsStaffUser(user))
             {
                 // Check if this staff user already has an office assigned
                 var existingOffice = await _context.Offices
@@ -188,6 +187,21 @@ namespace AUCAPulse.Services
             await _context.SaveChangesAsync();
 
             return true;
+        }
+
+        /// <summary>
+        /// Checks if a user belongs to the STAFF role.
+        /// </summary>
+        /// <param name="user">The user object to check (must have Role loaded)</param>
+        /// <returns>True if user's role is STAFF (case-insensitive), false otherwise</returns>
+        /// <remarks>
+        /// This method consolidates the role check logic used in office assignment.
+        /// It uses case-insensitive comparison to handle database variations.
+        /// Always ensure the Role is loaded via .Include(u => u.Role) before calling this method.
+        /// </remarks>
+        private bool IsStaffUser(User user)
+        {
+            return user?.Role?.RoleName?.Equals("STAFF", StringComparison.OrdinalIgnoreCase) ?? false;
         }
 
         private UserResponse MapToUserResponse(User user)
