@@ -62,6 +62,61 @@ namespace AUCAPulse.Services
             return (await GetAssignmentByIdAsync(assignment.Id))!;
         }
 
+        public async Task<(int copied, int skipped)> CopyAssignmentsFromSemesterAsync(int sourceSemesterId, int targetSemesterId)
+        {
+            if (sourceSemesterId == targetSemesterId)
+                throw new Exception("Source and target semesters must be different.");
+
+            var source = await _context.Semesters.FindAsync(sourceSemesterId)
+                ?? throw new Exception("Source semester not found.");
+            var target = await _context.Semesters.FindAsync(targetSemesterId)
+                ?? throw new Exception("Target semester not found.");
+
+            var sourceAssignments = await _context.CourseAssignments
+                .Where(ca => ca.SemesterId == sourceSemesterId)
+                .ToListAsync();
+
+            if (sourceAssignments.Count == 0)
+                throw new Exception($"'{source.Name}' has no assignments to copy.");
+
+            // Preload existing (course, group) pairs in the target semester so
+            // we skip duplicates without triggering the unique index.
+            var existingTargetKeys = await _context.CourseAssignments
+                .Where(ca => ca.SemesterId == targetSemesterId)
+                .Select(ca => new { ca.CourseId, ca.GroupId })
+                .ToListAsync();
+            var existingSet = new HashSet<(int, int)>(existingTargetKeys.Select(x => (x.CourseId, x.GroupId)));
+
+            var toInsert = new List<CourseAssignment>();
+            var skipped = 0;
+
+            foreach (var src in sourceAssignments)
+            {
+                if (existingSet.Contains((src.CourseId, src.GroupId)))
+                {
+                    skipped++;
+                    continue;
+                }
+                toInsert.Add(new CourseAssignment
+                {
+                    LecturerId = src.LecturerId,
+                    CourseId = src.CourseId,
+                    GroupId = src.GroupId,
+                    SemesterId = targetSemesterId,
+                    AssignedAt = DateTime.UtcNow
+                });
+                existingSet.Add((src.CourseId, src.GroupId));
+            }
+
+            if (toInsert.Count > 0)
+            {
+                _context.CourseAssignments.AddRange(toInsert);
+                await _context.SaveChangesAsync();
+            }
+
+            return (toInsert.Count, skipped);
+        }
+
         public async Task<CourseAssignmentResponse?> GetAssignmentByIdAsync(int id)
         {
             var assignment = await LoadWithIncludes().FirstOrDefaultAsync(ca => ca.Id == id);

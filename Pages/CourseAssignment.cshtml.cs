@@ -29,6 +29,9 @@ namespace AUCAPulse.Pages
         [BindProperty] public int LecturerId { get; set; }
         [BindProperty] public int GroupId { get; set; }
 
+        [BindProperty] public int CopySourceSemesterId { get; set; }
+        [BindProperty] public int CopyTargetSemesterId { get; set; }
+
         public async Task<IActionResult> OnGetAsync()
         {
             var role = HttpContext.Session.GetString("UserRole");
@@ -79,6 +82,41 @@ namespace AUCAPulse.Pages
             {
                 TempData["ErrorMessage"] = ExtractMessage(content)
                     ?? "We couldn't save the assignment. Please check the form and try again.";
+            }
+
+            return RedirectToPage();
+        }
+
+        public async Task<IActionResult> OnPostCopyAsync()
+        {
+            var role = HttpContext.Session.GetString("UserRole");
+            if (role != "ADMIN") return RedirectToPage("/Dashboard/Index");
+
+            var token = HttpContext.Session.GetString("Token");
+            if (string.IsNullOrEmpty(token)) return RedirectToPage("/Login");
+
+            if (CopySourceSemesterId <= 0 || CopyTargetSemesterId <= 0 || CopySourceSemesterId == CopyTargetSemesterId)
+            {
+                TempData["ErrorMessage"] = "Please pick two different semesters to copy between.";
+                return RedirectToPage();
+            }
+
+            var client = _httpClientFactory.CreateClient();
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+            var baseUrl = _configuration["ApiSettings:BaseUrl"];
+
+            var body = JsonSerializer.Serialize(new { sourceSemesterId = CopySourceSemesterId, targetSemesterId = CopyTargetSemesterId });
+            var res = await client.PostAsync($"{baseUrl}/courseassignments/copy-from-semester",
+                new StringContent(body, Encoding.UTF8, "application/json"));
+            var content = await res.Content.ReadAsStringAsync();
+
+            if (res.IsSuccessStatusCode)
+            {
+                TempData["SuccessMessage"] = ExtractMessage(content) ?? "Assignments copied.";
+            }
+            else
+            {
+                TempData["ErrorMessage"] = ExtractMessage(content) ?? "We couldn't copy the assignments. Please try again.";
             }
 
             return RedirectToPage();
