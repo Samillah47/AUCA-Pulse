@@ -24,6 +24,7 @@ namespace AUCAPulse.Data
         public DbSet<Notification> Notifications { get; set; }
         public DbSet<Course> Courses { get; set; }
         public DbSet<CourseAssignment> CourseAssignments { get; set; }
+        public DbSet<Group> Groups { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -173,10 +174,19 @@ namespace AUCAPulse.Data
                 entity.HasIndex(e => e.CourseCode).IsUnique();
             });
 
+            // Configure Group entity
+            modelBuilder.Entity<Group>(entity =>
+            {
+                entity.HasIndex(e => e.Name).IsUnique();
+            });
+
             // Configure CourseAssignment entity
             modelBuilder.Entity<CourseAssignment>(entity =>
             {
-                entity.HasIndex(e => new { e.LecturerId, e.CourseId, e.SemesterId }).IsUnique();
+                // One lecturer per (course, semester, group). A course can have
+                // many groups and a lecturer can teach multiple groups of the
+                // same course.
+                entity.HasIndex(e => new { e.CourseId, e.SemesterId, e.GroupId }).IsUnique();
 
                 entity.HasOne(e => e.Lecturer)
                     .WithMany()
@@ -192,6 +202,11 @@ namespace AUCAPulse.Data
                     .WithMany()
                     .HasForeignKey(e => e.SemesterId)
                     .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(e => e.Group)
+                    .WithMany(g => g.CourseAssignments)
+                    .HasForeignKey(e => e.GroupId)
+                    .OnDelete(DeleteBehavior.Restrict);
             });
 
             // Seed initial data
@@ -244,6 +259,14 @@ namespace AUCAPulse.Data
             // Seed Semester
             modelBuilder.Entity<Semester>().HasData(
                 new Semester { Id = 1, Name = "Fall 2024/2025", StartDate = new DateTime(2024, 9, 1, 0, 0, 0, DateTimeKind.Utc), EndDate = new DateTime(2025, 1, 31, 0, 0, 0, DateTimeKind.Utc), IsCurrent = true, CreatedAt = seedDate }
+            );
+
+            // Seed default groups A-D (admin can add more)
+            modelBuilder.Entity<Group>().HasData(
+                new Group { Id = 1, Name = "A", Description = "Group A", CreatedAt = seedDate },
+                new Group { Id = 2, Name = "B", Description = "Group B", CreatedAt = seedDate },
+                new Group { Id = 3, Name = "C", Description = "Group C", CreatedAt = seedDate },
+                new Group { Id = 4, Name = "D", Description = "Group D", CreatedAt = seedDate }
             );
         }
     }

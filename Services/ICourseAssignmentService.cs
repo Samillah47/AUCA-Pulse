@@ -6,7 +6,6 @@ namespace AUCAPulse.Services
     public interface ICourseAssignmentService
     {
         Task<CourseAssignmentResponse> CreateAssignmentAsync(CreateCourseAssignmentDto dto);
-        Task<BulkCourseAssignmentResult> CreateBulkAssignmentsAsync(BulkCreateCourseAssignmentDto dto);
         Task<CourseAssignmentResponse?> GetAssignmentByIdAsync(int id);
         Task<List<CourseAssignmentResponse>> GetAllAssignmentsAsync();
         Task<List<CourseAssignmentResponse>> GetAssignmentsByLecturerAsync(int lecturerId);

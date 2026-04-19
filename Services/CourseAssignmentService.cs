@@ -31,18 +31,28 @@ namespace AUCAPulse.Services
             if (semester == null)
                 throw new Exception("Semester not found");
 
-            var duplicate = await _context.CourseAssignments.AnyAsync(ca =>
-                ca.LecturerId == dto.LecturerId &&
-                ca.CourseId == dto.CourseId &&
-                ca.SemesterId == dto.SemesterId);
-            if (duplicate)
-                throw new Exception("This lecturer is already assigned to this course for the selected semester");
+            var group = await _context.Groups.FindAsync(dto.GroupId);
+            if (group == null)
+                throw new Exception("Group not found");
+
+            var conflict = await _context.CourseAssignments
+                .Include(ca => ca.Lecturer)
+                .FirstOrDefaultAsync(ca =>
+                    ca.CourseId == dto.CourseId &&
+                    ca.SemesterId == dto.SemesterId &&
+                    ca.GroupId == dto.GroupId);
+            if (conflict != null)
+            {
+                var existingName = conflict.Lecturer?.Name ?? "another lecturer";
+                throw new Exception($"{course.CourseCode} Group {group.Name} is already assigned to {existingName} for this semester.");
+            }
 
             var assignment = new CourseAssignment
             {
                 LecturerId = dto.LecturerId,
                 CourseId = dto.CourseId,
                 SemesterId = dto.SemesterId,
+                GroupId = dto.GroupId,
                 AssignedAt = DateTime.UtcNow
             };
 
@@ -50,75 +60,6 @@ namespace AUCAPulse.Services
             await _context.SaveChangesAsync();
 
             return (await GetAssignmentByIdAsync(assignment.Id))!;
-        }
-
-        public async Task<BulkCourseAssignmentResult> CreateBulkAssignmentsAsync(BulkCreateCourseAssignmentDto dto)
-        {
-            var result = new BulkCourseAssignmentResult();
-
-            var course = await _context.Courses.FindAsync(dto.CourseId)
-                ?? throw new Exception("Course not found.");
-            var semester = await _context.Semesters.FindAsync(dto.SemesterId)
-                ?? throw new Exception("Semester not found.");
-
-            if (dto.LecturerIds == null || dto.LecturerIds.Count == 0)
-                throw new Exception("Please select at least one lecturer.");
-
-            var distinctIds = dto.LecturerIds.Distinct().ToList();
-
-            var lecturers = await _context.Users
-                .Include(u => u.Role)
-                .Where(u => distinctIds.Contains(u.Id))
-                .ToListAsync();
-
-            var existing = await _context.CourseAssignments
-                .Where(ca => ca.CourseId == dto.CourseId && ca.SemesterId == dto.SemesterId)
-                .Select(ca => ca.LecturerId)
-                .ToListAsync();
-
-            var toInsert = new List<CourseAssignment>();
-
-            foreach (var lecturerId in distinctIds)
-            {
-                var lecturer = lecturers.FirstOrDefault(u => u.Id == lecturerId);
-                if (lecturer == null || lecturer.Role?.RoleName != "LECTURER")
-                {
-                    result.InvalidLecturers++;
-                    result.Notes.Add($"Skipped user id {lecturerId}: not a valid lecturer.");
-                    continue;
-                }
-
-                if (existing.Contains(lecturerId))
-                {
-                    result.SkippedDuplicates++;
-                    result.Notes.Add($"Skipped {lecturer.Name}: already assigned to this course for the selected semester.");
-                    continue;
-                }
-
-                toInsert.Add(new CourseAssignment
-                {
-                    LecturerId = lecturerId,
-                    CourseId = dto.CourseId,
-                    SemesterId = dto.SemesterId,
-                    AssignedAt = DateTime.UtcNow
-                });
-            }
-
-            if (toInsert.Count > 0)
-            {
-                _context.CourseAssignments.AddRange(toInsert);
-                await _context.SaveChangesAsync();
-
-                var insertedIds = toInsert.Select(t => t.Id).ToList();
-                var loaded = await LoadWithIncludes()
-                    .Where(ca => insertedIds.Contains(ca.Id))
-                    .ToListAsync();
-
-                result.Assignments = loaded.Select(MapToResponse).ToList();
-                result.Created = loaded.Count;
-            }
-
-            return result;
         }
 
         public async Task<CourseAssignmentResponse?> GetAssignmentByIdAsync(int id)
@@ -177,7 +118,8 @@ namespace AUCAPulse.Services
             return _context.CourseAssignments
                 .Include(ca => ca.Lecturer)
                 .Include(ca => ca.Course)
-                .Include(ca => ca.Semester);
+                .Include(ca => ca.Semester)
+                .Include(ca => ca.Group);
         }
 
         private static CourseAssignmentResponse MapToResponse(CourseAssignment ca)
@@ -194,6 +136,8 @@ namespace AUCAPulse.Services
                 Credits = ca.Course?.Credits ?? 0,
                 SemesterId = ca.SemesterId,
                 SemesterName = ca.Semester?.Name ?? string.Empty,
+                GroupId = ca.GroupId,
+                GroupName = ca.Group?.Name ?? string.Empty,
                 AssignedAt = ca.AssignedAt
             };
         }
