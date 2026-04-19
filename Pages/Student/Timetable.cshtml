@@ -1,0 +1,76 @@
+@page
+@model AUCAPulse.Pages.Student.TimetableModel
+@{
+    ViewData["Title"] = "My Timetable";
+    Layout = "_StudentLayout";
+    var dayOrder = new[] { "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY" };
+
+    var timeSlots = Model.Schedules
+        .Select(s => new { s.StartTime, s.EndTime })
+        .Distinct()
+        .OrderBy(s => s.StartTime)
+        .ToList();
+}
+
+<div class="mb-3">
+    <h1 class="mb-1">My Timetable</h1>
+    <div class="text-muted">@(string.IsNullOrWhiteSpace(Model.SemesterName) ? "Current semester" : Model.SemesterName)</div>
+</div>
+
+@if (!Model.Schedules.Any())
+{
+    <div class="card">
+        <div class="empty-state">
+            <i class="bi bi-calendar-x"></i>
+            <h5>No timetable available yet</h5>
+            <div>Once classes are scheduled for the current semester, they'll appear here.</div>
+        </div>
+    </div>
+}
+else
+{
+    <div class="card">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-bordered mb-0">
+                    <thead>
+                        <tr>
+                            <th style="width: 110px;">Time</th>
+                            @foreach (var d in dayOrder)
+                            {
+                                <th>@d</th>
+                            }
+                        </tr>
+                    </thead>
+                    <tbody>
+                    @foreach (var slot in timeSlots)
+                    {
+                        <tr>
+                            <td class="small text-muted">
+                                @slot.StartTime.Substring(0, Math.Min(5, slot.StartTime.Length)) - @slot.EndTime.Substring(0, Math.Min(5, slot.EndTime.Length))
+                            </td>
+                            @foreach (var d in dayOrder)
+                            {
+                                var entries = Model.Schedules.Where(e => e.DayOfWeek == d && e.StartTime == slot.StartTime).ToList();
+                                <td>
+                                    @foreach (var e in entries)
+                                    {
+                                        <div class="mb-2 p-2 rounded" style="background:var(--accent-soft);border-left:3px solid var(--accent);">
+                                            <div class="small" style="font-weight:600;">@e.CourseCode @e.CourseName</div>
+                                            <div class="small text-muted">@e.LecturerName</div>
+                                            @if (!string.IsNullOrEmpty(e.RoomNumber))
+                                            {
+                                                <div class="small mt-1"><span class="badge bg-secondary">@e.RoomNumber</span></div>
+                                            }
+                                        </div>
+                                    }
+                                </td>
+                            }
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+}
