@@ -122,7 +122,7 @@ namespace AUCAPulse.Services
                     // not synthetic placeholder offices. This ensures staff get actual
                     // school offices that were pre-registered in the system.
                     // ====================================================================
-                    if (user.Role.RoleName.Equals("STAFF", StringComparison.OrdinalIgnoreCase))
+                    if (IsStaffUser(user))
                     {
                         // First, check if this staff member already has an office assigned
                         var existingOffice = await _context.Offices
@@ -201,6 +201,22 @@ namespace AUCAPulse.Services
             await _context.SaveChangesAsync();
 
             return true;
+        }
+
+        /// <summary>
+        /// Checks if a user belongs to the STAFF role.
+        /// </summary>
+        /// <param name="user">The user object to check (must have Role loaded)</param>
+        /// <returns>True if user's role is STAFF (case-insensitive), false otherwise</returns>
+        /// <remarks>
+        /// This method consolidates the role check logic used in office assignment.
+        /// It uses case-insensitive comparison to handle database variations.
+        /// Always ensure the Role is loaded via .Include(u => u.Role) before calling this method.
+        /// This mirrors the helper method in UserService for consistency.
+        /// </remarks>
+        private bool IsStaffUser(User user)
+        {
+            return user?.Role?.RoleName?.Equals("STAFF", StringComparison.OrdinalIgnoreCase) ?? false;
         }
 
         private VerificationRequestResponse MapToResponse(VerificationRequest request)
