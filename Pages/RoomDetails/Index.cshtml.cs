@@ -46,7 +46,7 @@ namespace AUCAPulse.Pages.RoomDetails
 
                     // Check if current user can release the room
                     var userId = HttpContext.Session.GetString("UserId");
-                    CanRelease = Room?.OccupiedBy?.ToString() == userId;
+                    CanRelease = Room?.CurrentLecturerId?.ToString() == userId || HttpContext.Session.GetString("UserRole") == "ADMIN";
                 }
             }
             catch (Exception)
@@ -57,18 +57,27 @@ namespace AUCAPulse.Pages.RoomDetails
             return Page();
         }
 
-        public async Task<IActionResult> OnPostOccupyAsync(int roomId, DateTime occupyUntil)
+        public async Task<IActionResult> OnPostOccupyAsync(int roomId, TimeSpan startTime, TimeSpan endTime, string? courseInfo)
         {
             var token = HttpContext.Session.GetString("Token");
-            if (string.IsNullOrEmpty(token))
-            {
-                return RedirectToPage("/Login");
-            }
+            if (string.IsNullOrEmpty(token)) return RedirectToPage("/Login");
 
             try
             {
-                var userId = int.Parse(HttpContext.Session.GetString("UserId") ?? "0");
-                // Token is already retrieved at line 62
+                // Create local date times and then convert to UTC for the database
+                var today = DateTime.Today;
+                var startLocal = today.Add(startTime);
+                var endLocal = today.Add(endTime);
+
+                if (endLocal <= startLocal)
+                {
+                    TempData["ErrorMessage"] = "End time must be after start time.";
+                    return RedirectToPage(new { id = roomId });
+                }
+
+                // Ensure Kind is Local so ToUniversalTime works correctly, or specify Utc directly if that's what's intended
+                var startDateTime = DateTime.SpecifyKind(startLocal, DateTimeKind.Local).ToUniversalTime();
+                var endDateTime = DateTime.SpecifyKind(endLocal, DateTimeKind.Local).ToUniversalTime();
 
                 var client = _httpClientFactory.CreateClient();
                 client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
@@ -76,7 +85,8 @@ namespace AUCAPulse.Pages.RoomDetails
 
                 var occupyRequest = new
                 {
-                    occupiedUntil = occupyUntil
+                    occupiedUntil = endDateTime,
+                    courseInfo = courseInfo
                 };
 
                 var json = JsonSerializer.Serialize(occupyRequest);
@@ -145,8 +155,11 @@ namespace AUCAPulse.Pages.RoomDetails
         public string RoomType { get; set; } = string.Empty;
         public string Status { get; set; } = string.Empty;
         public string? Description { get; set; }
-        public int? OccupiedBy { get; set; }
+        public int? CurrentLecturerId { get; set; }
+        public string? CurrentLecturerName { get; set; }
+        public DateTime? OccupiedAt { get; set; }
         public DateTime? OccupiedUntil { get; set; }
         public DateTime CreatedAt { get; set; }
+        public string? CourseInfo { get; set; }
     }
 }

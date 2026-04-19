@@ -12,6 +12,33 @@
         </div>
     </div>
 
+    @if (Model.UserRole == "LECTURER" || Model.UserRole == "STAFF")
+    {
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card border-0 shadow-sm bg-primary bg-opacity-10">
+                    <div class="card-body d-flex justify-content-between align-items-center py-3">
+                        <div class="d-flex align-items-center">
+                            <i class="bi bi-person-badge fs-4 me-3 text-primary"></i>
+                            <div>
+                                <span class="text-muted small">Your Current Status:</span>
+                                <h6 class="mb-0">
+                                    <span class="badge @GetStatusBadgeClass(Model.MyCurrentStatus)">
+                                        <i class="bi bi-circle-fill me-1" style="font-size: 8px;"></i>
+                                        @Model.MyCurrentStatus.Replace('_', ' ')
+                                    </span>
+                                </h6>
+                            </div>
+                        </div>
+                        <a href="/UpdateStatus" class="btn btn-primary btn-sm">
+                            <i class="bi bi-pencil-square me-1"></i> Update Status
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+
     @if (Model.UserRole == "ADMIN")
     {
         <!-- Admin Dashboard -->
@@ -118,19 +145,84 @@
     else if (Model.UserRole == "LECTURER")
     {
         <!-- Lecturer Dashboard -->
-        <div class="row g-4">
-            <div class="col-md-12">
+        <div class="row g-4 mb-4">
+            <div class="col-md-8">
+                <h5 class="mb-3">My Occupied Rooms</h5>
+                <div class="row g-3">
+                    @if (Model.MyRooms.Any())
+                    {
+                        @foreach (var room in Model.MyRooms)
+                        {
+                            <div class="col-md-6">
+                                <div class="card border-0 shadow-sm h-100 border-start border-4 border-primary">
+                                    <div class="card-body">
+                                        @{
+                                            var specializedTypes = new[] { "OFFICE", "LIBRARY", "IT_LAB" };
+                                            var roomDisplayName = specializedTypes.Contains(room.RoomType) 
+                                                ? $"{room.RoomType.Replace("_", " ")} {room.RoomNumber}" 
+                                                : $"Room {room.RoomNumber}";
+                                        }
+                                        <h6 class="card-title fw-bold">@roomDisplayName</h6>
+                                        <p class="text-muted small mb-2"><i class="bi bi-building me-1"></i>@room.Building</p>
+                                        <div class="d-flex justify-content-between align-items-center mt-3">
+                                            <span class="badge bg-primary">Occupied</span>
+                                            <a href="/RoomDetails/@room.Id" class="btn btn-sm btn-outline-primary">Details</a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        <div class="col-12">
+                            <div class="card border-0 shadow-sm bg-light">
+                                <div class="card-body text-center py-4">
+                                    <i class="bi bi-door-closed fs-1 text-muted"></i>
+                                    <p class="mt-2 text-muted">You haven't occupied any rooms yet.</p>
+                                    <a href="/Rooms" class="btn btn-primary btn-sm">Find a Room</a>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <h5 class="mb-3">Notifications</h5>
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-body text-center py-4">
+                        <div class="position-relative d-inline-block mb-3">
+                            <i class="bi bi-bell fs-1 text-primary"></i>
+                            @if (Model.UnreadNotificationsCount > 0)
+                            {
+                                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                                    @Model.UnreadNotificationsCount
+                                </span>
+                            }
+                        </div>
+                        <h6>@Model.UnreadNotificationsCount Unread Notifications</h6>
+                        <a href="/Notifications" class="btn btn-outline-primary btn-sm mt-2">View All</a>
+                    </div>
+                </div>
+
                 <div class="card border-0 shadow-sm">
                     <div class="card-header bg-white">
                         <h5 class="mb-0">Quick Actions</h5>
                     </div>
                     <div class="card-body">
-                        <div class="d-grid gap-2 d-md-flex">
-                            <a href="/Schedule" class="btn btn-primary">
-                                <i class="bi bi-calendar me-2"></i> View Schedule
+                        <div class="d-grid gap-2">
+                            <a href="/UpdateStatus" class="btn btn-outline-primary text-start">
+                                <i class="bi bi-person-badge me-2"></i> Update My Status
                             </a>
-                            <a href="/Rooms" class="btn btn-outline-primary">
-                                <i class="bi bi-door-open me-2"></i> Find Room
+                            <a href="/Schedule" class="btn btn-outline-primary text-start">
+                                <i class="bi bi-calendar me-2"></i> View My Schedule
+                            </a>
+                            <a href="/Rooms" class="btn btn-outline-primary text-start">
+                                <i class="bi bi-search me-2"></i> Find/Reserve Room
+                            </a>
+                            <a href="/Messages" class="btn btn-outline-primary text-start">
+                                <i class="bi bi-chat-dots me-2"></i> Chat with Lecturers
                             </a>
                         </div>
                     </div>
@@ -271,3 +363,20 @@
         </div>
     }
 </div>
+
+@functions {
+    string GetStatusBadgeClass(string status)
+    {
+        return status switch
+        {
+            "AVAILABLE" => "bg-success",
+            "AVAILABLE_FOR_APPOINTMENT" => "bg-info",
+            "IN_CLASS" => "bg-danger",
+            "IN_MEETING" => "bg-warning",
+            "IN_OFFICE" => "bg-success",
+            "AWAY" => "bg-secondary",
+            "UNAVAILABLE" => "bg-dark",
+            _ => "bg-secondary"
+        };
+    }
+}

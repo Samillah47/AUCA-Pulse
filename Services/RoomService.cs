@@ -153,10 +153,19 @@ namespace AUCAPulse.Services
                 throw new Exception("Lecturer not found");
             }
 
+            // Ensure UTC for PostgreSQL
+            var occupiedUntilUtc = request.OccupiedUntil.Kind == DateTimeKind.Unspecified
+                ? DateTime.SpecifyKind(request.OccupiedUntil, DateTimeKind.Utc)
+                : request.OccupiedUntil.ToUniversalTime();
+
             room.Status = RoomStatus.OCCUPIED;
             room.CurrentLecturerId = lecturerId;
             room.OccupiedAt = DateTime.UtcNow;
-            room.OccupiedUntil = request.OccupiedUntil;
+            room.OccupiedUntil = occupiedUntilUtc;
+            room.CourseInfo = request.CourseInfo;
+
+            // Get current semester
+            var currentSemester = await _context.Semesters.FirstOrDefaultAsync(s => s.IsCurrent);
 
             // Also create a lecture schedule entry
             var schedule = new LectureSchedule
@@ -165,8 +174,9 @@ namespace AUCAPulse.Services
                 RoomNumber = room.RoomNumber,
                 DayOfWeek = DateTime.UtcNow.DayOfWeek.ToString().ToUpper(),
                 StartTime = DateTime.UtcNow.TimeOfDay,
-                EndTime = request.OccupiedUntil.TimeOfDay,
-                CourseName = "Manual Occupation",
+                EndTime = occupiedUntilUtc.TimeOfDay,
+                CourseName = !string.IsNullOrWhiteSpace(request.CourseInfo) ? request.CourseInfo : "Manual Occupation / Room Reservation",
+                SemesterId = currentSemester?.Id,
                 CreatedAt = DateTime.UtcNow
             };
             _context.LectureSchedules.Add(schedule);
@@ -233,6 +243,7 @@ namespace AUCAPulse.Services
                 CurrentLecturerName = room.CurrentLecturer?.Name,
                 OccupiedAt = room.OccupiedAt,
                 OccupiedUntil = room.OccupiedUntil,
+                CourseInfo = room.CourseInfo,
                 CreatedAt = room.CreatedAt
             };
         }

@@ -1,0 +1,297 @@
+@page
+@model AUCAPulse.Pages.MessagesModel
+@{
+    ViewData["Title"] = "Messages - ACPulse";
+}
+
+<style>
+    .chat-container {
+        height: calc(100vh - 160px);
+        background: #fff;
+        border-radius: 15px;
+        overflow: hidden;
+        display: flex;
+    }
+    .chat-sidebar {
+        width: 350px;
+        border-right: 1px solid #eee;
+        display: flex;
+        flex-direction: column;
+    }
+    .chat-main {
+        flex-grow: 1;
+        display: flex;
+        flex-direction: column;
+        background: #f8f9fa;
+    }
+    .chat-list {
+        flex-grow: 1;
+        overflow-y: auto;
+    }
+    .chat-item {
+        padding: 15px;
+        border-bottom: 1px solid #f8f9fa;
+        cursor: pointer;
+        transition: background 0.2s;
+    }
+    .chat-item:hover {
+        background: #f0f2f5;
+    }
+    .chat-item.active {
+        background: #e9ecef;
+    }
+    .message-area {
+        flex-grow: 1;
+        padding: 20px;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+    }
+    .message {
+        max-width: 75%;
+        padding: 10px 15px;
+        border-radius: 15px;
+        margin-bottom: 10px;
+        position: relative;
+    }
+    .message.sent {
+        align-self: flex-end;
+        background: #007bff;
+        color: #fff;
+        border-bottom-right-radius: 2px;
+    }
+    .message.received {
+        align-self: flex-start;
+        background: #fff;
+        border: 1px solid #eee;
+        border-bottom-left-radius: 2px;
+    }
+    .unread-badge {
+        background: #25d366;
+        color: #fff;
+        border-radius: 50%;
+        padding: 2px 7px;
+        font-size: 11px;
+    }
+    .read-status {
+        font-size: 12px;
+        margin-left: 5px;
+    }
+    .read-status.read {
+        color: #34b7f1;
+    }
+    .read-status.unread {
+        color: #999;
+    }
+</style>
+
+<div class="container-fluid">
+    <div class="chat-container shadow-sm">
+        <!-- Sidebar -->
+        <div class="chat-sidebar">
+            <div class="p-3 border-bottom bg-light">
+                <h5 class="mb-0 fw-bold">Chats</h5>
+            </div>
+            <div class="chat-list" id="chatList">
+                <div class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Chat Area -->
+        <div class="chat-main">
+            <div id="noChatSelected" class="h-100 d-flex flex-column align-items-center justify-content-center text-muted">
+                <i class="bi bi-chat-dots display-1 mb-3"></i>
+                <h5>Select a conversation to start chatting</h5>
+            </div>
+
+            <div id="chatActive" class="h-100 flex-column d-none">
+                <!-- Header -->
+                <div class="p-3 border-bottom bg-white d-flex align-items-center justify-content-between">
+                    <div class="d-flex align-items-center">
+                        <div class="bg-primary bg-opacity-10 rounded-circle p-2 me-3">
+                            <i class="bi bi-person text-primary"></i>
+                        </div>
+                        <div>
+                            <h6 class="mb-0 fw-bold" id="activeChatName">Loading...</h6>
+                            <small class="text-success" id="activeChatStatus">Online</small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Messages -->
+                <div class="message-area" id="messageArea">
+                    <!-- Messages will be loaded here -->
+                </div>
+
+                <!-- Input -->
+                <div class="p-3 bg-white border-top">
+                    <form id="messageForm" class="d-flex gap-2">
+                        <input type="text" id="messageInput" class="form-control rounded-pill" placeholder="Type a message..." autocomplete="off">
+                        <button type="submit" class="btn btn-primary rounded-circle p-2 px-3">
+                            <i class="bi bi-send-fill"></i>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        const currentUserId = "@HttpContext.Session.GetString("UserId")";
+        const apiUrl = "@Model.Configuration["ApiSettings:BaseUrl"]";
+        const token = "@HttpContext.Session.GetString("Token")";
+        let activeOtherId = null;
+        let refreshInterval = null;
+
+        $(document).ready(function() {
+            loadChatSummaries();
+            
+            // Check for URL parameters to start a specific chat
+            const urlParams = new URLSearchParams(window.location.search);
+            const startChatId = urlParams.get('with');
+            if (startChatId) {
+                selectChat(startChatId, urlParams.get('name'));
+            }
+
+            // Polling for updates every 3 seconds
+            setInterval(loadChatSummaries, 3000);
+            
+            $('#messageForm').on('submit', function(e) {
+                e.preventDefault();
+                sendMessage();
+            });
+        });
+
+        async function loadChatSummaries() {
+            try {
+                const res = await fetch(`${apiUrl}/Chat/summaries`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (!res.ok) return;
+                const summaries = await res.json();
+                
+                let html = '';
+                if (summaries.length === 0) {
+                    html = '<div class="text-center py-5 text-muted small">No conversations yet</div>';
+                } else {
+                    summaries.forEach(s => {
+                        const time = new Date(s.lastMessageTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                        const unread = s.unreadCount > 0 ? `<span class="unread-badge">${s.unreadCount}</span>` : '';
+                        const activeClass = s.otherUserId == activeOtherId ? 'active' : '';
+                        
+                        // WhatsApp-style ticks
+                        let statusIcon = '';
+                        if (s.lastMessageIsFromMe) {
+                            const iconClass = s.lastMessageIsRead ? 'bi-check2-all read' : 'bi-check2 unread';
+                            statusIcon = `<i class="bi ${iconClass} me-1"></i>`;
+                        }
+
+                        html += `
+                            <div class="chat-item ${activeClass}" onclick="selectChat(${s.otherUserId}, '${s.otherUserName}')">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div class="d-flex align-items-center">
+                                        <div class="bg-secondary bg-opacity-10 rounded-circle p-2 me-3">
+                                            <i class="bi bi-person text-secondary"></i>
+                                        </div>
+                                        <div>
+                                            <h6 class="mb-0 small fw-bold">${s.otherUserName}</h6>
+                                            <p class="mb-0 text-muted small text-truncate" style="max-width: 150px;">
+                                                ${statusIcon}${s.lastMessage}
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <div class="text-end">
+                                        <div class="small text-muted mb-1" style="font-size: 10px;">${time}</div>
+                                        ${unread}
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    });
+                }
+                $('#chatList').html(html);
+            } catch (err) { console.error(err); }
+        }
+
+        async function selectChat(id, name) {
+            activeOtherId = id;
+            $('#activeChatName').text(name);
+            $('#noChatSelected').addClass('d-none');
+            $('#chatActive').removeClass('d-none').addClass('d-flex');
+            
+            // Mark items in list as inactive
+            $('.chat-item').removeClass('active');
+            $(`div[onclick*="selectChat(${id},"]`).addClass('active');
+
+            loadConversation();
+            
+            if (refreshInterval) clearInterval(refreshInterval);
+            refreshInterval = setInterval(loadConversation, 3000);
+        }
+
+        async function loadConversation() {
+            if (!activeOtherId) return;
+            try {
+                const res = await fetch(`${apiUrl}/Chat/conversation/${activeOtherId}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (!res.ok) return;
+                const messages = await res.json();
+                
+                const area = document.getElementById('messageArea');
+                const isAtBottom = area.scrollHeight - area.scrollTop <= area.clientHeight + 50;
+
+                let html = '';
+                messages.forEach(m => {
+                    const type = m.senderId == currentUserId ? 'sent' : 'received';
+                    const time = new Date(m.sentAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                    
+                    let status = '';
+                    if (type === 'sent') {
+                        status = m.isRead 
+                            ? '<i class="bi bi-check2-all read-status read ms-1"></i>' 
+                            : '<i class="bi bi-check2 read-status unread ms-1"></i>';
+                    }
+
+                    html += `
+                        <div class="message ${type}">
+                            <div class="content">${m.content}</div>
+                            <div class="text-end" style="font-size: 10px; opacity: 0.7; margin-top: 2px;">
+                                ${time} ${status}
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                area.innerHTML = html;
+                if (isAtBottom) area.scrollTop = area.scrollHeight;
+            } catch (err) { console.error(err); }
+        }
+
+        async function sendMessage() {
+            const input = $('#messageInput');
+            const content = input.val().trim();
+            if (!content || !activeOtherId) return;
+
+            input.val('');
+            try {
+                const res = await fetch(`${apiUrl}/Chat/send`, {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ receiverId: parseInt(activeOtherId), content: content })
+                });
+                if (res.ok) {
+                    loadConversation();
+                    loadChatSummaries();
+                }
+            } catch (err) { console.error(err); }
+        }
+    </script>
+}
