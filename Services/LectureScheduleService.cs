@@ -127,6 +127,21 @@ namespace AUCAPulse.Services
             return schedules.Select(MapToResponse).ToList();
         }
 
+        public async Task<List<LectureScheduleResponse>> GetSchedulesByRoomAsync(string roomNumber)
+        {
+            if (string.IsNullOrWhiteSpace(roomNumber)) return new();
+
+            var schedules = await _context.LectureSchedules
+                .Include(s => s.Lecturer)
+                .Include(s => s.Semester)
+                .Where(s => s.RoomNumber == roomNumber)
+                .OrderBy(s => s.DayOfWeek)
+                .ThenBy(s => s.StartTime)
+                .ToListAsync();
+
+            return schedules.Select(MapToResponse).ToList();
+        }
+
         public async Task<LectureScheduleResponse?> UpdateScheduleAsync(int scheduleId, CreateLectureScheduleDto request)
         {
             var schedule = await _context.LectureSchedules.FindAsync(scheduleId);

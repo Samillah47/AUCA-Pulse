@@ -84,6 +84,73 @@
                         }
                     </div>
                 </div>
+
+                <!-- Weekly class schedule for this room -->
+                @{
+                    var dayOrder = new[] { "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY", "SUNDAY" };
+                    var grouped = Model.Schedule
+                        .GroupBy(s => (s.DayOfWeek ?? string.Empty).ToUpperInvariant())
+                        .OrderBy(g => Array.IndexOf(dayOrder, g.Key) is int idx && idx >= 0 ? idx : int.MaxValue);
+                }
+                <div class="card border-0 shadow-sm">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="mb-0"><i class="bi bi-calendar-week me-2"></i>Weekly Schedule</h5>
+                            <small class="text-muted">Classes assigned to this room</small>
+                        </div>
+                        <span class="badge bg-primary">@Model.Schedule.Count entries</span>
+                    </div>
+                    <div class="card-body">
+                        @if (!Model.Schedule.Any())
+                        {
+                            <div class="empty-state">
+                                <i class="bi bi-calendar-x"></i>
+                                <h5>No classes scheduled</h5>
+                                <div>This room has no lectures in the generated timetable yet.</div>
+                            </div>
+                        }
+                        else
+                        {
+                            @foreach (var dayGroup in grouped)
+                            {
+                                <h6 class="mt-2 mb-2 text-muted">@dayGroup.Key</h6>
+                                <div class="table-responsive mb-3">
+                                    <table class="table table-sm mb-0">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th style="width: 140px;">Time</th>
+                                                <th>Course</th>
+                                                <th>Lecturer</th>
+                                                <th>Semester</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                        @foreach (var entry in dayGroup.OrderBy(e => e.StartTime))
+                                        {
+                                            <tr>
+                                                <td>
+                                                    @entry.StartTime.Substring(0, Math.Min(5, entry.StartTime.Length))
+                                                    -
+                                                    @entry.EndTime.Substring(0, Math.Min(5, entry.EndTime.Length))
+                                                </td>
+                                                <td>
+                                                    <strong>@entry.CourseCode</strong>
+                                                    @if (!string.IsNullOrWhiteSpace(entry.CourseName))
+                                                    {
+                                                        <span class="text-muted"> — @entry.CourseName</span>
+                                                    }
+                                                </td>
+                                                <td>@entry.LecturerName</td>
+                                                <td class="text-muted small">@(entry.SemesterName ?? "-")</td>
+                                            </tr>
+                                        }
+                                        </tbody>
+                                    </table>
+                                </div>
+                            }
+                        }
+                    </div>
+                </div>
             </div>
 
             <div class="col-lg-4">

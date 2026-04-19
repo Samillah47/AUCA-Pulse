@@ -19,6 +19,7 @@ namespace AUCAPulse.Pages.RoomDetails
 
         public RoomDetailDto? Room { get; set; }
         public bool CanRelease { get; set; }
+        public List<RoomScheduleEntry> Schedule { get; set; } = new();
 
         public async Task<IActionResult> OnGetAsync(int id)
         {
@@ -47,6 +48,18 @@ namespace AUCAPulse.Pages.RoomDetails
                     // Check if current user can release the room
                     var userId = HttpContext.Session.GetString("UserId");
                     CanRelease = Room?.OccupiedBy?.ToString() == userId;
+
+                    // Load the weekly schedule for this room
+                    if (!string.IsNullOrWhiteSpace(Room?.RoomNumber))
+                    {
+                        var schedRes = await client.GetAsync($"{apiUrl}/LectureSchedule/room/{Uri.EscapeDataString(Room.RoomNumber)}");
+                        if (schedRes.IsSuccessStatusCode)
+                        {
+                            var schedContent = await schedRes.Content.ReadAsStringAsync();
+                            Schedule = JsonSerializer.Deserialize<List<RoomScheduleEntry>>(schedContent,
+                                new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new();
+                        }
+                    }
                 }
             }
             catch (Exception)
@@ -148,5 +161,19 @@ namespace AUCAPulse.Pages.RoomDetails
         public int? OccupiedBy { get; set; }
         public DateTime? OccupiedUntil { get; set; }
         public DateTime CreatedAt { get; set; }
+    }
+
+    public class RoomScheduleEntry
+    {
+        public int Id { get; set; }
+        public int LecturerId { get; set; }
+        public string LecturerName { get; set; } = string.Empty;
+        public string DayOfWeek { get; set; } = string.Empty;
+        public string StartTime { get; set; } = string.Empty;
+        public string EndTime { get; set; } = string.Empty;
+        public string? CourseCode { get; set; }
+        public string? CourseName { get; set; }
+        public string? RoomNumber { get; set; }
+        public string? SemesterName { get; set; }
     }
 }
