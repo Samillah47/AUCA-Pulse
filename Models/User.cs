@@ -83,5 +83,7 @@ namespace AUCAPulse.Models
         public virtual ICollection<LectureSchedule> LectureSchedules { get; set; } = new List<LectureSchedule>();
         public virtual Office? Office { get; set; }
         public virtual ICollection<PasswordResetRequest> PasswordResetRequests { get; set; } = new List<PasswordResetRequest>();
+        public virtual ICollection<Appointment> StudentAppointments { get; set; } = new List<Appointment>();
+        public virtual ICollection<Appointment> StaffAppointments { get; set; } = new List<Appointment>();
     }
 }
