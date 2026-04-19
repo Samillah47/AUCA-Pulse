@@ -35,6 +35,25 @@ namespace AUCAPulse.Services
                 var senderPassword = emailSettings["SenderPassword"];
                 var senderName = emailSettings["SenderName"];
 
+                var allowFallback = bool.TryParse(emailSettings["AllowDevConsoleOtpFallback"], out var parsed)
+                    ? parsed
+                    : true;
+
+                var hasPlaceholderValues =
+                    string.IsNullOrWhiteSpace(smtpServer) ||
+                    string.IsNullOrWhiteSpace(senderEmail) ||
+                    string.IsNullOrWhiteSpace(senderPassword) ||
+                    smtpServer.Contains("your-", StringComparison.OrdinalIgnoreCase) ||
+                    senderEmail.Contains("your-", StringComparison.OrdinalIgnoreCase) ||
+                    senderPassword.Contains("your-", StringComparison.OrdinalIgnoreCase);
+
+                // In local/dev setups, allow login flow to continue and rely on console OTP output.
+                if (hasPlaceholderValues && allowFallback)
+                {
+                    _logger.LogWarning("EmailSettings are not fully configured. Skipping SMTP send and using console OTP fallback.");
+                    return;
+                }
+
                 var message = new MimeMessage();
                 message.From.Add(new MailboxAddress(senderName, senderEmail));
                 message.To.Add(new MailboxAddress("", toEmail));
