@@ -107,6 +107,60 @@ namespace AUCAPulse.Services
             user.Status = request.Status;
             user.UpdatedAt = DateTime.UtcNow;
 
+            // ========================================================================
+            // OFFICE ASSIGNMENT LOGIC FOR NEWLY APPROVED STAFF
+            // ========================================================================
+            // When a staff user is approved, they need immediate access to an office.
+            // This logic assigns real existing offices from the database, not synthetic ones.
+            // 
+            // Business Logic:
+            // 1. Only applies to STAFF role (not Lecturers or other roles)
+            // 2. Only triggered when status changes to APPROVED
+            // 3. Assigns the first available unassigned office from the database
+            // 4. If no real offices exist, logs a warning for admin to manually assign
+            // ========================================================================
+            if (request.Status == UserStatus.APPROVED &&
+                user.Role.RoleName.Equals("STAFF", StringComparison.OrdinalIgnoreCase))
+            {
+                // Check if this staff user already has an office assigned
+                var existingOffice = await _context.Offices
+                    .FirstOrDefaultAsync(o => o.StaffUserId == user.Id);
+
+                if (existingOffice == null)
+                {
+                    // No office assigned yet. Try to find an unassigned real office.
+                    // We query for offices where StaffUserId is NULL (not assigned to anyone)
+                    var availableOffice = await _context.Offices
+                        .FirstOrDefaultAsync(o => o.StaffUserId == null);
+                    
+                    if (availableOffice != null)
+                    {
+                        // SUCCESS: Found an unassigned real office in the database
+                        // Assign it to this staff member
+                        availableOffice.StaffUserId = user.Id;
+                        
+                        // Log this action with details for admin audit trail
+                        // Includes: office ID, office number, and staff user ID
+                        _logger.LogInformation(
+                            "✓ Successfully assigned real office {OfficeId} (Office #{OfficeNumber}) to approved staff user {UserId}", 
+                            availableOffice.Id, 
+                            availableOffice.OfficeNumber, 
+                            user.Id);
+                    }
+                    else
+                    {
+                        // WARNING: No unassigned offices available in database
+                        // This means all real offices are already assigned to staff
+                        // Admin must manually create new offices or unassign existing ones
+                        _logger.LogWarning(
+                            "⚠ No unassigned offices available for approved staff user {UserId}. " +
+                            "Admin must manually assign an office through the Office Management page.",
+                            user.Id);
+                    }
+                }
+                // If existingOffice != null, user already has an office assigned, so do nothing
+            }
+
             await _context.SaveChangesAsync();
 
             // Send notification email

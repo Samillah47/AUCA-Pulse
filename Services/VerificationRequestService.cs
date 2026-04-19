@@ -97,11 +97,37 @@ namespace AUCAPulse.Services
             // If approved, also update user status
             if (request.Status == VerificationStatus.APPROVED)
             {
-                var user = await _context.Users.FindAsync(verificationRequest.UserId);
+                var user = await _context.Users
+                    .Include(u => u.Role)
+                    .FirstOrDefaultAsync(u => u.Id == verificationRequest.UserId);
                 if (user != null)
                 {
                     user.Status = UserStatus.APPROVED;
                     user.UpdatedAt = DateTime.UtcNow;
+
+                    // Keep staff onboarding consistent: approved staff users should always have an office.
+                    if (user.Role.RoleName.Equals("STAFF", StringComparison.OrdinalIgnoreCase))
+                    {
+                        var existingOffice = await _context.Offices.FirstOrDefaultAsync(o => o.StaffUserId == user.Id);
+                        if (existingOffice == null)
+                        {
+                            var autoOffice = new Office
+                            {
+                                OfficeName = $"{user.Name} Office",
+                                OfficeNumber = $"AUTO-{user.Id}",
+                                Department = user.Department,
+                                Building = "Main Building",
+                                Floor = "1",
+                                AvailabilityStatus = AvailabilityStatus.CLOSED,
+                                StaffUserId = user.Id,
+                                StatusUpdatedAt = DateTime.UtcNow,
+                                CreatedAt = DateTime.UtcNow
+                            };
+
+                            _context.Offices.Add(autoOffice);
+                            _logger.LogInformation("Auto office created after verification approval for staff user {UserId}", user.Id);
+                        }
+                    }
                 }
             }
             else if (request.Status == VerificationStatus.REJECTED)
