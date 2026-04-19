@@ -82,6 +82,36 @@ namespace AUCAPulse.Controllers
             }
         }
 
+        [HttpPost("password-reset-otp")]
+        public async Task<IActionResult> RequestPasswordResetOtp([FromBody] ForgotPasswordRequest request)
+        {
+            try
+            {
+                await _authService.RequestPasswordResetOtpAsync(request.Email);
+                return Ok(new { message = "OTP sent to your email." });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Password reset OTP error: {ex.Message}");
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        [HttpPost("verify-reset-otp")]
+        public async Task<IActionResult> VerifyResetOtp([FromBody] VerifyOtpRequest request)
+        {
+            try
+            {
+                var token = await _authService.VerifyPasswordResetOtpAsync(request.Email, request.Otp);
+                return Ok(new { message = "OTP verified successfully.", token = token });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Verify reset OTP error: {ex.Message}");
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
         [HttpPost("reset-password")]
         public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest request)
         {

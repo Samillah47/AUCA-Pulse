@@ -81,6 +81,14 @@
                     </div>
                 }
 
+                @if (Request.Query.ContainsKey("resetSuccess"))
+                {
+                    <div class="alert alert-success alert-dismissible fade show" role="alert">
+                        Password reset successfully! Please log in with your new password.
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                }
+
                 <form method="post">
                     <div class="mb-3">
                         <label asp-for="Email" class="form-label">Email Address</label>
