@@ -141,7 +141,7 @@
     else if (Model.UserRole == "STUDENT")
     {
         <!-- Student Dashboard -->
-        <div class="row g-4">
+        <div class="row g-4 mb-4">
             <div class="col-md-6">
                 <div class="card border-0 shadow-sm">
                     <div class="card-header bg-white">
@@ -168,6 +168,72 @@
                         </a>
                     </div>
                 </div>
+            </div>
+        </div>
+
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="bi bi-broadcast me-2"></i>Lecturer Locations — Right Now</h5>
+                <small class="text-muted">Auto-computed from schedule, status, and office</small>
+            </div>
+            <div class="card-body">
+                @if (!Model.LecturerLocations.Any())
+                {
+                    <p class="text-muted mb-0">No lecturers to show yet.</p>
+                }
+                else
+                {
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle">
+                            <thead>
+                                <tr>
+                                    <th>Lecturer</th>
+                                    <th>Status</th>
+                                    <th>Location</th>
+                                    <th>Course</th>
+                                    <th>Until</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                            @foreach (var loc in Model.LecturerLocations)
+                            {
+                                string badge = loc.Status switch
+                                {
+                                    "IN_CLASS" => "bg-danger",
+                                    "IN_OFFICE" => "bg-success",
+                                    "AVAILABLE" => "bg-success",
+                                    "IN_MEETING" => "bg-warning text-dark",
+                                    "AWAY" => "bg-secondary",
+                                    "UNAVAILABLE" => "bg-dark",
+                                    _ => "bg-light text-dark"
+                                };
+                                string icon = loc.Status switch
+                                {
+                                    "IN_CLASS" => "bi-easel",
+                                    "IN_OFFICE" => "bi-building-check",
+                                    "AVAILABLE" => "bi-check-circle",
+                                    "IN_MEETING" => "bi-people",
+                                    "AWAY" => "bi-box-arrow-right",
+                                    _ => "bi-question-circle"
+                                };
+                                <tr>
+                                    <td>
+                                        <strong>@loc.LecturerName</strong>
+                                        @if (!string.IsNullOrWhiteSpace(loc.Department))
+                                        {
+                                            <br /><small class="text-muted">@loc.Department</small>
+                                        }
+                                    </td>
+                                    <td><span class="badge @badge"><i class="bi @icon me-1"></i>@loc.Status.Replace('_', ' ')</span></td>
+                                    <td>@loc.LocationLabel</td>
+                                    <td>@(string.IsNullOrWhiteSpace(loc.CourseInfo) ? "-" : loc.CourseInfo)</td>
+                                    <td>@(string.IsNullOrWhiteSpace(loc.UntilTime) ? "-" : loc.UntilTime)</td>
+                                </tr>
+                            }
+                            </tbody>
+                        </table>
+                    </div>
+                }
             </div>
         </div>
     }

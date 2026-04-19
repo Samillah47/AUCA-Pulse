@@ -1,0 +1,128 @@
+@page
+@model AUCAPulse.Pages.HomeModel
+@{
+    ViewData["Title"] = "Home";
+    Layout = "_StudentLayout";
+    var today = DateTime.Now.ToString("dddd, d MMMM yyyy");
+}
+
+<section class="hero-greeting">
+    <h1 class="mb-1">Welcome back, @Model.FirstName</h1>
+    <div class="text-muted">
+        @today ·
+        @if (Model.TodayClasses.Count == 0)
+        {
+            <span>You have no classes scheduled today.</span>
+        }
+        else
+        {
+            <span>You have <strong>@Model.TodayClasses.Count</strong> class@(Model.TodayClasses.Count == 1 ? "" : "es") today.</span>
+        }
+    </div>
+</section>
+
+<!-- Quick tiles -->
+<div class="row g-3 mb-4">
+    <div class="col-sm-6 col-lg-3">
+        <a href="/Lecturers" class="quick-tile">
+            <div class="tile-icon"><i class="bi bi-search"></i></div>
+            <div class="tile-title">Find a lecturer</div>
+            <div class="tile-sub">@Model.LecturerCount available</div>
+        </a>
+    </div>
+    <div class="col-sm-6 col-lg-3">
+        <a href="/Student/Timetable" class="quick-tile">
+            <div class="tile-icon"><i class="bi bi-calendar-week"></i></div>
+            <div class="tile-title">My timetable</div>
+            <div class="tile-sub">Your classes this week</div>
+        </a>
+    </div>
+    <div class="col-sm-6 col-lg-3">
+        <a href="/Rooms?status=AVAILABLE" class="quick-tile">
+            <div class="tile-icon"><i class="bi bi-door-open"></i></div>
+            <div class="tile-title">Free rooms now</div>
+            <div class="tile-sub">@Model.AvailableRoomCount available</div>
+        </a>
+    </div>
+    <div class="col-sm-6 col-lg-3">
+        <a href="/Notifications" class="quick-tile">
+            <div class="tile-icon"><i class="bi bi-bell"></i></div>
+            <div class="tile-title">Notifications</div>
+            <div class="tile-sub">@Model.UnreadNotifications unread</div>
+        </a>
+    </div>
+</div>
+
+<!-- Today's classes -->
+<div class="mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-2">
+        <h5 class="mb-0">Today's classes</h5>
+        <a href="/Student/Timetable" class="btn btn-link btn-sm">See full week →</a>
+    </div>
+    @if (Model.TodayClasses.Count == 0)
+    {
+        <div class="card">
+            <div class="empty-state">
+                <i class="bi bi-calendar-check"></i>
+                <h5>Nothing on your schedule today</h5>
+                <div>Enjoy your day off. Your next class is just around the corner.</div>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="d-flex gap-2 overflow-auto pb-1">
+            @foreach (var c in Model.TodayClasses)
+            {
+                <div class="class-card">
+                    <div class="small text-muted mb-1">
+                        @c.StartTime.Substring(0, Math.Min(5, c.StartTime.Length)) - @c.EndTime.Substring(0, Math.Min(5, c.EndTime.Length))
+                    </div>
+                    <div style="font-weight:600;">@c.CourseCode @c.CourseName</div>
+                    <div class="small text-muted">@c.LecturerName</div>
+                    @if (!string.IsNullOrEmpty(c.RoomNumber))
+                    {
+                        <div class="small mt-1"><span class="badge bg-secondary">Room @c.RoomNumber</span></div>
+                    }
+                </div>
+            }
+        </div>
+    }
+</div>
+
+<!-- Announcements -->
+<div>
+    <div class="d-flex justify-content-between align-items-center mb-2">
+        <h5 class="mb-0">Campus announcements</h5>
+        <a href="/Notifications" class="btn btn-link btn-sm">See all →</a>
+    </div>
+    @if (Model.Announcements.Count == 0)
+    {
+        <div class="card">
+            <div class="empty-state">
+                <i class="bi bi-megaphone"></i>
+                <h5>No announcements yet</h5>
+                <div>New campus announcements will appear here.</div>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="card">
+            <div class="card-body p-0">
+                @foreach (var a in Model.Announcements)
+                {
+                    <div class="px-3 py-3" style="border-bottom:1px solid var(--border);">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <div style="font-weight:600;">@a.Title</div>
+                                <div class="small text-muted">@a.Message</div>
+                            </div>
+                            <div class="small text-muted">@a.CreatedAt.ToLocalTime().ToString("MMM d")</div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+</div>

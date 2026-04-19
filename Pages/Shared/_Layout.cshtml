@@ -1,154 +1,151 @@
-﻿<!DOCTYPE html>
+@{
+    var token = Context.Session.GetString("Token");
+    var userName = Context.Session.GetString("UserName") ?? "User";
+    var userRole = Context.Session.GetString("UserRole") ?? "STUDENT";
+    var isAuthenticated = !string.IsNullOrEmpty(token);
+    var currentPath = Context.Request.Path.Value?.ToLower() ?? "";
+}
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@ViewData["Title"] - ACPulse</title>
+    <title>@ViewData["Title"] · AUCA Pulse</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@@400;500;600;700&display=swap">
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
-    <link rel="stylesheet" href="~/AUCAPulse.styles.css" asp-append-version="true" />
-    <style>
-        .sidebar {
-            min-height: 100vh;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-        }
-        .sidebar .nav-link {
-            color: rgba(255,255,255,0.8);
-            padding: 12px 20px;
-            margin: 5px 0;
-            border-radius: 8px;
-            transition: all 0.3s;
-        }
-        .sidebar .nav-link:hover, .sidebar .nav-link.active {
-            background: rgba(255,255,255,0.2);
-            color: white;
-        }
-        .main-content {
-            background: #f8f9fa;
-            min-height: 100vh;
-        }
-        .topbar {
-            background: white;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-    </style>
 </head>
 <body>
-    @{
-        var token = Context.Session.GetString("Token");
-        var userName = Context.Session.GetString("UserName") ?? "User";
-        var userRole = Context.Session.GetString("UserRole") ?? "STUDENT";
-        var isAuthenticated = !string.IsNullOrEmpty(token);
-    }
 
-    @if (isAuthenticated)
-    {
-        <div class="d-flex">
-            <!-- Sidebar -->
-            <div class="sidebar p-3" style="width: 250px;">
-                <div class="mb-4">
-                    <h3 class="mb-0">⚡ ACPulse</h3>
-                    <small class="text-white-50">AUCA Smart Campus</small>
+@functions {
+    bool IsActive(string prefix) =>
+        !string.IsNullOrEmpty(prefix) && (Context.Request.Path.Value ?? string.Empty)
+            .StartsWith(prefix, StringComparison.OrdinalIgnoreCase);
+}
+
+@if (isAuthenticated)
+{
+    <div class="app-shell">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="brand">
+                <div class="brand-mark" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 2v8" />
+                        <path d="M4.9 9.1l5.7 5.7" />
+                        <path d="M19.1 9.1l-5.7 5.7" />
+                        <circle cx="12" cy="17" r="4" />
+                    </svg>
                 </div>
-
-                <nav class="nav flex-column">
-                    <a class="nav-link" href="/Dashboard">
-                        <i class="bi bi-speedometer2 me-2"></i> Dashboard
-                    </a>
-                    <a class="nav-link" href="/Rooms">
-                        <i class="bi bi-door-open me-2"></i> Rooms
-                    </a>
-                    <a class="nav-link" href="/Lecturers">
-                        <i class="bi bi-people me-2"></i> Lecturers
-                    </a>
-                    @if (userRole == "LECTURER")
-                    {
-                        <a class="nav-link" href="/Schedule">
-                            <i class="bi bi-calendar me-2"></i> My Schedule
-                        </a>
-                    }
-                    <a class="nav-link" href="/Notifications">
-                        <i class="bi bi-bell me-2"></i> Notifications
-                    </a>
-                    <a class="nav-link" href="/Profile">
-                        <i class="bi bi-person me-2"></i> Profile
-                    </a>
-
-                    @if (userRole == "STAFF")
-                    {
-                        <a class="nav-link" href="/MyOffice">
-                            <i class="bi bi-building me-2"></i> My Office
-                        </a>
-                    }
-
-                    @if (userRole == "ADMIN")
-                    {
-                        <hr class="my-3 border-white-50" />
-                        <div class="text-white-50 small mb-2 px-3">ADMIN</div>
-                        <a class="nav-link" href="/VerificationRequests">
-                            <i class="bi bi-check-circle me-2"></i> Verifications
-                        </a>
-                        <a class="nav-link" href="/UserManagement">
-                            <i class="bi bi-people me-2"></i> Users
-                        </a>
-                        <a class="nav-link" href="/Reports">
-                            <i class="bi bi-bar-chart me-2"></i> Reports
-                        </a>
-                        <a class="nav-link" href="/PasswordResets">
-                            <i class="bi bi-key me-2"></i> Password Resets
-                        </a>
-                    }
-
-                    <hr class="my-3 border-white-50" />
-                    <a class="nav-link" href="/Logout">
-                        <i class="bi bi-box-arrow-right me-2"></i> Logout
-                    </a>
-                </nav>
+                <div>
+                    <div class="brand-text">AUCA Pulse</div>
+                    <div class="brand-sub">Smart Campus</div>
+                </div>
             </div>
 
-            <!-- Main Content -->
-            <div class="flex-grow-1 main-content">
-                <!-- Top Bar -->
-                <div class="topbar p-3 mb-4">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <h5 class="mb-0">@ViewData["Title"]</h5>
-                        <div class="d-flex align-items-center gap-3">
-                            <span class="badge bg-primary">@userRole</span>
-                            <div class="dropdown">
-                                <button class="btn btn-light dropdown-toggle" type="button" data-bs-toggle="dropdown">
-                                    <i class="bi bi-person-circle me-2"></i>@userName
-                                </button>
-                                <ul class="dropdown-menu dropdown-menu-end">
-                                    <li><a class="dropdown-item" href="/Profile">Profile</a></li>
-                                    <li><hr class="dropdown-divider"></li>
-                                    <li><a class="dropdown-item" href="/Logout">Logout</a></li>
-                                </ul>
-                            </div>
-                        </div>
+            <nav aria-label="Primary">
+                <a class="nav-link @(IsActive("/Dashboard") ? "active" : "")" href="/Dashboard">
+                    <i class="bi bi-speedometer2"></i> Dashboard
+                </a>
+                <a class="nav-link @(IsActive("/Rooms") || IsActive("/RoomDetails") ? "active" : "")" href="/Rooms">
+                    <i class="bi bi-door-open"></i> Rooms
+                </a>
+                <a class="nav-link @(IsActive("/Lecturers") ? "active" : "")" href="/Lecturers">
+                    <i class="bi bi-people"></i> Lecturers
+                </a>
+                @if (userRole == "LECTURER")
+                {
+                    <a class="nav-link @(IsActive("/Schedule") ? "active" : "")" href="/Schedule">
+                        <i class="bi bi-calendar"></i> My Schedule
+                    </a>
+                }
+                <a class="nav-link @(IsActive("/Notifications") ? "active" : "")" href="/Notifications">
+                    <i class="bi bi-bell"></i> Notifications
+                </a>
+                <a class="nav-link @(IsActive("/Profile") ? "active" : "")" href="/Profile">
+                    <i class="bi bi-person"></i> Profile
+                </a>
+                @if (userRole == "STAFF")
+                {
+                    <a class="nav-link @(IsActive("/MyOffice") ? "active" : "")" href="/MyOffice">
+                        <i class="bi bi-building"></i> My Office
+                    </a>
+                }
+
+                @if (userRole == "ADMIN")
+                {
+                    <div class="nav-group-label">Admin</div>
+                    <a class="nav-link @(IsActive("/VerificationRequests") ? "active" : "")" href="/VerificationRequests">
+                        <i class="bi bi-check-circle"></i> Verifications
+                    </a>
+                    <a class="nav-link @(IsActive("/UserManagement") ? "active" : "")" href="/UserManagement">
+                        <i class="bi bi-people"></i> Users
+                    </a>
+                    <a class="nav-link @(IsActive("/Courses") ? "active" : "")" href="/Courses">
+                        <i class="bi bi-book"></i> Courses
+                    </a>
+                    <a class="nav-link @(IsActive("/CourseAssignment") ? "active" : "")" href="/CourseAssignment">
+                        <i class="bi bi-journal-check"></i> Assign Courses
+                    </a>
+                    <a class="nav-link @(IsActive("/TimetableGenerator") ? "active" : "")" href="/TimetableGenerator">
+                        <i class="bi bi-calendar-week"></i> Timetable
+                    </a>
+                    <a class="nav-link @(IsActive("/Reports") ? "active" : "")" href="/Reports">
+                        <i class="bi bi-bar-chart"></i> Reports
+                    </a>
+                    <a class="nav-link @(IsActive("/PasswordResets") ? "active" : "")" href="/PasswordResets">
+                        <i class="bi bi-key"></i> Password Resets
+                    </a>
+                }
+
+                <hr />
+                <a class="nav-link" href="/Logout">
+                    <i class="bi bi-box-arrow-right"></i> Logout
+                </a>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <header class="topbar">
+                <h5 class="mb-0">@ViewData["Title"]</h5>
+                <div class="d-flex align-items-center gap-3">
+                    <span class="badge bg-primary">@userRole</span>
+                    <div class="dropdown">
+                        <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                            <i class="bi bi-person-circle me-1"></i>@userName
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><a class="dropdown-item" href="/Profile">Profile</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="/Logout">Logout</a></li>
+                        </ul>
                     </div>
                 </div>
-
-                <!-- Page Content -->
-                <div class="px-4 pb-4">
-                    @RenderBody()
-                </div>
-            </div>
+            </header>
+            <main class="page">
+                @RenderBody()
+            </main>
         </div>
-    }
-    else
-    {
-        <!-- Public Layout -->
-        <main role="main">
-            @RenderBody()
-        </main>
-    }
+    </div>
+}
+else
+{
+    <main role="main">
+        @RenderBody()
+    </main>
+}
 
-    <script src="~/lib/jquery/dist/jquery.min.js"></script>
-    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="~/js/site.js" asp-append-version="true"></script>
+<script src="~/lib/jquery/dist/jquery.min.js"></script>
+<script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+<script src="~/js/site.js" asp-append-version="true"></script>
+<script src="~/js/toast.js" asp-append-version="true"></script>
 
-    @await RenderSectionAsync("Scripts", required: false)
+<partial name="_Toasts" />
+
+@await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

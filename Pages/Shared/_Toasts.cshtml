@@ -1,0 +1,47 @@
+@{
+    string? success = TempData["SuccessMessage"] as string;
+    string? error = TempData["ErrorMessage"] as string;
+    string? info = TempData["InfoMessage"] as string;
+    string? warning = TempData["WarningMessage"] as string;
+
+    // Remove to prevent duplicate display on back/forward
+    TempData.Remove("SuccessMessage");
+    TempData.Remove("ErrorMessage");
+    TempData.Remove("InfoMessage");
+    TempData.Remove("WarningMessage");
+}
+
+@if (!string.IsNullOrWhiteSpace(success)
+     || !string.IsNullOrWhiteSpace(error)
+     || !string.IsNullOrWhiteSpace(info)
+     || !string.IsNullOrWhiteSpace(warning))
+{
+    <script>
+        (function () {
+            function fire() {
+                if (typeof Toast === 'undefined') { setTimeout(fire, 50); return; }
+                @if (!string.IsNullOrWhiteSpace(success))
+                {
+                    @:Toast.success(@Json.Serialize(success));
+                }
+                @if (!string.IsNullOrWhiteSpace(error))
+                {
+                    @:Toast.error(@Json.Serialize(error));
+                }
+                @if (!string.IsNullOrWhiteSpace(info))
+                {
+                    @:Toast.info(@Json.Serialize(info));
+                }
+                @if (!string.IsNullOrWhiteSpace(warning))
+                {
+                    @:Toast.warning(@Json.Serialize(warning));
+                }
+            }
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', fire);
+            } else {
+                fire();
+            }
+        })();
+    </script>
+}

@@ -62,7 +62,14 @@ namespace AUCAPulse.Pages
                     {
                         var statusContent = await statusResponse.Content.ReadAsStringAsync();
                         var statusData = JsonSerializer.Deserialize<JsonElement>(statusContent);
-                        CurrentStatus = statusData.GetProperty("status").GetString();
+                        if (statusData.TryGetProperty("status", out var statusProp))
+                        {
+                            CurrentStatus = statusProp.GetString();
+                        }
+                        else if (statusData.TryGetProperty("Status", out var statusPropCap))
+                        {
+                            CurrentStatus = statusPropCap.GetString();
+                        }
                     }
                 }
                 catch { }

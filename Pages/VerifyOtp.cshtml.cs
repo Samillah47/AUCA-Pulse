@@ -82,7 +82,13 @@ namespace AUCAPulse.Pages
                     HttpContext.Session.SetString("UserRole", result.GetProperty("role").GetString() ?? string.Empty);
                     HttpContext.Session.SetString("Email", Email);
 
-                    // Redirect to dashboard
+                    // Students land on the public portal at /Home;
+                    // everyone else goes to the admin-style dashboard.
+                    var role = result.GetProperty("role").GetString();
+                    if (string.Equals(role, "STUDENT", StringComparison.OrdinalIgnoreCase))
+                    {
+                        return RedirectToPage("/Home");
+                    }
                     return RedirectToPage("/Dashboard/Index");
                 }
                 else

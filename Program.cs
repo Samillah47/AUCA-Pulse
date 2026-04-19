@@ -5,6 +5,7 @@ using System.Text;
 using AUCAPulse.Data;
 using AUCAPulse.Services;
 using AUCAPulse.Helpers;
+using AUCAPulse.Middleware;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -74,6 +75,16 @@ builder.Services.AddScoped<ILectureScheduleService, LectureScheduleService>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddScoped<IPasswordResetRequestService, PasswordResetRequestService>();
 builder.Services.AddScoped<ISemesterService, SemesterService>();
+builder.Services.AddScoped<ICourseService, CourseService>();
+builder.Services.AddScoped<ICourseAssignmentService, CourseAssignmentService>();
+builder.Services.AddScoped<ITimetableGeneratorService, TimetableGeneratorService>();
+builder.Services.AddScoped<ILecturerLocationService, LecturerLocationService>();
+
+// Singleton: preserves the Round Robin pointer between requests across all users
+builder.Services.AddSingleton<IRoundRobinRoomService, RoundRobinRoomService>();
+
+// Background service: auto-releases rooms whose OccupiedUntil has passed
+builder.Services.AddHostedService<RoomAutoReleaseService>();
 builder.Services.AddScoped<JwtHelper>();
 
 // Add HttpClient for API calls
@@ -108,10 +119,13 @@ var app = builder.Build();
 // Initialize admin user
 await AdminUserInitializer.InitializeAsync(app.Services);
 
+// Global friendly exception handler (logs full error server-side, returns
+// plain-English message to the client). Must come before UseRouting.
+app.UseMiddleware<FriendlyExceptionMiddleware>();
+
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
 {
-    app.UseExceptionHandler("/Error");
     app.UseHsts();
 }
 

@@ -1,0 +1,186 @@
+@page
+@model AUCAPulse.Pages.CourseAssignmentModel
+@{
+    ViewData["Title"] = "Assign Courses to Lecturers";
+
+    var groupedByCourse = Model.Assignments
+        .GroupBy(a => new { a.CourseId, a.CourseCode, a.CourseName })
+        .OrderBy(g => g.Key.CourseCode);
+}
+
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-journal-check me-2"></i>Assign Courses to Lecturers</h2>
+        <span class="badge bg-primary fs-6">@Model.Assignments.Count Assignments</span>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show">
+            @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+    @if (TempData["WarningMessage"] != null)
+    {
+        <div class="alert alert-warning alert-dismissible fade show">
+            @TempData["WarningMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show">
+            @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+    @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+    {
+        <div class="alert alert-danger">@Model.ErrorMessage</div>
+    }
+
+    <div class="card mb-4">
+        <div class="card-header"><strong>New Assignment</strong> — assign a course to one or more lecturers</div>
+        <div class="card-body">
+            <form method="post" asp-page-handler="Assign" class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label">Course</label>
+                    <select asp-for="CourseId" class="form-select" required>
+                        <option value="">-- Select Course --</option>
+                        @foreach (var c in Model.Courses)
+                        {
+                            <option value="@c.Id">@c.CourseCode — @c.CourseName</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Semester</label>
+                    <select asp-for="SemesterId" class="form-select" required>
+                        <option value="">-- Select Semester --</option>
+                        @foreach (var s in Model.Semesters)
+                        {
+                            <option value="@s.Id" selected="@(s.IsCurrent)">@s.Name @(s.IsCurrent ? "(Current)" : "")</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-12">
+                    <label class="form-label d-flex justify-content-between">
+                        <span>Lecturers <span class="text-muted fw-normal">(select one or more)</span></span>
+                        <span>
+                            <button type="button" class="btn btn-link btn-sm p-0 me-3" onclick="toggleLecturers(true)">Select all</button>
+                            <button type="button" class="btn btn-link btn-sm p-0" onclick="toggleLecturers(false)">Clear</button>
+                        </span>
+                    </label>
+                    <div class="border rounded p-3" style="max-height: 260px; overflow-y: auto;">
+                        <input type="text" id="lecturerSearch" class="form-control form-control-sm mb-2" placeholder="Filter lecturers..." onkeyup="filterLecturers(this.value)" />
+                        <div class="row g-2" id="lecturerList">
+                            @if (!Model.Lecturers.Any())
+                            {
+                                <div class="text-muted">No approved lecturers yet. Approve users with the LECTURER role first.</div>
+                            }
+                            @foreach (var l in Model.Lecturers)
+                            {
+                                <div class="col-md-6 col-lg-4 lecturer-item" data-name="@l.Name.ToLower() @l.Email.ToLower() @((l.Department ?? "").ToLower())">
+                                    <label class="form-check w-100 p-2 rounded" style="cursor: pointer; border: 1px solid #e5e7eb;">
+                                        <input type="checkbox" name="LecturerIds" value="@l.Id" class="form-check-input me-2 lecturer-checkbox" />
+                                        <strong>@l.Name</strong><br />
+                                        <small class="text-muted">@l.Email</small>
+                                        @if (!string.IsNullOrEmpty(l.Department))
+                                        {
+                                            <br /><small class="text-muted">@l.Department</small>
+                                        }
+                                    </label>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12 d-flex justify-content-end">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-plus-circle me-1"></i>Assign Selected Lecturers
+                    </button>
+                </div>
+            </form>
+            @if (!Model.Lecturers.Any() || !Model.Courses.Any() || !Model.Semesters.Any())
+            {
+                <div class="alert alert-warning mt-3 mb-0">
+                    <i class="bi bi-exclamation-triangle me-1"></i>
+                    You need at least one approved Lecturer, one Course, and one Semester before you can assign.
+                </div>
+            }
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header"><strong>Current Assignments — grouped by course</strong></div>
+        <div class="card-body">
+            @if (!Model.Assignments.Any())
+            {
+                <p class="text-muted mb-0">No assignments yet.</p>
+            }
+            else
+            {
+                @foreach (var group in groupedByCourse)
+                {
+                    <div class="mb-4">
+                        <h5 class="mb-1">
+                            <span class="badge bg-info text-dark me-2">@group.Key.CourseCode</span>
+                            @group.Key.CourseName
+                        </h5>
+                        <div class="text-muted small mb-2">
+                            Lecturers: @string.Join(", ", group.Select(a => a.LecturerName).Distinct())
+                        </div>
+                        <table class="table table-sm mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Lecturer</th>
+                                    <th>Semester</th>
+                                    <th>Assigned</th>
+                                    <th style="width: 100px;">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var a in group.OrderBy(x => x.SemesterName).ThenBy(x => x.LecturerName))
+                                {
+                                    <tr>
+                                        <td>@a.LecturerName<br /><small class="text-muted">@a.LecturerEmail</small></td>
+                                        <td>@a.SemesterName</td>
+                                        <td>@a.AssignedAt.ToString("yyyy-MM-dd")</td>
+                                        <td>
+                                            <form method="post" class="d-inline">
+                                                <input type="hidden" name="assignmentId" value="@a.Id" />
+                                                <button type="submit" asp-page-handler="Delete" class="btn btn-outline-danger btn-sm" onclick="return confirm('Remove this assignment?')">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            }
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function toggleLecturers(checked) {
+            document.querySelectorAll('.lecturer-checkbox').forEach(cb => {
+                const item = cb.closest('.lecturer-item');
+                if (!item || item.style.display === 'none') return;
+                cb.checked = checked;
+            });
+        }
+        function filterLecturers(q) {
+            const needle = q.trim().toLowerCase();
+            document.querySelectorAll('.lecturer-item').forEach(item => {
+                const hay = item.getAttribute('data-name') || '';
+                item.style.display = (!needle || hay.indexOf(needle) !== -1) ? '' : 'none';
+            });
+        }
+    </script>
+}
