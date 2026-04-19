@@ -44,10 +44,10 @@ namespace AUCAPulse.Pages
 
         /// <summary>
         /// DTO for editing existing offices
-        /// Used in OnPostEditAsync
+        /// Used in OnPostEditAsync (uses CreateOfficeDto for both create and update)
         /// </summary>
         [BindProperty]
-        public UpdateOfficeDto EditOfficeRequest { get; set; } = new();
+        public CreateOfficeDto EditOfficeRequest { get; set; } = new();
 
         /// <summary>
         /// Success message displayed to user
@@ -146,7 +146,6 @@ namespace AUCAPulse.Pages
         /// Update an existing office
         /// Called when admin submits the "Edit Office" form
         /// </summary>
-        [ValidateAntiForgeryToken]
         public async Task<IActionResult> OnPostEditAsync(int officeId)
         {
             try
@@ -195,7 +194,6 @@ namespace AUCAPulse.Pages
         /// Delete an office
         /// Called when admin clicks "Delete" button for an office
         /// </summary>
-        [ValidateAntiForgeryToken]
         public async Task<IActionResult> OnPostDeleteAsync(int officeId)
         {
             try
@@ -234,4 +232,7 @@ namespace AUCAPulse.Pages
         }
     }
 }
+
+
+
 
