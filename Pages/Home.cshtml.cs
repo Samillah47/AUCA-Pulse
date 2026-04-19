@@ -57,30 +57,39 @@ namespace AUCAPulse.Pages
                     LecturerCount = doc.RootElement.GetArrayLength();
                 }
 
-                // Today's timetable — current semester, filter by current day
+                // Today's timetable — only show classes when today falls inside
+                // the current semester's date window. A weekly schedule alone
+                // doesn't mean the lecturer is actually teaching today.
                 var semRes = await client.GetAsync($"{baseUrl}/semester/current");
                 int? semesterId = null;
+                DateTime? semStart = null, semEnd = null;
                 if (semRes.IsSuccessStatusCode)
                 {
                     var content = await semRes.Content.ReadAsStringAsync();
                     using var doc = JsonDocument.Parse(content);
-                    if (doc.RootElement.TryGetProperty("data", out var dataEl)
-                        && dataEl.TryGetProperty("id", out var idEl))
+                    if (doc.RootElement.TryGetProperty("data", out var dataEl))
                     {
-                        semesterId = idEl.GetInt32();
+                        if (dataEl.TryGetProperty("id", out var idEl)) semesterId = idEl.GetInt32();
+                        if (dataEl.TryGetProperty("startDate", out var sd) && sd.TryGetDateTime(out var s)) semStart = s;
+                        if (dataEl.TryGetProperty("endDate", out var ed) && ed.TryGetDateTime(out var e)) semEnd = e;
                     }
                 }
 
-                if (semesterId.HasValue)
+                var todayUtc = DateTime.UtcNow.Date;
+                var semesterActiveToday = semesterId.HasValue
+                    && (!semStart.HasValue || semStart.Value.Date <= todayUtc)
+                    && (!semEnd.HasValue || semEnd.Value.Date >= todayUtc);
+
+                if (semesterId.HasValue && semesterActiveToday)
                 {
                     var schedRes = await client.GetAsync($"{baseUrl}/LectureSchedule/semester/{semesterId.Value}");
                     if (schedRes.IsSuccessStatusCode)
                     {
                         var content = await schedRes.Content.ReadAsStringAsync();
                         var all = JsonSerializer.Deserialize<List<TodayClassDto>>(content, opts) ?? new();
-                        var today = DateTime.UtcNow.DayOfWeek.ToString().ToUpper();
+                        var todayName = DateTime.UtcNow.DayOfWeek.ToString().ToUpper();
                         TodayClasses = all
-                            .Where(s => string.Equals(s.DayOfWeek, today, StringComparison.OrdinalIgnoreCase))
+                            .Where(s => string.Equals(s.DayOfWeek, todayName, StringComparison.OrdinalIgnoreCase))
                             .OrderBy(s => s.StartTime)
                             .ToList();
                     }

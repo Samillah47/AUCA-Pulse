@@ -30,6 +30,9 @@ namespace AUCAPulse.Pages.Dashboard
         public int ClassesThisWeek { get; set; }
         public int ClassesToday { get; set; }
         public string CurrentSemesterName { get; set; } = "No active semester";
+        public DateTime? CurrentSemesterStart { get; set; }
+        public DateTime? CurrentSemesterEnd { get; set; }
+        public bool IsSemesterActiveToday { get; set; }
 
         // Chart data
         public Dictionary<string, int> UsersByRole { get; set; } = new();
@@ -134,7 +137,7 @@ namespace AUCAPulse.Pages.Dashboard
                     TotalAssignments = doc.RootElement.GetArrayLength();
                 }
 
-                // Current semester name
+                // Current semester name + date window
                 var semRes = await client.GetAsync($"{baseUrl}/semester/current");
                 int? currentSemesterId = null;
                 if (semRes.IsSuccessStatusCode)
@@ -145,8 +148,14 @@ namespace AUCAPulse.Pages.Dashboard
                     {
                         if (d.TryGetProperty("name", out var n)) CurrentSemesterName = n.GetString() ?? CurrentSemesterName;
                         if (d.TryGetProperty("id", out var i)) currentSemesterId = i.GetInt32();
+                        if (d.TryGetProperty("startDate", out var sd) && sd.TryGetDateTime(out var s)) CurrentSemesterStart = s;
+                        if (d.TryGetProperty("endDate", out var ed) && ed.TryGetDateTime(out var e)) CurrentSemesterEnd = e;
                     }
                 }
+                var todayDate = DateTime.UtcNow.Date;
+                IsSemesterActiveToday = currentSemesterId.HasValue
+                    && (!CurrentSemesterStart.HasValue || CurrentSemesterStart.Value.Date <= todayDate)
+                    && (!CurrentSemesterEnd.HasValue || CurrentSemesterEnd.Value.Date >= todayDate);
 
                 // Classes by day of week (from saved LectureSchedule of the current semester)
                 var weekDays = new[] { "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY", "SUNDAY" };
@@ -167,7 +176,7 @@ namespace AUCAPulse.Pages.Dashboard
                             var day = s.TryGetProperty("dayOfWeek", out var dw) ? dw.GetString() : null;
                             day = (day ?? string.Empty).ToUpperInvariant();
                             if (ClassesByDay.ContainsKey(day)) ClassesByDay[day]++;
-                            if (day == today) ClassesToday++;
+                            if (day == today && IsSemesterActiveToday) ClassesToday++;
                         }
                     }
                 }

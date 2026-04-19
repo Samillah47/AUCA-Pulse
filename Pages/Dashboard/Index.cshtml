@@ -14,6 +14,20 @@
         <h1 class="dash-hero-title">@greetWord, @Model.UserName</h1>
         <div class="dash-hero-sub">
             <i class="bi bi-calendar-heart me-1"></i>@Model.CurrentSemesterName
+            @if (Model.CurrentSemesterStart.HasValue && Model.CurrentSemesterEnd.HasValue)
+            {
+                <span class="text-muted small ms-1">
+                    (@Model.CurrentSemesterStart.Value.ToString("MMM d") - @Model.CurrentSemesterEnd.Value.ToString("MMM d, yyyy"))
+                </span>
+            }
+            @if (Model.IsSemesterActiveToday)
+            {
+                <span class="badge bg-success ms-2"><i class="bi bi-dot"></i>Active today</span>
+            }
+            else
+            {
+                <span class="badge bg-warning ms-2"><i class="bi bi-pause-circle me-1"></i>Not in session</span>
+            }
             <span class="mx-2">·</span>
             <span class="badge bg-primary">@Model.UserRole</span>
         </div>

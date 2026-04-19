@@ -256,9 +256,37 @@ namespace AUCAPulse.Data
                 new Office { Id = 4, OfficeNumber = "Admin-202", OfficeName = "Academic Affairs", Building = "Admin Building", Floor = "2nd Floor", AvailabilityStatus = AvailabilityStatus.CLOSED, RegularOpenTime = new TimeSpan(8, 0, 0), RegularCloseTime = new TimeSpan(17, 0, 0), CreatedAt = seedDate }
             );
 
-            // Seed Semester
+            // Seed three semesters for the 2025/2026 academic year. The middle
+            // trimester (Jan - Apr 2026) is flagged as the current one because
+            // its window contains today's date.
             modelBuilder.Entity<Semester>().HasData(
-                new Semester { Id = 1, Name = "Fall 2024/2025", StartDate = new DateTime(2024, 9, 1, 0, 0, 0, DateTimeKind.Utc), EndDate = new DateTime(2025, 1, 31, 0, 0, 0, DateTimeKind.Utc), IsCurrent = true, CreatedAt = seedDate }
+                new Semester
+                {
+                    Id = 1,
+                    Name = "Semester 1, 2025/2026",
+                    StartDate = new DateTime(2025, 9, 1, 0, 0, 0, DateTimeKind.Utc),
+                    EndDate = new DateTime(2025, 12, 20, 0, 0, 0, DateTimeKind.Utc),
+                    IsCurrent = false,
+                    CreatedAt = seedDate
+                },
+                new Semester
+                {
+                    Id = 2,
+                    Name = "Semester 2, 2025/2026",
+                    StartDate = new DateTime(2026, 1, 12, 0, 0, 0, DateTimeKind.Utc),
+                    EndDate = new DateTime(2026, 4, 30, 0, 0, 0, DateTimeKind.Utc),
+                    IsCurrent = true,
+                    CreatedAt = seedDate
+                },
+                new Semester
+                {
+                    Id = 3,
+                    Name = "Semester 3, 2025/2026",
+                    StartDate = new DateTime(2026, 5, 18, 0, 0, 0, DateTimeKind.Utc),
+                    EndDate = new DateTime(2026, 8, 21, 0, 0, 0, DateTimeKind.Utc),
+                    IsCurrent = false,
+                    CreatedAt = seedDate
+                }
             );
 
             // Seed default groups A-D (admin can add more)
