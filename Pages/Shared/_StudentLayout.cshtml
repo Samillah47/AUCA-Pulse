@@ -1,6 +1,7 @@
 @{
     var token = Context.Session.GetString("Token");
     var userName = Context.Session.GetString("UserName") ?? "Student";
+    var userId = Context.Session.GetString("UserId");
     var isAuthenticated = !string.IsNullOrEmpty(token);
 
     string NavClass(string prefix) =>
@@ -45,7 +46,10 @@
                 <a href="/Student/Timetable" class="@NavClass("/Student/Timetable")">Timetable</a>
                 <a href="/Lecturers" class="@NavClass("/Lecturers")">Lecturers</a>
                 <a href="/Rooms" class="@NavClass("/Rooms")">Rooms</a>
-                <a href="/Notifications" class="@NavClass("/Notifications")">Notifications</a>
+                <button type="button" id="notificationsBtn" class="notif-btn" data-bs-toggle="modal" data-bs-target="#notificationsModal" aria-label="Notifications">
+                    <i class="bi bi-bell"></i>
+                    <span id="notifBadge" class="notif-badge d-none">0</span>
+                </button>
                 <div class="dropdown">
                     <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">
                         <i class="bi bi-person-circle me-1"></i>@userName
@@ -69,10 +73,145 @@
     © @DateTime.Now.Year AUCA Pulse · Adventist University of Central Africa
 </footer>
 
+@if (isAuthenticated)
+{
+    <!-- Notifications Modal -->
+    <div class="modal fade" id="notificationsModal" tabindex="-1" aria-labelledby="notificationsModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-scrollable modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="notificationsModalLabel">
+                        <i class="bi bi-bell me-2"></i>Notifications
+                    </h5>
+                    <div class="ms-auto d-flex align-items-center gap-2">
+                        <button type="button" id="notifMarkAllRead" class="btn btn-link btn-sm p-0 d-none">Mark all as read</button>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                </div>
+                <div class="modal-body p-0" id="notifModalBody">
+                    <div class="text-center text-muted py-5">
+                        <div class="spinner-border spinner-border-sm me-2" role="status"></div>
+                        Loading notifications...
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
 <script src="~/lib/jquery/dist/jquery.min.js"></script>
 <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
 <script src="~/js/toast.js" asp-append-version="true"></script>
 <partial name="_Toasts" />
+@if (isAuthenticated && !string.IsNullOrEmpty(userId))
+{
+    <script>
+        (function () {
+            const USER_ID = @userId;
+            const BASE = '@(Url.Content("~/"))'.replace(/\/$/, '') + '';
+            // ApiSettings:BaseUrl isn't directly available client-side; derive from current origin
+            const API = window.location.protocol + '//' + window.location.host + '/api';
+            const TOKEN = @Html.Raw(Json.Serialize(token));
+
+            const authHeaders = { 'Authorization': 'Bearer ' + TOKEN };
+
+            const badge = document.getElementById('notifBadge');
+            const body = document.getElementById('notifModalBody');
+            const markAll = document.getElementById('notifMarkAllRead');
+
+            function esc(s) { return (s || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+            function timeAgo(iso) {
+                try {
+                    const d = new Date(iso);
+                    const diff = (Date.now() - d.getTime()) / 1000;
+                    if (diff < 60) return 'just now';
+                    if (diff < 3600) return Math.floor(diff / 60) + 'm ago';
+                    if (diff < 86400) return Math.floor(diff / 3600) + 'h ago';
+                    if (diff < 604800) return Math.floor(diff / 86400) + 'd ago';
+                    return d.toLocaleDateString();
+                } catch (e) { return ''; }
+            }
+
+            async function updateBadge() {
+                try {
+                    const res = await fetch(API + '/notification/user/' + USER_ID + '/unread-count', { headers: authHeaders });
+                    if (!res.ok) return;
+                    const json = await res.json();
+                    const count = json.count || 0;
+                    if (count > 0) {
+                        badge.textContent = count > 99 ? '99+' : count;
+                        badge.classList.remove('d-none');
+                    } else {
+                        badge.classList.add('d-none');
+                    }
+                } catch (e) {}
+            }
+
+            async function loadList() {
+                body.innerHTML = '<div class="text-center text-muted py-5"><div class="spinner-border spinner-border-sm me-2" role="status"></div>Loading notifications...</div>';
+                try {
+                    const res = await fetch(API + '/notification/user/' + USER_ID, { headers: authHeaders });
+                    if (!res.ok) {
+                        body.innerHTML = '<div class="text-center text-muted py-5"><i class="bi bi-exclamation-circle d-block mb-2" style="font-size:1.5rem;"></i>Could not load notifications.</div>';
+                        return;
+                    }
+                    const json = await res.json();
+                    const list = (json && json.data) || [];
+                    if (!list.length) {
+                        body.innerHTML = '<div class="text-center text-muted py-5"><i class="bi bi-inbox d-block mb-2" style="font-size:2rem;"></i><div>No notifications yet.</div><div class="small">You\'re all caught up.</div></div>';
+                        markAll.classList.add('d-none');
+                        return;
+                    }
+                    const hasUnread = list.some(n => !n.isRead);
+                    if (hasUnread) markAll.classList.remove('d-none'); else markAll.classList.add('d-none');
+
+                    body.innerHTML = list.map(n => `
+                        <div class="notif-row ${n.isRead ? '' : 'unread'}" data-id="${n.id}">
+                            <div class="notif-dot"></div>
+                            <div class="notif-content">
+                                <div class="notif-title">${esc(n.title)}</div>
+                                <div class="notif-message">${esc(n.message)}</div>
+                                <div class="notif-meta">${timeAgo(n.createdAt)}${n.type ? ' · ' + esc(n.type) : ''}</div>
+                            </div>
+                            ${n.isRead ? '' : '<button type="button" class="btn btn-link btn-sm notif-mark" title="Mark as read"><i class="bi bi-check2"></i></button>'}
+                        </div>
+                    `).join('');
+
+                    body.querySelectorAll('.notif-mark').forEach(btn => {
+                        btn.addEventListener('click', async (e) => {
+                            e.stopPropagation();
+                            const row = btn.closest('.notif-row');
+                            const id = row.getAttribute('data-id');
+                            try {
+                                await fetch(API + '/notification/' + id + '/mark-read', { method: 'PUT', headers: authHeaders });
+                                row.classList.remove('unread');
+                                btn.remove();
+                                await updateBadge();
+                                if (!body.querySelector('.notif-row.unread')) markAll.classList.add('d-none');
+                            } catch (e) {}
+                        });
+                    });
+                } catch (e) {
+                    body.innerHTML = '<div class="text-center text-muted py-5">Could not load notifications.</div>';
+                }
+            }
+
+            markAll.addEventListener('click', async () => {
+                try {
+                    await fetch(API + '/notification/user/' + USER_ID + '/mark-all-read', { method: 'PUT', headers: authHeaders });
+                    await loadList();
+                    await updateBadge();
+                } catch (e) {}
+            });
+
+            document.getElementById('notificationsModal').addEventListener('show.bs.modal', loadList);
+
+            // Initial badge load + every 60s
+            updateBadge();
+            setInterval(updateBadge, 60000);
+        })();
+    </script>
+}
 @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>
