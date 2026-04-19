@@ -1,140 +1,295 @@
 @page
 @model AUCAPulse.Pages.LoginModel
 @{
-    ViewData["Title"] = "Login - ACPulse";
+    ViewData["Title"] = "Sign in";
     Layout = null;
 }
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@ViewData["Title"]</title>
+    <title>Sign in · AUCA Pulse</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@@400;500;600;700&display=swap">
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <style>
+        /* Editorial, no-gradient login layout */
         body {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: 'Inter', system-ui, sans-serif;
+            background: #ffffff;
             min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            margin: 0;
+            color: #111827;
         }
-        .login-container {
-            background: white;
-            border-radius: 20px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-            overflow: hidden;
-            max-width: 900px;
-            width: 100%;
-        }
-        .login-left {
-            padding: 60px;
-        }
-        .login-right {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 60px;
+        .auth-shell { display: grid; grid-template-columns: 1fr 1fr; min-height: 100vh; }
+        @@media (max-width: 900px) { .auth-shell { grid-template-columns: 1fr; } .auth-showcase { display: none; } }
+
+        .auth-form-col {
             display: flex;
             flex-direction: column;
             justify-content: center;
+            padding: 3rem 2rem;
         }
-        .brand-logo {
-            font-size: 2.5rem;
-            font-weight: bold;
-            margin-bottom: 10px;
+        .auth-form-inner {
+            width: 100%;
+            max-width: 420px;
+            margin: 0 auto;
         }
-        .btn-primary-custom {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border: none;
-            padding: 12px;
+        .auth-brand {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.625rem;
+            color: #111827;
+            text-decoration: none;
+            margin-bottom: 2.25rem;
+        }
+        .auth-brand-mark {
+            width: 36px; height: 36px; border-radius: 10px;
+            background: #2563eb;
+            display: grid; place-items: center;
+            color: #fff;
+        }
+        .auth-brand-text { font-weight: 700; letter-spacing: -0.01em; font-size: 1.0625rem; }
+        .auth-brand-sub { color: #6b7280; font-size: 0.75rem; letter-spacing: 0.02em; }
+
+        .auth-eyebrow {
+            color: #6b7280;
+            font-size: 0.75rem;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
             font-weight: 600;
+            margin-bottom: 0.75rem;
         }
-        .btn-primary-custom:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        .auth-title { font-size: 2rem; font-weight: 700; letter-spacing: -0.02em; margin: 0 0 0.5rem 0; }
+        .auth-sub { color: #6b7280; margin-bottom: 2rem; font-size: 0.9375rem; }
+
+        .auth-field { margin-bottom: 1rem; }
+        .auth-field label { font-weight: 500; font-size: 0.875rem; margin-bottom: 0.375rem; display: block; color: #111827; }
+        .auth-field input {
+            width: 100%;
+            padding: 0.75rem 0.875rem;
+            border: 1px solid #d1d5db;
+            border-radius: 10px;
+            font-size: 0.9375rem;
+            background: #fff;
+            color: #111827;
+            transition: border-color .15s ease, box-shadow .15s ease;
+        }
+        .auth-field input::placeholder { color: #9ca3af; }
+        .auth-field input:focus {
+            outline: none;
+            border-color: #2563eb;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+        }
+        .auth-field .validation { color: #ef4444; font-size: 0.8125rem; margin-top: 0.25rem; display: block; }
+
+        .auth-submit {
+            width: 100%;
+            padding: 0.8125rem;
+            background: #111827;
+            color: #fff;
+            border: none;
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 0.9375rem;
+            letter-spacing: 0.01em;
+            cursor: pointer;
+            transition: background-color .15s ease, transform .05s ease;
+            margin-top: 0.5rem;
+        }
+        .auth-submit:hover { background: #2563eb; }
+        .auth-submit:active { transform: translateY(1px); }
+
+        .auth-alt {
+            margin-top: 1.75rem;
+            text-align: center;
+            color: #6b7280;
+            font-size: 0.875rem;
+        }
+        .auth-alt a { color: #2563eb; font-weight: 500; text-decoration: none; }
+        .auth-alt a:hover { text-decoration: underline; }
+        .auth-hr {
+            display: flex; align-items: center;
+            color: #9ca3af; font-size: 0.75rem;
+            text-transform: uppercase; letter-spacing: 0.08em;
+            margin: 1.25rem 0 1rem;
+        }
+        .auth-hr::before, .auth-hr::after {
+            content: ''; flex: 1; height: 1px; background: #e5e7eb; margin: 0 0.75rem;
+        }
+
+        .auth-alert {
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            color: #991b1b;
+            padding: 0.625rem 0.875rem;
+            border-radius: 10px;
+            margin-bottom: 1rem;
+            font-size: 0.875rem;
+            display: flex; gap: 0.5rem; align-items: flex-start;
+        }
+
+        /* Showcase (right column): deep slate, typography-driven — no gradient */
+        .auth-showcase {
+            background: #0f172a;
+            color: #e2e8f0;
+            padding: 3rem 3rem 3rem 3.5rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            position: relative;
+            overflow: hidden;
+        }
+        .auth-showcase::before {
+            content: '';
+            position: absolute;
+            top: -120px; right: -120px;
+            width: 340px; height: 340px;
+            border-radius: 50%;
+            background: rgba(37, 99, 235, 0.10);
+            filter: blur(4px);
+        }
+        .auth-showcase::after {
+            content: '';
+            position: absolute;
+            bottom: -80px; left: -40px;
+            width: 220px; height: 220px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.03);
+        }
+        .auth-showcase .stamp {
+            position: relative;
+            display: inline-block;
+            padding: 0.375rem 0.75rem;
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 999px;
+            font-size: 0.75rem;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: #94a3b8;
+        }
+        .auth-showcase h1 {
+            position: relative;
+            font-size: 2.25rem;
+            line-height: 1.15;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            margin: 1.25rem 0 1rem 0;
+        }
+        .auth-showcase .lead {
+            position: relative;
+            color: #94a3b8;
+            font-size: 1rem;
+            line-height: 1.55;
+            max-width: 38ch;
+            margin-bottom: 2rem;
+        }
+        .auth-features {
+            position: relative;
+            list-style: none;
+            padding: 0; margin: 0;
+            display: flex; flex-direction: column; gap: 0.75rem;
+        }
+        .auth-features li {
+            display: flex; align-items: center; gap: 0.625rem;
+            color: #cbd5e1;
+            font-size: 0.9375rem;
+        }
+        .auth-features li .dot {
+            width: 6px; height: 6px; border-radius: 50%;
+            background: #60a5fa;
+            flex-shrink: 0;
+        }
+        .auth-showcase .footnote {
+            position: relative;
+            color: #64748b;
+            font-size: 0.75rem;
+            letter-spacing: 0.06em;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="login-container row g-0">
-            <!-- Left Side - Login Form -->
-            <div class="col-md-6 login-left">
-                <a href="/" class="text-decoration-none text-muted mb-4 d-inline-block">
-                    <i class="bi bi-arrow-left"></i> Back to Home
-                </a>
-                
-                <div class="mb-4">
-                    <div class="brand-logo">⚡ ACPulse</div>
-                    <p class="text-muted">AUCA Smart Campus</p>
+<div class="auth-shell">
+    <!-- Form column -->
+    <section class="auth-form-col">
+        <div class="auth-form-inner">
+            <a href="/" class="auth-brand">
+                <span class="auth-brand-mark" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 2v8" />
+                        <path d="M4.9 9.1l5.7 5.7" />
+                        <path d="M19.1 9.1l-5.7 5.7" />
+                        <circle cx="12" cy="17" r="4" />
+                    </svg>
+                </span>
+                <span>
+                    <span class="auth-brand-text d-block">AUCA Pulse</span>
+                    <span class="auth-brand-sub">Smart Campus</span>
+                </span>
+            </a>
+
+            <div class="auth-eyebrow">Sign in</div>
+            <h1 class="auth-title">Welcome back</h1>
+            <p class="auth-sub">Enter your credentials to continue to your campus dashboard.</p>
+
+            @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+            {
+                <div class="auth-alert">
+                    <i class="bi bi-exclamation-octagon-fill"></i>
+                    <span>@Model.ErrorMessage</span>
+                </div>
+            }
+
+            <form method="post" novalidate>
+                <div class="auth-field">
+                    <label asp-for="Email">Email address</label>
+                    <input asp-for="Email" type="email" placeholder="your.email@auca.ac.rw" autocomplete="email" autofocus />
+                    <span asp-validation-for="Email" class="validation"></span>
                 </div>
 
-                <h2 class="mb-2">Welcome back</h2>
-                <p class="text-muted mb-4">Sign in to access your campus dashboard</p>
-
-                @if (!string.IsNullOrEmpty(Model.ErrorMessage))
-                {
-                    <div class="alert alert-danger" role="alert">
-                        @Model.ErrorMessage
-                    </div>
-                }
-
-                <form method="post">
-                    <div class="mb-3">
-                        <label asp-for="Email" class="form-label">Email Address</label>
-                        <input asp-for="Email" class="form-control form-control-lg" placeholder="your.email@auca.ac.rw" />
-                        <span asp-validation-for="Email" class="text-danger"></span>
-                    </div>
-
-                    <div class="mb-3">
-                        <label asp-for="Password" class="form-label">Password</label>
-                        <input asp-for="Password" type="password" class="form-control form-control-lg" placeholder="Enter your password" />
-                        <span asp-validation-for="Password" class="text-danger"></span>
-                    </div>
-
-                    <button type="submit" class="btn btn-primary-custom btn-lg w-100 mb-3">
-                        Sign In
-                    </button>
-                </form>
-
-                <div class="text-center mt-4">
-                    <p class="text-muted">
-                        Don't have an account? 
-                        <a href="/Signup" class="text-primary fw-bold">Request Access</a>
-                    </p>
-                    <a href="/ForgotPassword" class="text-muted">Forgot your password?</a>
+                <div class="auth-field">
+                    <label asp-for="Password">Password</label>
+                    <input asp-for="Password" type="password" placeholder="••••••••" autocomplete="current-password" />
+                    <span asp-validation-for="Password" class="validation"></span>
                 </div>
+
+                <button type="submit" class="auth-submit">Sign in</button>
+            </form>
+
+            <div class="auth-alt">
+                <a href="/ForgotPassword">Forgot your password?</a>
             </div>
-
-            <!-- Right Side - Branding -->
-            <div class="col-md-6 login-right d-none d-md-flex">
-                <div>
-                    <h2 class="display-5 mb-4">Feel the Pulse of AUCA</h2>
-                    <p class="lead mb-5">Your gateway to smart campus connectivity. Track lecturers, find rooms, and stay connected with the AUCA community.</p>
-                    
-                    <div class="mb-3">
-                        <i class="bi bi-lightning-charge-fill"></i> Real-time campus visibility
-                    </div>
-                    <div class="mb-3">
-                        <i class="bi bi-shield-check"></i> Secure authentication
-                    </div>
-                    <div class="mb-3">
-                        <i class="bi bi-bell-fill"></i> Smart notifications
-                    </div>
-
-                    <div class="mt-5 pt-4 border-top border-light">
-                        <p class="small">Trusted by the Adventist University of Central Africa community</p>
-                    </div>
-                </div>
+            <div class="auth-hr">or</div>
+            <div class="auth-alt">
+                New to AUCA Pulse? <a href="/Signup">Create an account</a>
             </div>
         </div>
-    </div>
+    </section>
 
-    <script src="~/lib/jquery/dist/jquery.min.js"></script>
-    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="~/lib/jquery-validation/dist/jquery.validate.min.js"></script>
-    <script src="~/lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.min.js"></script>
+    <!-- Showcase column -->
+    <aside class="auth-showcase">
+        <div>
+            <span class="stamp">Adventist University of Central Africa</span>
+            <h1>One place for your classes, rooms, and teachers.</h1>
+            <p class="lead">Find where your lecturer is. See which rooms are free. Plan your week without the guessing.</p>
+
+            <ul class="auth-features">
+                <li><span class="dot"></span>Live lecturer locations</li>
+                <li><span class="dot"></span>Weekly timetable at a glance</li>
+                <li><span class="dot"></span>Free-room finder on campus</li>
+                <li><span class="dot"></span>Notifications you actually read</li>
+            </ul>
+        </div>
+        <div class="footnote">© @DateTime.Now.Year AUCA Pulse</div>
+    </aside>
+</div>
+<script src="~/lib/jquery/dist/jquery.min.js"></script>
+<script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+<script src="~/lib/jquery-validation/dist/jquery.validate.min.js"></script>
+<script src="~/lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.min.js"></script>
 </body>
 </html>
