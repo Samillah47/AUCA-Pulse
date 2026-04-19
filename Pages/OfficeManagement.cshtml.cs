@@ -1,7 +1,6 @@
 ﻿using AUCAPulse.DTOs.Request;
 using AUCAPulse.DTOs.Response;
 using AUCAPulse.Services;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
@@ -12,8 +11,8 @@ namespace AUCAPulse.Pages
     /// Purpose: Allow ADMIN users to manage offices in the system
     /// Features: View, Create, Edit, Delete offices
     /// Date: April 19, 2026
+    /// NOTE: Authorization is checked manually via session in OnGetAsync (not via [Authorize] attribute)
     /// </summary>
-    [Authorize(Roles = "ADMIN")]
     public class OfficeManagementModel : PageModel
     {
         private readonly IOfficeService _officeService;
@@ -76,6 +75,15 @@ namespace AUCAPulse.Pages
         {
             try
             {
+                // Manual authorization check
+                var userRole = HttpContext.Session.GetString("UserRole");
+                if (userRole != "ADMIN")
+                {
+                    _logger.LogWarning("Unauthorized access attempt to Office Management");
+                    Response.Redirect("/AccessDenied");
+                    return;
+                }
+
                 _logger.LogInformation("Loading all offices for admin");
                 Offices = await _officeService.GetAllOfficesAsync();
                 _logger.LogInformation($"Successfully loaded {Offices.Count} offices");
@@ -232,7 +240,4 @@ namespace AUCAPulse.Pages
         }
     }
 }
-
-
-
 
