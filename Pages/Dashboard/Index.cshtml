@@ -465,8 +465,9 @@ else
                     options: { plugins: { legend: { position: 'bottom' } }, cutout: '60%' }
                 });
 
-                const daysOrder = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY'];
-                const daysLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+                // Saturday is excluded from the teaching week (see TimetableGeneratorService)
+                const daysOrder = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SUNDAY'];
+                const daysLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sun'];
                 const classesData = @Html.Raw(Json.Serialize(Model.ClassesByDay));
                 new Chart(document.getElementById('classesChart'), {
                     type: 'bar',

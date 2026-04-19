@@ -2,7 +2,7 @@
 @model AUCAPulse.Pages.TimetableGeneratorModel
 @{
     ViewData["Title"] = "Timetable";
-    var dayOrder = new[] { "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY" };
+    var dayOrder = new[] { "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SUNDAY" };
 
     // Apply lecturer filter to the saved schedules
     var visible = Model.SelectedLecturerId.HasValue

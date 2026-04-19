@@ -3,7 +3,7 @@
 @{
     ViewData["Title"] = "My Timetable";
     Layout = "_StudentLayout";
-    var dayOrder = new[] { "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY" };
+    var dayOrder = new[] { "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SUNDAY" };
 
     var timeSlots = Model.Schedules
         .Select(s => new { s.StartTime, s.EndTime })

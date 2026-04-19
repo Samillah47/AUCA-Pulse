@@ -13,15 +13,21 @@ namespace AUCAPulse.Services
     ///   - Rooms rotate through a separate circular pointer
     /// A slot is accepted only if it causes no lecturer conflict and no
     /// room conflict among already-scheduled assignments for the same week.
+    ///
+    /// Saturday is excluded (AUCA is Adventist, Sabbath is a rest day).
+    /// Time slots are ordered by time-of-day FIRST, then day-of-week, so a
+    /// small number of assignments spreads across all six teaching days
+    /// before piling up on one day.
     /// </summary>
     public class TimetableGeneratorService : ITimetableGeneratorService
     {
         private readonly ApplicationDbContext _context;
         private readonly ILogger<TimetableGeneratorService> _logger;
 
+        // Teaching week: Mon-Fri + Sun. Saturday is intentionally excluded.
         private static readonly string[] WeekDays =
         {
-            "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY"
+            "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SUNDAY"
         };
 
         public TimetableGeneratorService(
@@ -207,15 +213,26 @@ namespace AUCAPulse.Services
             return result;
         }
 
+        /// <summary>
+        /// Build the ordered list of (day, startTime) slots the Round Robin
+        /// pointer will cycle through.
+        ///
+        /// Crucial detail: the OUTER loop is time-of-day and the INNER loop is
+        /// day-of-week. That makes the first few slots [(Mon 08:00), (Tue 08:00),
+        /// (Wed 08:00), ..., (Sun 08:00), (Mon 08:50), (Tue 08:50), ...] so a
+        /// handful of assignments spread out across all teaching days before
+        /// piling onto one day. If we looped day-first we would fill all of
+        /// Monday before even trying Tuesday.
+        /// </summary>
         private static List<(string Day, TimeSpan Start)> BuildTimeSlots(
             int startHour, int endHour, int slotMinutes)
         {
             var slots = new List<(string, TimeSpan)>();
-            foreach (var day in WeekDays)
+            for (var t = TimeSpan.FromHours(startHour);
+                 t + TimeSpan.FromMinutes(slotMinutes) <= TimeSpan.FromHours(endHour);
+                 t = t.Add(TimeSpan.FromMinutes(slotMinutes)))
             {
-                for (var t = TimeSpan.FromHours(startHour);
-                     t + TimeSpan.FromMinutes(slotMinutes) <= TimeSpan.FromHours(endHour);
-                     t = t.Add(TimeSpan.FromMinutes(slotMinutes)))
+                foreach (var day in WeekDays)
                 {
                     slots.Add((day, t));
                 }
