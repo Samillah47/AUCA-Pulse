@@ -71,14 +71,15 @@
                             </div>
                         }
 
-                        @if (Model.Room.OccupiedBy.HasValue)
+                        @if (Model.Room.CurrentLecturerId.HasValue)
                         {
                             <div class="alert alert-info">
                                 <i class="bi bi-info-circle me-2"></i>
-                                Currently occupied by user ID: @Model.Room.OccupiedBy
+                                Currently occupied by
+                                <strong>@(Model.Room.CurrentLecturerName ?? $"user #{Model.Room.CurrentLecturerId}")</strong>
                                 @if (Model.Room.OccupiedUntil.HasValue)
                                 {
-                                    <span>until @Model.Room.OccupiedUntil.Value.ToString("MMM dd, yyyy HH:mm")</span>
+                                    <span>until @Model.Room.OccupiedUntil.Value.ToLocalTime().ToString("MMM dd, yyyy HH:mm")</span>
                                 }
                             </div>
                         }
@@ -172,10 +173,10 @@
                                 </button>
                             </form>
                         }
-                        else if (Model.Room.Status == "OCCUPIED")
+                        else if (Model.Room.Status == "OCCUPIED" || Model.Room.Status == "RESERVED")
                         {
-                            <button class="btn btn-secondary w-100" disabled>
-                                <i class="bi bi-lock me-2"></i>Currently Occupied
+                            <button class="btn btn-outline-secondary w-100" disabled>
+                                <i class="bi bi-lock me-2"></i>@(Model.Room.Status == "OCCUPIED" ? "Currently Occupied" : "Reserved")
                             </button>
                             @if (Model.CanRelease)
                             {
