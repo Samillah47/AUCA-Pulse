@@ -23,12 +23,9 @@ namespace AUCAPulse.Pages
         public List<SemesterDto> Semesters { get; set; } = new();
         public string? ErrorMessage { get; set; }
 
-        [BindProperty]
-        public int LecturerId { get; set; }
-        [BindProperty]
-        public int CourseId { get; set; }
-        [BindProperty]
-        public int SemesterId { get; set; }
+        [BindProperty] public int CourseId { get; set; }
+        [BindProperty] public int SemesterId { get; set; }
+        [BindProperty] public List<int> LecturerIds { get; set; } = new();
 
         public async Task<IActionResult> OnGetAsync()
         {
@@ -50,23 +47,51 @@ namespace AUCAPulse.Pages
             var token = HttpContext.Session.GetString("Token");
             if (string.IsNullOrEmpty(token)) return RedirectToPage("/Login");
 
+            if (LecturerIds == null || LecturerIds.Count == 0)
+            {
+                TempData["ErrorMessage"] = "Please select at least one lecturer.";
+                return RedirectToPage();
+            }
+
             var client = _httpClientFactory.CreateClient();
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
             var baseUrl = _configuration["ApiSettings:BaseUrl"];
 
-            var body = new { lecturerId = LecturerId, courseId = CourseId, semesterId = SemesterId };
+            var body = new { courseId = CourseId, semesterId = SemesterId, lecturerIds = LecturerIds };
             var json = JsonSerializer.Serialize(body);
-            var response = await client.PostAsync($"{baseUrl}/courseassignments",
+            var response = await client.PostAsync($"{baseUrl}/courseassignments/bulk",
                 new StringContent(json, Encoding.UTF8, "application/json"));
 
+            var content = await response.Content.ReadAsStringAsync();
             if (response.IsSuccessStatusCode)
             {
-                TempData["SuccessMessage"] = "Course assigned successfully!";
+                try
+                {
+                    using var doc = JsonDocument.Parse(content);
+                    var created = doc.RootElement.TryGetProperty("created", out var c) ? c.GetInt32() : 0;
+                    var skipped = doc.RootElement.TryGetProperty("skippedDuplicates", out var s) ? s.GetInt32() : 0;
+                    var invalid = doc.RootElement.TryGetProperty("invalidLecturers", out var i) ? i.GetInt32() : 0;
+
+                    var parts = new List<string>();
+                    if (created > 0) parts.Add($"{created} new assignment(s) created");
+                    if (skipped > 0) parts.Add($"{skipped} already existed");
+                    if (invalid > 0) parts.Add($"{invalid} invalid");
+
+                    if (created > 0)
+                        TempData["SuccessMessage"] = string.Join(", ", parts) + ".";
+                    else
+                        TempData["WarningMessage"] = parts.Count > 0
+                            ? string.Join(", ", parts) + "."
+                            : "No changes were made.";
+                }
+                catch
+                {
+                    TempData["SuccessMessage"] = "Assignments saved.";
+                }
             }
             else
             {
-                var err = await response.Content.ReadAsStringAsync();
-                TempData["ErrorMessage"] = $"Failed: {err}";
+                TempData["ErrorMessage"] = ExtractFriendlyError(content);
             }
 
             return RedirectToPage();
@@ -89,7 +114,26 @@ namespace AUCAPulse.Pages
             {
                 TempData["SuccessMessage"] = "Assignment removed.";
             }
+            else
+            {
+                TempData["ErrorMessage"] = "Could not remove the assignment. Please try again.";
+            }
             return RedirectToPage();
+        }
+
+        private static string ExtractFriendlyError(string raw)
+        {
+            try
+            {
+                using var doc = JsonDocument.Parse(raw);
+                if (doc.RootElement.TryGetProperty("message", out var m))
+                {
+                    var msg = m.GetString();
+                    if (!string.IsNullOrWhiteSpace(msg)) return msg;
+                }
+            }
+            catch { }
+            return "We couldn't save the assignments. Please check the form and try again.";
         }
 
         private async Task LoadData(string token)

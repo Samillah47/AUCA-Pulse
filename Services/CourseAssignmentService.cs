@@ -52,6 +52,75 @@ namespace AUCAPulse.Services
             return (await GetAssignmentByIdAsync(assignment.Id))!;
         }
 
+        public async Task<BulkCourseAssignmentResult> CreateBulkAssignmentsAsync(BulkCreateCourseAssignmentDto dto)
+        {
+            var result = new BulkCourseAssignmentResult();
+
+            var course = await _context.Courses.FindAsync(dto.CourseId)
+                ?? throw new Exception("Course not found.");
+            var semester = await _context.Semesters.FindAsync(dto.SemesterId)
+                ?? throw new Exception("Semester not found.");
+
+            if (dto.LecturerIds == null || dto.LecturerIds.Count == 0)
+                throw new Exception("Please select at least one lecturer.");
+
+            var distinctIds = dto.LecturerIds.Distinct().ToList();
+
+            var lecturers = await _context.Users
+                .Include(u => u.Role)
+                .Where(u => distinctIds.Contains(u.Id))
+                .ToListAsync();
+
+            var existing = await _context.CourseAssignments
+                .Where(ca => ca.CourseId == dto.CourseId && ca.SemesterId == dto.SemesterId)
+                .Select(ca => ca.LecturerId)
+                .ToListAsync();
+
+            var toInsert = new List<CourseAssignment>();
+
+            foreach (var lecturerId in distinctIds)
+            {
+                var lecturer = lecturers.FirstOrDefault(u => u.Id == lecturerId);
+                if (lecturer == null || lecturer.Role?.RoleName != "LECTURER")
+                {
+                    result.InvalidLecturers++;
+                    result.Notes.Add($"Skipped user id {lecturerId}: not a valid lecturer.");
+                    continue;
+                }
+
+                if (existing.Contains(lecturerId))
+                {
+                    result.SkippedDuplicates++;
+                    result.Notes.Add($"Skipped {lecturer.Name}: already assigned to this course for the selected semester.");
+                    continue;
+                }
+
+                toInsert.Add(new CourseAssignment
+                {
+                    LecturerId = lecturerId,
+                    CourseId = dto.CourseId,
+                    SemesterId = dto.SemesterId,
+                    AssignedAt = DateTime.UtcNow
+                });
+            }
+
+            if (toInsert.Count > 0)
+            {
+                _context.CourseAssignments.AddRange(toInsert);
+                await _context.SaveChangesAsync();
+
+                var insertedIds = toInsert.Select(t => t.Id).ToList();
+                var loaded = await LoadWithIncludes()
+                    .Where(ca => insertedIds.Contains(ca.Id))
+                    .ToListAsync();
+
+                result.Assignments = loaded.Select(MapToResponse).ToList();
+                result.Created = loaded.Count;
+            }
+
+            return result;
+        }
+
         public async Task<CourseAssignmentResponse?> GetAssignmentByIdAsync(int id)
         {
             var assignment = await LoadWithIncludes().FirstOrDefaultAsync(ca => ca.Id == id);

@@ -33,6 +33,21 @@ namespace AUCAPulse.Controllers
             }
         }
 
+        [HttpPost("bulk")]
+        [Authorize(Roles = "ADMIN")]
+        public async Task<IActionResult> CreateBulk([FromBody] BulkCreateCourseAssignmentDto dto)
+        {
+            try
+            {
+                var result = await _service.CreateBulkAssignmentsAsync(dto);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(int id)
         {
