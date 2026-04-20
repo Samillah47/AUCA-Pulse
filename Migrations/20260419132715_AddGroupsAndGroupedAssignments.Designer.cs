@@ -3,6 +3,7 @@ using System;
 using AUCAPulse.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace AUCAPulse.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260419132715_AddGroupsAndGroupedAssignments")]
+    partial class AddGroupsAndGroupedAssignments
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -204,11 +207,6 @@ namespace AUCAPulse.Migrations
                     b.Property<TimeSpan>("EndTime")
                         .HasColumnType("interval")
                         .HasColumnName("end_time");
-
-                    b.Property<string>("GroupName")
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)")
-                        .HasColumnName("group_name");
 
                     b.Property<int>("LecturerId")
                         .HasColumnType("integer")
@@ -875,28 +873,10 @@ namespace AUCAPulse.Migrations
                         {
                             Id = 1,
                             CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            EndDate = new DateTime(2025, 12, 20, 0, 0, 0, 0, DateTimeKind.Utc),
-                            IsCurrent = false,
-                            Name = "Semester 1, 2025/2026",
-                            StartDate = new DateTime(2025, 9, 1, 0, 0, 0, 0, DateTimeKind.Utc)
-                        },
-                        new
-                        {
-                            Id = 2,
-                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            EndDate = new DateTime(2026, 4, 30, 0, 0, 0, 0, DateTimeKind.Utc),
+                            EndDate = new DateTime(2025, 1, 31, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsCurrent = true,
-                            Name = "Semester 2, 2025/2026",
-                            StartDate = new DateTime(2026, 1, 12, 0, 0, 0, 0, DateTimeKind.Utc)
-                        },
-                        new
-                        {
-                            Id = 3,
-                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            EndDate = new DateTime(2026, 8, 21, 0, 0, 0, 0, DateTimeKind.Utc),
-                            IsCurrent = false,
-                            Name = "Semester 3, 2025/2026",
-                            StartDate = new DateTime(2026, 5, 18, 0, 0, 0, 0, DateTimeKind.Utc)
+                            Name = "Fall 2024/2025",
+                            StartDate = new DateTime(2024, 9, 1, 0, 0, 0, 0, DateTimeKind.Utc)
                         });
                 });
 

@@ -6,6 +6,8 @@ namespace AUCAPulse.Services
 {
     public interface IUserService
     {
+        Task<UserResponse> AdminCreateUserAsync(AdminCreateUserDto request);
+        Task<UserResponse?> AdminUpdateUserAsync(int userId, AdminUpdateUserRequest request);
         Task<UserResponse?> GetUserByIdAsync(int userId);
         Task<UserResponse?> GetUserByEmailAsync(string email);
         Task<List<UserResponse>> GetAllUsersAsync();

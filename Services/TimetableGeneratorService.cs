@@ -13,15 +13,21 @@ namespace AUCAPulse.Services
     ///   - Rooms rotate through a separate circular pointer
     /// A slot is accepted only if it causes no lecturer conflict and no
     /// room conflict among already-scheduled assignments for the same week.
+    ///
+    /// Saturday is excluded (AUCA is Adventist, Sabbath is a rest day).
+    /// Time slots are ordered by time-of-day FIRST, then day-of-week, so a
+    /// small number of assignments spreads across all six teaching days
+    /// before piling up on one day.
     /// </summary>
     public class TimetableGeneratorService : ITimetableGeneratorService
     {
         private readonly ApplicationDbContext _context;
         private readonly ILogger<TimetableGeneratorService> _logger;
 
+        // Teaching week: Mon-Fri + Sun. Saturday is intentionally excluded.
         private static readonly string[] WeekDays =
         {
-            "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY"
+            "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SUNDAY"
         };
 
         public TimetableGeneratorService(
@@ -46,6 +52,7 @@ namespace AUCAPulse.Services
             var assignments = await _context.CourseAssignments
                 .Include(ca => ca.Lecturer)
                 .Include(ca => ca.Course)
+                .Include(ca => ca.Group)
                 .Where(ca => ca.SemesterId == dto.SemesterId)
                 .OrderBy(ca => ca.CourseId)
                 .ThenBy(ca => ca.LecturerId)
@@ -99,26 +106,50 @@ namespace AUCAPulse.Services
 
             var newSchedules = new List<LectureSchedule>();
 
+            // Each credit is worth one base slot: a 3-credit course occupies
+            // 3 consecutive time slots on the same day. We check the whole
+            // run for lecturer / room conflicts before placing.
+            var daySlotEnd = TimeSpan.FromHours(dto.EndHour);
+
             foreach (var assignment in assignments)
             {
+                var credits = Math.Max(1, assignment.Course?.Credits ?? 1);
+                var totalSpan = TimeSpan.FromMinutes(dto.SlotDurationMinutes * credits);
+
                 var placed = false;
                 var triedSlots = 0;
                 var totalSlots = timeSlots.Count;
 
-                // Try each time slot in Round Robin order until we find one that fits
                 while (triedSlots < totalSlots && !placed)
                 {
                     var slot = timeSlots[timeSlotPointer];
                     timeSlotPointer = (timeSlotPointer + 1) % totalSlots;
                     triedSlots++;
 
-                    var key = (slot.Day, slot.Start);
-                    var lecturersAtSlot = bookedLecturers.GetValueOrDefault(key) ?? new HashSet<int>();
-                    if (lecturersAtSlot.Contains(assignment.LecturerId))
-                        continue; // lecturer already teaching at this time — try next slot
+                    // Build the list of N consecutive (day, time) slots this
+                    // placement would occupy. All must fit in the daily window
+                    // and be free of the lecturer.
+                    var runStart = slot.Start;
+                    var runEnd = runStart.Add(totalSpan);
+                    if (runEnd > daySlotEnd) continue;
 
-                    // Try each room in Round Robin order for this slot
-                    var roomsAtSlot = bookedRooms.GetValueOrDefault(key) ?? new HashSet<int>();
+                    var runKeys = new List<(string, TimeSpan)>(credits);
+                    var lecturerClash = false;
+                    for (int i = 0; i < credits; i++)
+                    {
+                        var t = runStart.Add(TimeSpan.FromMinutes(dto.SlotDurationMinutes * i));
+                        var key = (slot.Day, t);
+                        runKeys.Add(key);
+                        if ((bookedLecturers.GetValueOrDefault(key) ?? new HashSet<int>()).Contains(assignment.LecturerId))
+                        {
+                            lecturerClash = true;
+                            break;
+                        }
+                    }
+                    if (lecturerClash) continue;
+
+                    // Try each room in Round Robin order. A room fits only if
+                    // ALL N consecutive slots are free for that room.
                     var triedRooms = 0;
                     while (triedRooms < rooms.Count && !placed)
                     {
@@ -126,34 +157,38 @@ namespace AUCAPulse.Services
                         roomPointer = (roomPointer + 1) % rooms.Count;
                         triedRooms++;
 
-                        if (roomsAtSlot.Contains(room.Id))
-                            continue; // room already booked at this time — try next room
+                        var roomClash = runKeys.Any(k =>
+                            (bookedRooms.GetValueOrDefault(k) ?? new HashSet<int>()).Contains(room.Id));
+                        if (roomClash) continue;
 
-                        // Slot + room is free — place the assignment here
-                        var endTime = slot.Start.Add(TimeSpan.FromMinutes(dto.SlotDurationMinutes));
-
+                        // Place: one LectureSchedule row spanning the full run.
                         var schedule = new LectureSchedule
                         {
                             LecturerId = assignment.LecturerId,
                             DayOfWeek = slot.Day,
-                            StartTime = slot.Start,
-                            EndTime = endTime,
+                            StartTime = runStart,
+                            EndTime = runEnd,
                             CourseCode = assignment.Course?.CourseCode,
                             CourseName = assignment.Course?.CourseName,
                             RoomNumber = room.RoomNumber,
+                            GroupName = assignment.Group?.Name,
                             SemesterId = semester.Id,
                             CreatedAt = DateTime.UtcNow
                         };
                         newSchedules.Add(schedule);
 
-                        // Record the booking
-                        if (!bookedLecturers.ContainsKey(key))
-                            bookedLecturers[key] = new HashSet<int>();
-                        bookedLecturers[key].Add(assignment.LecturerId);
+                        // Mark EVERY consecutive base slot as booked so the
+                        // next round-robin candidate can't overlap us.
+                        foreach (var k in runKeys)
+                        {
+                            if (!bookedLecturers.ContainsKey(k))
+                                bookedLecturers[k] = new HashSet<int>();
+                            bookedLecturers[k].Add(assignment.LecturerId);
 
-                        if (!bookedRooms.ContainsKey(key))
-                            bookedRooms[key] = new HashSet<int>();
-                        bookedRooms[key].Add(room.Id);
+                            if (!bookedRooms.ContainsKey(k))
+                                bookedRooms[k] = new HashSet<int>();
+                            bookedRooms[k].Add(room.Id);
+                        }
 
                         result.Scheduled.Add(new GeneratedScheduleEntry
                         {
@@ -162,9 +197,10 @@ namespace AUCAPulse.Services
                             CourseCode = assignment.Course?.CourseCode ?? string.Empty,
                             CourseName = assignment.Course?.CourseName ?? string.Empty,
                             RoomNumber = room.RoomNumber,
+                            GroupName = assignment.Group?.Name,
                             DayOfWeek = slot.Day,
-                            StartTime = slot.Start.ToString(@"hh\:mm"),
-                            EndTime = endTime.ToString(@"hh\:mm")
+                            StartTime = runStart.ToString(@"hh\:mm"),
+                            EndTime = runEnd.ToString(@"hh\:mm")
                         });
 
                         placed = true;
@@ -179,7 +215,7 @@ namespace AUCAPulse.Services
                         LecturerName = assignment.Lecturer?.Name ?? string.Empty,
                         CourseCode = assignment.Course?.CourseCode ?? string.Empty,
                         CourseName = assignment.Course?.CourseName ?? string.Empty,
-                        Reason = "No conflict-free slot/room combination available. Expand time window, add more rooms, or reduce course load."
+                        Reason = $"No conflict-free {credits * dto.SlotDurationMinutes}-minute window available. Expand the day, add more rooms, or reduce course load."
                     });
                 }
             }
@@ -207,15 +243,56 @@ namespace AUCAPulse.Services
             return result;
         }
 
+        /// <summary>
+        /// Build the ordered list of (day, startTime) slots the Round Robin
+        /// pointer will cycle through.
+        ///
+        /// Two intentional tricks so the distribution feels natural:
+        ///
+        /// 1. Times of day are INTERLEAVED between the morning half and the
+        ///    afternoon/evening half. For a day window like 08:00-21:00 the
+        ///    raw times are [08:00, 08:50, 09:40, ..., 20:10]. We split them
+        ///    into early [08:00, ..., 13:30] and late [14:20, ..., 20:10] and
+        ///    zip them: [08:00, 14:20, 08:50, 15:10, 09:40, 16:00, ...].
+        ///    That way when the Round Robin comes back to the same day for a
+        ///    second class, it lands in the afternoon instead of right after
+        ///    the first one.
+        ///
+        /// 2. Days-of-week are the INNER loop for each time-of-day, so the
+        ///    first six slots are (Mon 08:00), (Tue 08:00), (Wed 08:00),
+        ///    (Thu 08:00), (Fri 08:00), (Sun 08:00) and only then does the
+        ///    pointer jump to the late-morning slot. Combined with the time
+        ///    interleave, a semester with 12 courses ends up with one morning
+        ///    and one afternoon class per teaching day.
+        /// </summary>
         private static List<(string Day, TimeSpan Start)> BuildTimeSlots(
             int startHour, int endHour, int slotMinutes)
         {
-            var slots = new List<(string, TimeSpan)>();
-            foreach (var day in WeekDays)
+            // Enumerate all valid start times in the daily window.
+            var rawTimes = new List<TimeSpan>();
+            for (var t = TimeSpan.FromHours(startHour);
+                 t + TimeSpan.FromMinutes(slotMinutes) <= TimeSpan.FromHours(endHour);
+                 t = t.Add(TimeSpan.FromMinutes(slotMinutes)))
             {
-                for (var t = TimeSpan.FromHours(startHour);
-                     t + TimeSpan.FromMinutes(slotMinutes) <= TimeSpan.FromHours(endHour);
-                     t = t.Add(TimeSpan.FromMinutes(slotMinutes)))
+                rawTimes.Add(t);
+            }
+
+            // Interleave: alternate between the early half and the late half.
+            var interleavedTimes = new List<TimeSpan>(rawTimes.Count);
+            int mid = (rawTimes.Count + 1) / 2;
+            int iEarly = 0, iLate = mid;
+            while (iEarly < mid || iLate < rawTimes.Count)
+            {
+                if (iEarly < mid) interleavedTimes.Add(rawTimes[iEarly++]);
+                if (iLate < rawTimes.Count) interleavedTimes.Add(rawTimes[iLate++]);
+            }
+
+            // Cross with day-of-week (day is the inner loop so we spread
+            // across all teaching days before filling a second slot on any).
+            var slots = new List<(string, TimeSpan)>(interleavedTimes.Count * WeekDays.Length);
+            foreach (var t in interleavedTimes)
+            {
+                foreach (var day in WeekDays)
                 {
                     slots.Add((day, t));
                 }

@@ -12,5 +12,8 @@ namespace AUCAPulse.DTOs.Request
 
         [Required]
         public int SemesterId { get; set; }
+
+        [Required]
+        public int GroupId { get; set; }
     }
 }

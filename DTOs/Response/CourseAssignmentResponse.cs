@@ -12,6 +12,8 @@ namespace AUCAPulse.DTOs.Response
         public int Credits { get; set; }
         public int SemesterId { get; set; }
         public string SemesterName { get; set; } = string.Empty;
+        public int GroupId { get; set; }
+        public string GroupName { get; set; } = string.Empty;
         public DateTime AssignedAt { get; set; }
     }
 }

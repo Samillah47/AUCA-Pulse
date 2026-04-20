@@ -30,8 +30,8 @@ namespace AUCAPulse.Pages
         // Generate form parameters
         [BindProperty] public int GenSemesterId { get; set; }
         [BindProperty] public int StartHour { get; set; } = 8;
-        [BindProperty] public int EndHour { get; set; } = 18;
-        [BindProperty] public int SlotDurationMinutes { get; set; } = 120;
+        [BindProperty] public int EndHour { get; set; } = 21;
+        [BindProperty] public int SlotDurationMinutes { get; set; } = 50;
         [BindProperty] public bool ReplaceExisting { get; set; } = true;
 
         public async Task<IActionResult> OnGetAsync()
@@ -44,11 +44,16 @@ namespace AUCAPulse.Pages
 
             await LoadReferenceData(token);
 
-            // Default selected semester = current if not set
+            // Default the filter and the generator form to the current semester
+            // so a fresh page load is already pointing at the right one.
+            var currentSem = Semesters.FirstOrDefault(s => s.IsCurrent) ?? Semesters.FirstOrDefault();
             if (!SelectedSemesterId.HasValue)
             {
-                var current = Semesters.FirstOrDefault(s => s.IsCurrent) ?? Semesters.FirstOrDefault();
-                SelectedSemesterId = current?.Id;
+                SelectedSemesterId = currentSem?.Id;
+            }
+            if (GenSemesterId == 0)
+            {
+                GenSemesterId = currentSem?.Id ?? 0;
             }
 
             if (SelectedSemesterId.HasValue)
@@ -186,6 +191,7 @@ namespace AUCAPulse.Pages
         public string? CourseCode { get; set; }
         public string? CourseName { get; set; }
         public string? RoomNumber { get; set; }
+        public string? GroupName { get; set; }
         public int? SemesterId { get; set; }
         public string? SemesterName { get; set; }
     }
