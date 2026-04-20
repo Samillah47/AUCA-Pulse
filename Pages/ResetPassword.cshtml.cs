@@ -49,22 +49,30 @@ namespace AUCAPulse.Pages
                 return Page();
             }
 
-            var client = _httpClientFactory.CreateClient();
-            var baseUrl = _configuration["ApiSettings:BaseUrl"];
-
-            var body = JsonSerializer.Serialize(new { token = Token, newPassword = NewPassword });
-            var response = await client.PostAsync($"{baseUrl}/auth/reset-password",
-                new StringContent(body, Encoding.UTF8, "application/json"));
-
-            var content = await response.Content.ReadAsStringAsync();
-            if (response.IsSuccessStatusCode)
+            try
             {
-                TempData["SuccessMessage"] = "Your password has been updated. Please sign in with your new password.";
-                return RedirectToPage("/Login");
-            }
+                var client = _httpClientFactory.CreateClient();
+                var baseUrl = _configuration["ApiSettings:BaseUrl"];
 
-            TempData["ErrorMessage"] = ExtractMessage(content);
-            return Page();
+                var body = JsonSerializer.Serialize(new { token = Token, newPassword = NewPassword });
+                var response = await client.PostAsync($"{baseUrl}/auth/reset-password",
+                    new StringContent(body, Encoding.UTF8, "application/json"));
+
+                var content = await response.Content.ReadAsStringAsync();
+                if (response.IsSuccessStatusCode)
+                {
+                    TempData["SuccessMessage"] = "Your password has been updated. Please sign in with your new password.";
+                    return RedirectToPage("/Login");
+                }
+
+                TempData["ErrorMessage"] = ExtractMessage(content);
+                return Page();
+            }
+            catch
+            {
+                TempData["ErrorMessage"] = "We couldn't reach the server. Please try again in a moment.";
+                return Page();
+            }
         }
 
         private static string ExtractMessage(string raw)

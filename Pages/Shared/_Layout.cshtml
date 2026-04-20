@@ -104,6 +104,9 @@
                     <a class="nav-link @(IsActive("/CourseAssignment") ? "active" : "")" href="/CourseAssignment">
                         <i class="bi bi-journal-check"></i> Assign Courses
                     </a>
+                    <a class="nav-link @(IsActive("/Groups") ? "active" : "")" href="/Groups">
+                        <i class="bi bi-people-fill"></i> Groups
+                    </a>
                     <a class="nav-link @(IsActive("/TimetableGenerator") ? "active" : "")" href="/TimetableGenerator">
                         <i class="bi bi-calendar-week"></i> Timetable
                     </a>
@@ -168,6 +171,7 @@ else
 <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
 <script src="~/js/site.js" asp-append-version="true"></script>
 <script src="~/js/toast.js" asp-append-version="true"></script>
+<script src="~/js/table-paginate.js" asp-append-version="true"></script>
 
 <partial name="_Toasts" />
 

@@ -19,6 +19,9 @@ namespace AUCAPulse.Pages
 
         public List<UserDto> Users { get; set; } = new();
 
+        [BindProperty] public CreateUserInput NewUser { get; set; } = new();
+        [BindProperty] public EditUserInput EditUser { get; set; } = new();
+
         public async Task<IActionResult> OnGetAsync()
         {
             var role = HttpContext.Session.GetString("UserRole");
@@ -45,6 +48,108 @@ namespace AUCAPulse.Pages
             }
 
             return Page();
+        }
+
+        public async Task<IActionResult> OnPostCreateAsync()
+        {
+            var role = HttpContext.Session.GetString("UserRole");
+            if (role != "ADMIN") return RedirectToPage("/Dashboard/Index");
+
+            var token = HttpContext.Session.GetString("Token");
+            if (string.IsNullOrEmpty(token)) return RedirectToPage("/Login");
+
+            var client = _httpClientFactory.CreateClient();
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+            var baseUrl = _configuration["ApiSettings:BaseUrl"];
+
+            var payload = new
+            {
+                name = NewUser.Name,
+                email = NewUser.Email,
+                password = NewUser.Password,
+                identificationNumber = NewUser.IdentificationNumber,
+                roleType = NewUser.RoleType,
+                phoneNumber = NewUser.PhoneNumber,
+                department = NewUser.Department
+            };
+            var json = JsonSerializer.Serialize(payload);
+            var response = await client.PostAsync($"{baseUrl}/User",
+                new StringContent(json, Encoding.UTF8, "application/json"));
+
+            var content = await response.Content.ReadAsStringAsync();
+            if (response.IsSuccessStatusCode)
+            {
+                TempData["SuccessMessage"] = $"New {NewUser.RoleType.ToUpper()} account created for {NewUser.Email}.";
+            }
+            else
+            {
+                TempData["ErrorMessage"] = ExtractMessage(content)
+                    ?? "We couldn't create the user. Please check the form and try again.";
+            }
+
+            return RedirectToPage();
+        }
+
+        private static string? ExtractMessage(string raw)
+        {
+            if (string.IsNullOrWhiteSpace(raw)) return null;
+            try
+            {
+                using var doc = JsonDocument.Parse(raw);
+                if (doc.RootElement.TryGetProperty("message", out var m))
+                {
+                    var msg = m.GetString();
+                    if (!string.IsNullOrWhiteSpace(msg)) return msg;
+                }
+            }
+            catch { }
+            return null;
+        }
+
+        public async Task<IActionResult> OnPostEditAsync()
+        {
+            var role = HttpContext.Session.GetString("UserRole");
+            if (role != "ADMIN") return RedirectToPage("/Dashboard/Index");
+
+            var token = HttpContext.Session.GetString("Token");
+            if (string.IsNullOrEmpty(token)) return RedirectToPage("/Login");
+
+            if (EditUser.Id <= 0)
+            {
+                TempData["ErrorMessage"] = "Could not find the user to update.";
+                return RedirectToPage();
+            }
+
+            var client = _httpClientFactory.CreateClient();
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+            var baseUrl = _configuration["ApiSettings:BaseUrl"];
+
+            var payload = new
+            {
+                name = EditUser.Name,
+                email = EditUser.Email,
+                identificationNumber = EditUser.IdentificationNumber,
+                phoneNumber = EditUser.PhoneNumber,
+                department = EditUser.Department,
+                roleType = EditUser.RoleType,
+                status = EditUser.Status
+            };
+            var json = JsonSerializer.Serialize(payload);
+            var response = await client.PutAsync($"{baseUrl}/User/{EditUser.Id}/admin-update",
+                new StringContent(json, Encoding.UTF8, "application/json"));
+
+            var content = await response.Content.ReadAsStringAsync();
+            if (response.IsSuccessStatusCode)
+            {
+                TempData["SuccessMessage"] = "User updated successfully.";
+            }
+            else
+            {
+                TempData["ErrorMessage"] = ExtractMessage(content)
+                    ?? "We couldn't update the user. Please check the form and try again.";
+            }
+
+            return RedirectToPage();
         }
 
         public async Task<IActionResult> OnPostActivateAsync(int userId)
@@ -109,9 +214,33 @@ namespace AUCAPulse.Pages
         public int Id { get; set; }
         public string Name { get; set; } = string.Empty;
         public string Email { get; set; } = string.Empty;
+        public string IdentificationNumber { get; set; } = string.Empty;
         public string? PhoneNumber { get; set; }
         public string? Department { get; set; }
         public string Role { get; set; } = string.Empty;
         public string Status { get; set; } = string.Empty;
+    }
+
+    public class CreateUserInput
+    {
+        public string Name { get; set; } = string.Empty;
+        public string Email { get; set; } = string.Empty;
+        public string Password { get; set; } = string.Empty;
+        public string IdentificationNumber { get; set; } = string.Empty;
+        public string RoleType { get; set; } = "STAFF";
+        public string? PhoneNumber { get; set; }
+        public string? Department { get; set; }
+    }
+
+    public class EditUserInput
+    {
+        public int Id { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public string Email { get; set; } = string.Empty;
+        public string IdentificationNumber { get; set; } = string.Empty;
+        public string? PhoneNumber { get; set; }
+        public string? Department { get; set; }
+        public string RoleType { get; set; } = "STUDENT";
+        public string Status { get; set; } = "APPROVED";
     }
 }

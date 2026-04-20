@@ -55,7 +55,10 @@ namespace AUCAPulse.Pages.LecturerProfile
                     {
                         var statusContent = await statusResponse.Content.ReadAsStringAsync();
                         var statusData = JsonSerializer.Deserialize<JsonElement>(statusContent);
-                        CurrentStatus = statusData.GetProperty("status").GetString();
+                        if (statusData.TryGetProperty("status", out var sp))
+                            CurrentStatus = sp.GetString();
+                        else if (statusData.TryGetProperty("Status", out var spc))
+                            CurrentStatus = spc.GetString();
                     }
                 }
                 catch { }

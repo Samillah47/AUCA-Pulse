@@ -65,15 +65,24 @@ namespace AUCAPulse.Services
             };
 
             var now = DateTime.UtcNow;
+            var today = now.Date;
             var currentDay = now.DayOfWeek.ToString().ToUpper(); // MONDAY, TUESDAY, ...
             var currentTime = now.TimeOfDay;
 
-            // 1. Check active LectureSchedule for right now
+            // 1. Check active LectureSchedule for right now.
+            //    A weekly schedule only counts when we're inside its semester
+            //    window (StartDate <= today <= EndDate). Otherwise the schedule
+            //    is historical or future and the lecturer is NOT actually in
+            //    class right now — even if today happens to be the same weekday.
             var activeSchedule = await _context.LectureSchedules
+                .Include(s => s.Semester)
                 .Where(s => s.LecturerId == lecturer.Id
                          && s.DayOfWeek.ToUpper() == currentDay
                          && s.StartTime <= currentTime
-                         && s.EndTime >= currentTime)
+                         && s.EndTime >= currentTime
+                         && s.Semester != null
+                         && s.Semester.StartDate <= today
+                         && s.Semester.EndDate >= today)
                 .OrderBy(s => s.StartTime)
                 .FirstOrDefaultAsync();
 

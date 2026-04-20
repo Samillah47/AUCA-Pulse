@@ -1,273 +1,500 @@
 @page
 @model AUCAPulse.Pages.Dashboard.IndexModel
 @{
-    ViewData["Title"] = "Dashboard - ACPulse";
+    ViewData["Title"] = "Dashboard";
+    var today = DateTime.Now.ToString("dddd, d MMMM yyyy");
+    var greetHour = DateTime.Now.Hour;
+    var greetWord = greetHour < 12 ? "Good morning" : (greetHour < 18 ? "Good afternoon" : "Good evening");
 }
 
-<div class="container-fluid">
-    <div class="row mb-4">
-        <div class="col-12">
-            <h1 class="display-6">Welcome back, @Model.UserName! 👋</h1>
-            <p class="text-muted">@Model.UserRole Dashboard</p>
+<!-- Hero greeting -->
+<div class="dash-hero mb-4">
+    <div>
+        <div class="dash-hero-date">@today</div>
+        <h1 class="dash-hero-title">@greetWord, @Model.UserName</h1>
+        <div class="dash-hero-sub">
+            <i class="bi bi-calendar-heart me-1"></i>@Model.CurrentSemesterName
+            @if (Model.CurrentSemesterStart.HasValue && Model.CurrentSemesterEnd.HasValue)
+            {
+                <span class="text-muted small ms-1">
+                    (@Model.CurrentSemesterStart.Value.ToString("MMM d") - @Model.CurrentSemesterEnd.Value.ToString("MMM d, yyyy"))
+                </span>
+            }
+            @if (Model.IsSemesterActiveToday)
+            {
+                <span class="badge bg-success ms-2"><i class="bi bi-dot"></i>Active today</span>
+            }
+            else
+            {
+                <span class="badge bg-warning ms-2"><i class="bi bi-pause-circle me-1"></i>Not in session</span>
+            }
+            <span class="mx-2">·</span>
+            <span class="badge bg-primary">@Model.UserRole</span>
+        </div>
+    </div>
+    <div class="dash-hero-art" aria-hidden="true">
+        <svg viewBox="0 0 64 64" width="72" height="72" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="32" cy="32" r="28" />
+            <path d="M32 4v56" />
+            <path d="M4 32h56" />
+            <circle cx="32" cy="32" r="6" fill="currentColor" stroke="none" />
+        </svg>
+    </div>
+</div>
+
+@if (Model.UserRole == "ADMIN")
+{
+    <!-- ADMIN: KPI cards -->
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-md-3">
+            <div class="kpi-card">
+                <div class="kpi-icon" style="background:#eff6ff;color:#2563eb;"><i class="bi bi-people"></i></div>
+                <div>
+                    <div class="kpi-value">@Model.TotalUsers</div>
+                    <div class="kpi-label">Total users</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="kpi-card">
+                <div class="kpi-icon" style="background:#ecfdf5;color:#10b981;"><i class="bi bi-door-open"></i></div>
+                <div>
+                    <div class="kpi-value">@Model.AvailableRooms <small class="text-muted">/ @Model.TotalRooms</small></div>
+                    <div class="kpi-label">Rooms available now</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="kpi-card">
+                <div class="kpi-icon" style="background:#fffbeb;color:#f59e0b;"><i class="bi bi-clock-history"></i></div>
+                <div>
+                    <div class="kpi-value">@Model.PendingRequests</div>
+                    <div class="kpi-label">Pending verifications</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="kpi-card">
+                <div class="kpi-icon" style="background:#fef2f2;color:#ef4444;"><i class="bi bi-calendar-week"></i></div>
+                <div>
+                    <div class="kpi-value">@Model.ClassesToday</div>
+                    <div class="kpi-label">Classes today (of @Model.ClassesThisWeek / week)</div>
+                </div>
+            </div>
         </div>
     </div>
 
+    <!-- Second KPI row -->
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-md-3">
+            <div class="kpi-card">
+                <div class="kpi-icon" style="background:#eff6ff;color:#2563eb;"><i class="bi bi-person-video3"></i></div>
+                <div>
+                    <div class="kpi-value">@Model.ActiveLecturers</div>
+                    <div class="kpi-label">Active lecturers</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="kpi-card">
+                <div class="kpi-icon" style="background:#ecfeff;color:#0e7490;"><i class="bi bi-book"></i></div>
+                <div>
+                    <div class="kpi-value">@Model.TotalCourses</div>
+                    <div class="kpi-label">Courses in catalog</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="kpi-card">
+                <div class="kpi-icon" style="background:#f5f3ff;color:#7c3aed;"><i class="bi bi-journal-check"></i></div>
+                <div>
+                    <div class="kpi-value">@Model.TotalAssignments</div>
+                    <div class="kpi-label">Course groups assigned</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="kpi-card">
+                <div class="kpi-icon" style="background:#fef2f2;color:#ef4444;"><i class="bi bi-broadcast"></i></div>
+                <div>
+                    <div class="kpi-value">@Model.LecturerLocations.Count(l => l.Status == "IN_CLASS")</div>
+                    <div class="kpi-label">Lecturers in class right now</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts row -->
+    <div class="row g-4 mb-4">
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-pie-chart me-2"></i>Users by role</h5>
+                    <small class="text-muted">Breakdown of the @Model.TotalUsers registered users</small>
+                </div>
+                <div class="card-body">
+                    <canvas id="usersChart"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-door-open me-2"></i>Room status</h5>
+                    <small class="text-muted">How the @Model.TotalRooms rooms are being used right now</small>
+                </div>
+                <div class="card-body">
+                    <canvas id="roomsChart"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-bar-chart-line me-2"></i>Classes per day</h5>
+                    <small class="text-muted">Weekly distribution for @Model.CurrentSemesterName</small>
+                </div>
+                <div class="card-body">
+                    <canvas id="classesChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick actions + live lecturer locations -->
+    <div class="row g-4">
+        <div class="col-lg-5">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header"><h5 class="mb-0">Quick actions</h5></div>
+                <div class="card-body d-grid gap-2">
+                    <a href="/VerificationRequests" class="btn btn-outline-primary text-start">
+                        <i class="bi bi-check-circle me-2"></i> Review verifications (@Model.PendingRequests)
+                    </a>
+                    <a href="/TimetableGenerator" class="btn btn-outline-primary text-start">
+                        <i class="bi bi-magic me-2"></i> Generate / view timetable
+                    </a>
+                    <a href="/CourseAssignment" class="btn btn-outline-primary text-start">
+                        <i class="bi bi-journal-check me-2"></i> Assign courses to lecturers
+                    </a>
+                    <a href="/UserManagement" class="btn btn-outline-primary text-start">
+                        <i class="bi bi-people me-2"></i> Manage users
+                    </a>
+                    <a href="/Reports" class="btn btn-outline-primary text-start">
+                        <i class="bi bi-bar-chart me-2"></i> Reports
+                    </a>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-7">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5 class="mb-0"><i class="bi bi-broadcast me-2"></i>Live lecturer locations</h5>
+                        <small class="text-muted">Merges current schedule, status, and office</small>
+                    </div>
+                    <span class="badge bg-secondary">@Model.LecturerLocations.Count</span>
+                </div>
+                <div class="card-body p-0">
+                    @if (!Model.LecturerLocations.Any())
+                    {
+                        <div class="empty-state">
+                            <i class="bi bi-broadcast-pin"></i>
+                            <h5>Nothing to show yet</h5>
+                            <div>Lecturers will appear here once they have classes or status updates.</div>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0 align-middle" data-paginate="5">
+                                <thead>
+                                    <tr>
+                                        <th>Lecturer</th>
+                                        <th>Status</th>
+                                        <th>Where</th>
+                                        <th>Until</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var loc in Model.LecturerLocations)
+                                    {
+                                        var badge = loc.Status switch
+                                        {
+                                            "IN_CLASS" => "bg-danger",
+                                            "IN_OFFICE" => "bg-success",
+                                            "AVAILABLE" => "bg-success",
+                                            "IN_MEETING" => "bg-warning",
+                                            "AWAY" => "bg-secondary",
+                                            _ => "bg-secondary"
+                                        };
+                                        <tr>
+                                            <td><strong>@loc.LecturerName</strong></td>
+                                            <td><span class="badge @badge">@loc.Status.Replace('_', ' ')</span></td>
+                                            <td class="text-muted">@loc.LocationLabel</td>
+                                            <td class="text-muted small">@(string.IsNullOrWhiteSpace(loc.UntilTime) ? "-" : loc.UntilTime)</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+}
+else if (Model.UserRole == "LECTURER")
+{
+    <!-- LECTURER dashboard -->
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-md-3">
+            <div class="kpi-card">
+                <div class="kpi-icon" style="background:#eff6ff;color:#2563eb;"><i class="bi bi-book"></i></div>
+                <div>
+                    <div class="kpi-value">@Model.MyCoursesCount</div>
+                    <div class="kpi-label">My course groups</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="kpi-card">
+                <div class="kpi-icon" style="background:#ecfdf5;color:#10b981;"><i class="bi bi-calendar-week"></i></div>
+                <div>
+                    <div class="kpi-value">@Model.MyClassesThisWeek</div>
+                    <div class="kpi-label">Classes this week</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="kpi-card">
+                <div class="kpi-icon" style="background:#fffbeb;color:#f59e0b;"><i class="bi bi-hourglass-split"></i></div>
+                <div>
+                    <div class="kpi-value">@Model.MyTodayClasses.Count</div>
+                    <div class="kpi-label">Classes today</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="kpi-card">
+                <div class="kpi-icon" style="background:#f5f3ff;color:#7c3aed;"><i class="bi bi-door-open"></i></div>
+                <div>
+                    <div class="kpi-value">@Model.AvailableRooms</div>
+                    <div class="kpi-label">Free rooms now</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-lg-7">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-calendar-day me-2"></i>Today's classes</h5>
+                    <small class="text-muted">@DateTime.Now.ToString("dddd, d MMMM")</small>
+                </div>
+                <div class="card-body">
+                    @if (!Model.MyTodayClasses.Any())
+                    {
+                        <div class="empty-state">
+                            <i class="bi bi-cup-hot"></i>
+                            <h5>Nothing on your schedule today</h5>
+                            <div>Take a break — your next class is on its way.</div>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="d-flex flex-column gap-2">
+                            @foreach (var c in Model.MyTodayClasses)
+                            {
+                                <div class="p-3 rounded" style="background:var(--accent-soft);border-left:3px solid var(--accent);">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <strong>@c.CourseCode</strong>
+                                            @if (!string.IsNullOrEmpty(c.CourseName))
+                                            {
+                                                <span class="text-muted"> — @c.CourseName</span>
+                                            }
+                                        </div>
+                                        <div class="small text-muted">
+                                            @c.StartTime.Substring(0, Math.Min(5, c.StartTime.Length))
+                                            -
+                                            @c.EndTime.Substring(0, Math.Min(5, c.EndTime.Length))
+                                        </div>
+                                    </div>
+                                    <div class="small mt-1 d-flex gap-1 flex-wrap">
+                                        @if (!string.IsNullOrEmpty(c.GroupName))
+                                        {
+                                            <span class="badge bg-primary">Group @c.GroupName</span>
+                                        }
+                                        @if (!string.IsNullOrEmpty(c.RoomNumber))
+                                        {
+                                            <span class="badge bg-secondary">Room @c.RoomNumber</span>
+                                        }
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-5">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header"><h5 class="mb-0">Quick actions</h5></div>
+                <div class="card-body d-grid gap-2">
+                    <a href="/Schedule" class="btn btn-outline-primary text-start">
+                        <i class="bi bi-calendar me-2"></i> View my full schedule
+                    </a>
+                    <a href="/Rooms" class="btn btn-outline-primary text-start">
+                        <i class="bi bi-door-open me-2"></i> Find a free room
+                    </a>
+                    <a href="/Lecturers" class="btn btn-outline-primary text-start">
+                        <i class="bi bi-people me-2"></i> Browse other lecturers
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+else
+{
+    <!-- STAFF dashboard -->
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-md-3">
+            <div class="kpi-card">
+                <div class="kpi-icon" style="background:#eff6ff;color:#2563eb;"><i class="bi bi-building"></i></div>
+                <div>
+                    <div class="kpi-value">@Model.TotalRooms</div>
+                    <div class="kpi-label">Rooms on campus</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="kpi-card">
+                <div class="kpi-icon" style="background:#ecfdf5;color:#10b981;"><i class="bi bi-door-open"></i></div>
+                <div>
+                    <div class="kpi-value">@Model.AvailableRooms</div>
+                    <div class="kpi-label">Available now</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="kpi-card">
+                <div class="kpi-icon" style="background:#fffbeb;color:#f59e0b;"><i class="bi bi-person-video3"></i></div>
+                <div>
+                    <div class="kpi-value">@Model.ActiveLecturers</div>
+                    <div class="kpi-label">Active lecturers</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="kpi-card">
+                <div class="kpi-icon" style="background:#f5f3ff;color:#7c3aed;"><i class="bi bi-calendar-week"></i></div>
+                <div>
+                    <div class="kpi-value">@Model.ClassesToday</div>
+                    <div class="kpi-label">Classes today</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header"><h5 class="mb-0">My Office</h5></div>
+                <div class="card-body">
+                    <p class="text-muted">Manage your office availability and see visitors.</p>
+                    <a href="/MyOffice" class="btn btn-primary">
+                        <i class="bi bi-building me-2"></i> Open My Office
+                    </a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header"><h5 class="mb-0">Campus resources</h5></div>
+                <div class="card-body">
+                    <p class="text-muted">Browse rooms and lecturers.</p>
+                    <a href="/Rooms" class="btn btn-outline-primary me-2">
+                        <i class="bi bi-door-open me-2"></i> Rooms
+                    </a>
+                    <a href="/Lecturers" class="btn btn-outline-primary">
+                        <i class="bi bi-people me-2"></i> Lecturers
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@section Scripts {
     @if (Model.UserRole == "ADMIN")
     {
-        <!-- Admin Dashboard -->
-        <div class="row g-4">
-            <div class="col-md-3">
-                <div class="card border-0 shadow-sm">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <h6 class="text-muted mb-2">Total Users</h6>
-                                <h3 class="mb-0">@Model.TotalUsers</h3>
-                            </div>
-                            <div class="bg-primary bg-opacity-10 p-3 rounded">
-                                <i class="bi bi-people fs-3 text-primary"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+        <script src="https://cdn.jsdelivr.net/npm/chart.js@@4.4.0/dist/chart.umd.min.js"></script>
+        <script>
+            (function () {
+                const textColor = getComputedStyle(document.documentElement).getPropertyValue('--text-muted').trim() || '#6b7280';
+                const accent = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#2563eb';
 
-            <div class="col-md-3">
-                <div class="card border-0 shadow-sm">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <h6 class="text-muted mb-2">Pending Requests</h6>
-                                <h3 class="mb-0">@Model.PendingRequests</h3>
-                            </div>
-                            <div class="bg-warning bg-opacity-10 p-3 rounded">
-                                <i class="bi bi-clock-history fs-3 text-warning"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+                Chart.defaults.font.family = 'Inter, system-ui, sans-serif';
+                Chart.defaults.color = textColor;
 
-            <div class="col-md-3">
-                <div class="card border-0 shadow-sm">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <h6 class="text-muted mb-2">Available Rooms</h6>
-                                <h3 class="mb-0">@Model.AvailableRooms</h3>
-                            </div>
-                            <div class="bg-success bg-opacity-10 p-3 rounded">
-                                <i class="bi bi-door-open fs-3 text-success"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+                const rolesOrder = ['STUDENT', 'LECTURER', 'STAFF', 'ADMIN'];
+                const rolesData = @Html.Raw(Json.Serialize(Model.UsersByRole));
+                const roleColors = { STUDENT: '#2563eb', LECTURER: '#10b981', STAFF: '#f59e0b', ADMIN: '#ef4444' };
+                new Chart(document.getElementById('usersChart'), {
+                    type: 'doughnut',
+                    data: {
+                        labels: rolesOrder,
+                        datasets: [{
+                            data: rolesOrder.map(r => rolesData[r] || 0),
+                            backgroundColor: rolesOrder.map(r => roleColors[r]),
+                            borderWidth: 0
+                        }]
+                    },
+                    options: { plugins: { legend: { position: 'bottom' } }, cutout: '60%' }
+                });
 
-            <div class="col-md-3">
-                <div class="card border-0 shadow-sm">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <h6 class="text-muted mb-2">Active Lecturers</h6>
-                                <h3 class="mb-0">@Model.ActiveLecturers</h3>
-                            </div>
-                            <div class="bg-info bg-opacity-10 p-3 rounded">
-                                <i class="bi bi-person-badge fs-3 text-info"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+                const roomOrder = ['AVAILABLE', 'OCCUPIED', 'RESERVED', 'MAINTENANCE'];
+                const roomsData = @Html.Raw(Json.Serialize(Model.RoomsByStatus));
+                const roomColors = { AVAILABLE: '#10b981', OCCUPIED: '#ef4444', RESERVED: '#2563eb', MAINTENANCE: '#f59e0b' };
+                new Chart(document.getElementById('roomsChart'), {
+                    type: 'doughnut',
+                    data: {
+                        labels: roomOrder,
+                        datasets: [{
+                            data: roomOrder.map(s => roomsData[s] || 0),
+                            backgroundColor: roomOrder.map(s => roomColors[s]),
+                            borderWidth: 0
+                        }]
+                    },
+                    options: { plugins: { legend: { position: 'bottom' } }, cutout: '60%' }
+                });
 
-        <div class="row mt-4">
-            <div class="col-md-6">
-                <div class="card border-0 shadow-sm">
-                    <div class="card-header bg-white">
-                        <h5 class="mb-0">Quick Actions</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="d-grid gap-2">
-                            <a href="/VerificationRequests" class="btn btn-outline-primary text-start">
-                                <i class="bi bi-check-circle me-2"></i> Review Verification Requests
-                            </a>
-                            <a href="/UserManagement" class="btn btn-outline-primary text-start">
-                                <i class="bi bi-people me-2"></i> Manage Users
-                            </a>
-                            <a href="/PasswordResets" class="btn btn-outline-primary text-start">
-                                <i class="bi bi-key me-2"></i> Password Reset Requests
-                            </a>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-md-6">
-                <div class="card border-0 shadow-sm">
-                    <div class="card-header bg-white">
-                        <h5 class="mb-0">Recent Activity</h5>
-                    </div>
-                    <div class="card-body">
-                        <p class="text-muted">No recent activity</p>
-                    </div>
-                </div>
-            </div>
-        </div>
+                // Saturday is excluded from the teaching week (see TimetableGeneratorService)
+                const daysOrder = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SUNDAY'];
+                const daysLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sun'];
+                const classesData = @Html.Raw(Json.Serialize(Model.ClassesByDay));
+                new Chart(document.getElementById('classesChart'), {
+                    type: 'bar',
+                    data: {
+                        labels: daysLabels,
+                        datasets: [{
+                            label: 'Classes',
+                            data: daysOrder.map(d => classesData[d] || 0),
+                            backgroundColor: accent,
+                            borderRadius: 6
+                        }]
+                    },
+                    options: {
+                        plugins: { legend: { display: false } },
+                        scales: {
+                            y: { beginAtZero: true, ticks: { precision: 0 } },
+                            x: { grid: { display: false } }
+                        }
+                    }
+                });
+            })();
+        </script>
     }
-    else if (Model.UserRole == "LECTURER")
-    {
-        <!-- Lecturer Dashboard -->
-        <div class="row g-4">
-            <div class="col-md-12">
-                <div class="card border-0 shadow-sm">
-                    <div class="card-header bg-white">
-                        <h5 class="mb-0">Quick Actions</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="d-grid gap-2 d-md-flex">
-                            <a href="/Schedule" class="btn btn-primary">
-                                <i class="bi bi-calendar me-2"></i> View Schedule
-                            </a>
-                            <a href="/Rooms" class="btn btn-outline-primary">
-                                <i class="bi bi-door-open me-2"></i> Find Room
-                            </a>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    }
-    else if (Model.UserRole == "STUDENT")
-    {
-        <!-- Student Dashboard -->
-        <div class="row g-4 mb-4">
-            <div class="col-md-6">
-                <div class="card border-0 shadow-sm">
-                    <div class="card-header bg-white">
-                        <h5 class="mb-0">Find Lecturers</h5>
-                    </div>
-                    <div class="card-body">
-                        <p class="text-muted">Search for lecturers and check their availability</p>
-                        <a href="/Lecturers" class="btn btn-primary">
-                            <i class="bi bi-search me-2"></i> Search Lecturers
-                        </a>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-md-6">
-                <div class="card border-0 shadow-sm">
-                    <div class="card-header bg-white">
-                        <h5 class="mb-0">Available Rooms</h5>
-                    </div>
-                    <div class="card-body">
-                        <p class="text-muted">Find available rooms for study or meetings</p>
-                        <a href="/Rooms" class="btn btn-primary">
-                            <i class="bi bi-door-open me-2"></i> View Rooms
-                        </a>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="card border-0 shadow-sm">
-            <div class="card-header bg-white d-flex justify-content-between align-items-center">
-                <h5 class="mb-0"><i class="bi bi-broadcast me-2"></i>Lecturer Locations — Right Now</h5>
-                <small class="text-muted">Auto-computed from schedule, status, and office</small>
-            </div>
-            <div class="card-body">
-                @if (!Model.LecturerLocations.Any())
-                {
-                    <p class="text-muted mb-0">No lecturers to show yet.</p>
-                }
-                else
-                {
-                    <div class="table-responsive">
-                        <table class="table table-hover align-middle">
-                            <thead>
-                                <tr>
-                                    <th>Lecturer</th>
-                                    <th>Status</th>
-                                    <th>Location</th>
-                                    <th>Course</th>
-                                    <th>Until</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                            @foreach (var loc in Model.LecturerLocations)
-                            {
-                                string badge = loc.Status switch
-                                {
-                                    "IN_CLASS" => "bg-danger",
-                                    "IN_OFFICE" => "bg-success",
-                                    "AVAILABLE" => "bg-success",
-                                    "IN_MEETING" => "bg-warning text-dark",
-                                    "AWAY" => "bg-secondary",
-                                    "UNAVAILABLE" => "bg-dark",
-                                    _ => "bg-light text-dark"
-                                };
-                                string icon = loc.Status switch
-                                {
-                                    "IN_CLASS" => "bi-easel",
-                                    "IN_OFFICE" => "bi-building-check",
-                                    "AVAILABLE" => "bi-check-circle",
-                                    "IN_MEETING" => "bi-people",
-                                    "AWAY" => "bi-box-arrow-right",
-                                    _ => "bi-question-circle"
-                                };
-                                <tr>
-                                    <td>
-                                        <strong>@loc.LecturerName</strong>
-                                        @if (!string.IsNullOrWhiteSpace(loc.Department))
-                                        {
-                                            <br /><small class="text-muted">@loc.Department</small>
-                                        }
-                                    </td>
-                                    <td><span class="badge @badge"><i class="bi @icon me-1"></i>@loc.Status.Replace('_', ' ')</span></td>
-                                    <td>@loc.LocationLabel</td>
-                                    <td>@(string.IsNullOrWhiteSpace(loc.CourseInfo) ? "-" : loc.CourseInfo)</td>
-                                    <td>@(string.IsNullOrWhiteSpace(loc.UntilTime) ? "-" : loc.UntilTime)</td>
-                                </tr>
-                            }
-                            </tbody>
-                        </table>
-                    </div>
-                }
-            </div>
-        </div>
-    }
-    else
-    {
-        <!-- Staff Dashboard -->
-        <div class="row g-4">
-            <div class="col-md-6">
-                <div class="card border-0 shadow-sm">
-                    <div class="card-header bg-white">
-                        <h5 class="mb-0">My Office</h5>
-                    </div>
-                    <div class="card-body">
-                        <p class="text-muted">Manage your office status and availability</p>
-                        <a href="/MyOffice" class="btn btn-primary">
-                            <i class="bi bi-building me-2"></i> View Office
-                        </a>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-md-6">
-                <div class="card border-0 shadow-sm">
-                    <div class="card-header bg-white">
-                        <h5 class="mb-0">Campus Resources</h5>
-                    </div>
-                    <div class="card-body">
-                        <p class="text-muted">Access rooms and facilities</p>
-                        <a href="/Rooms" class="btn btn-primary">
-                            <i class="bi bi-door-open me-2"></i> View Rooms
-                        </a>
-                    </div>
-                </div>
-            </div>
-        </div>
-    }
-</div>
+}

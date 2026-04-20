@@ -2,18 +2,20 @@
 @model AUCAPulse.Pages.TimetableGeneratorModel
 @{
     ViewData["Title"] = "Timetable";
-    var dayOrder = new[] { "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY" };
+    var dayOrder = new[] { "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SUNDAY" };
 
     // Apply lecturer filter to the saved schedules
     var visible = Model.SelectedLecturerId.HasValue
         ? Model.SavedSchedules.Where(s => s.LecturerId == Model.SelectedLecturerId.Value).ToList()
         : Model.SavedSchedules;
 
-    // Derive unique time slots from the saved schedules, sorted
-    var timeSlots = visible
-        .Select(s => new { s.StartTime, s.EndTime })
+    // Rows are one per distinct START time. Multi-credit classes may end at
+    // different times — we do NOT include EndTime in the key or we'd get
+    // duplicate rows (08:00-10:30 AND 08:00-11:20) showing the same classes.
+    var startTimes = visible
+        .Select(s => s.StartTime)
         .Distinct()
-        .OrderBy(s => s.StartTime)
+        .OrderBy(s => s)
         .ToList();
 }
 
@@ -92,8 +94,7 @@
                             <option value="">-- Select --</option>
                             @foreach (var s in Model.Semesters)
                             {
-                                var sel = Model.SelectedSemesterId == s.Id;
-                                <option value="@s.Id" selected="@sel">@s.Name @(s.IsCurrent ? "(Current)" : "")</option>
+                                <option value="@s.Id">@s.Name @(s.IsCurrent ? "(Current)" : "")</option>
                             }
                         </select>
                     </div>
@@ -107,7 +108,7 @@
                     </div>
                     <div class="col-md-2">
                         <label class="form-label">Slot (min)</label>
-                        <input asp-for="SlotDurationMinutes" type="number" min="30" max="240" step="30" class="form-control" />
+                        <input asp-for="SlotDurationMinutes" type="number" min="30" max="240" step="5" class="form-control" />
                     </div>
                     <div class="col-md-2 d-flex align-items-end">
                         <div class="form-check">
@@ -163,23 +164,32 @@
                             </tr>
                         </thead>
                         <tbody>
-                        @foreach (var slot in timeSlots)
+                        @foreach (var startTime in startTimes)
                         {
                             <tr>
-                                <td class="text-muted small">@slot.StartTime.Substring(0, 5) - @slot.EndTime.Substring(0, 5)</td>
+                                <td class="text-muted small">@startTime.Substring(0, Math.Min(5, startTime.Length))</td>
                                 @foreach (var d in dayOrder)
                                 {
-                                    var entries = visible.Where(e => e.DayOfWeek == d && e.StartTime == slot.StartTime).ToList();
+                                    var entries = visible.Where(e => e.DayOfWeek == d && e.StartTime == startTime).ToList();
                                     <td>
                                         @foreach (var e in entries)
                                         {
                                             <div class="mb-2 p-2 rounded" style="background:#eff6ff;border-left:3px solid #2563eb;">
+                                                <div class="small text-muted">
+                                                    @e.StartTime.Substring(0, Math.Min(5, e.StartTime.Length)) - @e.EndTime.Substring(0, Math.Min(5, e.EndTime.Length))
+                                                </div>
                                                 <div class="small"><strong>@e.CourseCode</strong> @e.CourseName</div>
                                                 <div class="small text-muted">@e.LecturerName</div>
-                                                @if (!string.IsNullOrEmpty(e.RoomNumber))
-                                                {
-                                                    <div class="small"><span class="badge bg-secondary">@e.RoomNumber</span></div>
-                                                }
+                                                <div class="small mt-1 d-flex gap-1 flex-wrap">
+                                                    @if (!string.IsNullOrEmpty(e.GroupName))
+                                                    {
+                                                        <span class="badge bg-primary">Group @e.GroupName</span>
+                                                    }
+                                                    @if (!string.IsNullOrEmpty(e.RoomNumber))
+                                                    {
+                                                        <span class="badge bg-secondary">@e.RoomNumber</span>
+                                                    }
+                                                </div>
                                             </div>
                                         }
                                     </td>

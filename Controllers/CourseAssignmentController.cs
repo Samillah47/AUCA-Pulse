@@ -33,14 +33,14 @@ namespace AUCAPulse.Controllers
             }
         }
 
-        [HttpPost("bulk")]
+        [HttpPost("copy-from-semester")]
         [Authorize(Roles = "ADMIN")]
-        public async Task<IActionResult> CreateBulk([FromBody] BulkCreateCourseAssignmentDto dto)
+        public async Task<IActionResult> CopyFromSemester([FromBody] CopySemesterAssignmentsDto dto)
         {
             try
             {
-                var result = await _service.CreateBulkAssignmentsAsync(dto);
-                return Ok(result);
+                var (copied, skipped) = await _service.CopyAssignmentsFromSemesterAsync(dto.SourceSemesterId, dto.TargetSemesterId);
+                return Ok(new { copied, skipped, message = $"{copied} copied, {skipped} skipped as duplicates." });
             }
             catch (Exception ex)
             {

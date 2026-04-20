@@ -11,6 +11,7 @@ namespace AUCAPulse.Services
         Task<List<LectureScheduleResponse>> GetSchedulesByLecturerIdAsync(int lecturerId);
         Task<List<LectureScheduleResponse>> GetSchedulesBySemesterIdAsync(int semesterId);
         Task<List<LectureScheduleResponse>> GetSchedulesByDayAsync(string dayOfWeek);
+        Task<List<LectureScheduleResponse>> GetSchedulesByRoomAsync(string roomNumber);
         Task<LectureScheduleResponse?> UpdateScheduleAsync(int scheduleId, CreateLectureScheduleDto request);
         Task<bool> DeleteScheduleAsync(int scheduleId);
     }

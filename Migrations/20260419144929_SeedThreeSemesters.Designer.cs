@@ -3,6 +3,7 @@ using System;
 using AUCAPulse.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace AUCAPulse.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260419144929_SeedThreeSemesters")]
+    partial class SeedThreeSemesters
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -21,54 +24,6 @@ namespace AUCAPulse.Migrations
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
-
-            modelBuilder.Entity("AUCAPulse.Models.Appointment", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
-                        .HasColumnName("id");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime>("AppointmentDate")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("appointment_date");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
-
-                    b.Property<string>("Reason")
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)")
-                        .HasColumnName("reason");
-
-                    b.Property<int>("StaffUserId")
-                        .HasColumnType("integer")
-                        .HasColumnName("staff_user_id");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("status");
-
-                    b.Property<int>("StudentUserId")
-                        .HasColumnType("integer")
-                        .HasColumnName("student_user_id");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("StaffUserId");
-
-                    b.HasIndex("StudentUserId");
-
-                    b.ToTable("appointments");
-                });
 
             modelBuilder.Entity("AUCAPulse.Models.Course", b =>
                 {
@@ -252,11 +207,6 @@ namespace AUCAPulse.Migrations
                     b.Property<TimeSpan>("EndTime")
                         .HasColumnType("interval")
                         .HasColumnName("end_time");
-
-                    b.Property<string>("GroupName")
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)")
-                        .HasColumnName("group_name");
 
                     b.Property<int>("LecturerId")
                         .HasColumnType("integer")
@@ -1087,25 +1037,6 @@ namespace AUCAPulse.Migrations
                     b.ToTable("verification_requests");
                 });
 
-            modelBuilder.Entity("AUCAPulse.Models.Appointment", b =>
-                {
-                    b.HasOne("AUCAPulse.Models.User", "StaffUser")
-                        .WithMany("StaffAppointments")
-                        .HasForeignKey("StaffUserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("AUCAPulse.Models.User", "StudentUser")
-                        .WithMany("StudentAppointments")
-                        .HasForeignKey("StudentUserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("StaffUser");
-
-                    b.Navigation("StudentUser");
-                });
-
             modelBuilder.Entity("AUCAPulse.Models.CourseAssignment", b =>
                 {
                     b.HasOne("AUCAPulse.Models.Course", "Course")
@@ -1291,10 +1222,6 @@ namespace AUCAPulse.Migrations
                     b.Navigation("Office");
 
                     b.Navigation("PasswordResetRequests");
-
-                    b.Navigation("StaffAppointments");
-
-                    b.Navigation("StudentAppointments");
 
                     b.Navigation("VerificationRequests");
                 });
