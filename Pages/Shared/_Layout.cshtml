@@ -47,39 +47,53 @@
             </div>
 
             <nav aria-label="Primary">
-                <a class="nav-link @(IsActive("/Dashboard") ? "active" : "")" href="/Dashboard">
-                    <i class="bi bi-speedometer2"></i> Dashboard
-                </a>
-                <a class="nav-link @(IsActive("/Rooms") || IsActive("/RoomDetails") ? "active" : "")" href="/Rooms">
-                    <i class="bi bi-door-open"></i> Rooms
-                </a>
-                @if (userRole != "LECTURER")
+                @if (userRole == "STUDENT")
                 {
+                    <a class="nav-link @(IsActive("/Dashboard") ? "active" : "")" href="/Dashboard">
+                        <i class="bi bi-speedometer2"></i> Dashboard
+                    </a>
                     <a class="nav-link @(IsActive("/Lecturers") ? "active" : "")" href="/Lecturers">
                         <i class="bi bi-people"></i> Lecturers
+                    </a>
+                    <a class="nav-link @(IsActive("/Student/MyAppointments") ? "active" : "")" href="/Student/MyAppointments">
+                        <i class="bi bi-calendar-check"></i> My Appointments
+                    </a>
+                    <a class="nav-link @(IsActive("/Rooms") ? "active" : "")" href="/Rooms">
+                        <i class="bi bi-door-open"></i> Rooms
                     </a>
                 }
                 @if (userRole == "LECTURER")
                 {
+                    <a class="nav-link @(IsActive("/Dashboard") ? "active" : "")" href="/Dashboard">
+                        <i class="bi bi-speedometer2"></i> Dashboard
+                    </a>
                     <a class="nav-link @(IsActive("/Schedule") ? "active" : "")" href="/Schedule">
                         <i class="bi bi-calendar"></i> My Schedule
                     </a>
+                    <a class="nav-link @(IsActive("/Rooms") ? "active" : "")" href="/Rooms">
+                        <i class="bi bi-door-open"></i> Rooms
+                    </a>
                 }
-                <a class="nav-link @(IsActive("/Notifications") ? "active" : "")" href="/Notifications">
-                    <i class="bi bi-bell"></i> Notifications
-                </a>
-                <a class="nav-link @(IsActive("/Profile") ? "active" : "")" href="/Profile">
-                    <i class="bi bi-person"></i> Profile
-                </a>
                 @if (userRole == "STAFF")
                 {
+                    <a class="nav-link @(IsActive("/Dashboard") ? "active" : "")" href="/Dashboard">
+                        <i class="bi bi-speedometer2"></i> Dashboard
+                    </a>
                     <a class="nav-link @(IsActive("/MyOffice") ? "active" : "")" href="/MyOffice">
                         <i class="bi bi-building"></i> My Office
                     </a>
+                    <a class="nav-link @(IsActive("/Appointments") ? "active" : "")" href="/Appointments">
+                        <i class="bi bi-calendar-check"></i> Appointments
+                    </a>
+                    <a class="nav-link @(IsActive("/Rooms") ? "active" : "")" href="/Rooms">
+                        <i class="bi bi-door-open"></i> Rooms
+                    </a>
                 }
-
                 @if (userRole == "ADMIN")
                 {
+                    <a class="nav-link @(IsActive("/Dashboard") ? "active" : "")" href="/Dashboard">
+                        <i class="bi bi-speedometer2"></i> Dashboard
+                    </a>
                     <div class="nav-group-label">Admin</div>
                     <a class="nav-link @(IsActive("/VerificationRequests") ? "active" : "")" href="/VerificationRequests">
                         <i class="bi bi-check-circle"></i> Verifications
@@ -102,15 +116,28 @@
                     <a class="nav-link @(IsActive("/Reports") ? "active" : "")" href="/Reports">
                         <i class="bi bi-bar-chart"></i> Reports
                     </a>
-                }
-
-                @if (userRole != "LECTURER")
-                {
-                    <hr />
-                    <a class="nav-link" href="/Logout">
-                        <i class="bi bi-box-arrow-right"></i> Logout
+                    <a class="nav-link @(IsActive("/PasswordResets") ? "active" : "")" href="/PasswordResets">
+                        <i class="bi bi-key"></i> Password Resets
+                    </a>
+                    <a class="nav-link @(IsActive("/OfficeManagement") ? "active" : "")" href="/OfficeManagement">
+                        <i class="bi bi-building"></i> Offices
+                    </a>
+                    <a class="nav-link @(IsActive("/Rooms") ? "active" : "")" href="/Rooms">
+                        <i class="bi bi-door-open"></i> Rooms
                     </a>
                 }
+                
+                <a class="nav-link @(IsActive("/Notifications") ? "active" : "")" href="/Notifications">
+                    <i class="bi bi-bell"></i> Notifications
+                </a>
+                <a class="nav-link @(IsActive("/Profile") ? "active" : "")" href="/Profile">
+                    <i class="bi bi-person"></i> Profile
+                </a>
+                
+                <hr />
+                <a class="nav-link" href="/Logout">
+                    <i class="bi bi-box-arrow-right"></i> Logout
+                </a>
             </nav>
         </aside>
 

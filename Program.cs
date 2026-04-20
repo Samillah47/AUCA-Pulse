@@ -70,6 +70,7 @@ builder.Services.AddScoped<IVerificationRequestService, VerificationRequestServi
 builder.Services.AddScoped<ILocationService, LocationService>();
 builder.Services.AddScoped<IRoomService, RoomService>();
 builder.Services.AddScoped<IOfficeService, OfficeService>();
+builder.Services.AddScoped<IAppointmentService, AppointmentService>();
 builder.Services.AddScoped<ILecturerStatusService, LecturerStatusService>();
 builder.Services.AddScoped<ILectureScheduleService, LectureScheduleService>();
 builder.Services.AddScoped<INotificationService, NotificationService>();

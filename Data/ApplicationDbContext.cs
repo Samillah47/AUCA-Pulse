@@ -16,6 +16,7 @@ namespace AUCAPulse.Data
         public DbSet<Location> Locations { get; set; }
         public DbSet<Room> Rooms { get; set; }
         public DbSet<Office> Offices { get; set; }
+        public DbSet<Appointment> Appointments { get; set; }
         public DbSet<LecturerStatus> LecturerStatuses { get; set; }
         public DbSet<LectureSchedule> LectureSchedules { get; set; }
         public DbSet<Semester> Semesters { get; set; }
@@ -114,6 +115,23 @@ namespace AUCAPulse.Data
                 
                 entity.Property(e => e.AvailabilityStatus)
                     .HasConversion<string>();
+            });
+
+            // Configure Appointment entity
+            modelBuilder.Entity<Appointment>(entity =>
+            {
+                entity.Property(e => e.Status)
+                    .HasConversion<string>();
+
+                entity.HasOne(e => e.StudentUser)
+                    .WithMany(u => u.StudentAppointments)
+                    .HasForeignKey(e => e.StudentUserId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(e => e.StaffUser)
+                    .WithMany(u => u.StaffAppointments)
+                    .HasForeignKey(e => e.StaffUserId)
+                    .OnDelete(DeleteBehavior.Cascade);
             });
 
             // Configure LecturerStatus entity
