@@ -53,9 +53,12 @@
                 <a class="nav-link @(IsActive("/Rooms") || IsActive("/RoomDetails") ? "active" : "")" href="/Rooms">
                     <i class="bi bi-door-open"></i> Rooms
                 </a>
-                <a class="nav-link @(IsActive("/Lecturers") ? "active" : "")" href="/Lecturers">
-                    <i class="bi bi-people"></i> Lecturers
-                </a>
+                @if (userRole != "LECTURER")
+                {
+                    <a class="nav-link @(IsActive("/Lecturers") ? "active" : "")" href="/Lecturers">
+                        <i class="bi bi-people"></i> Lecturers
+                    </a>
+                }
                 @if (userRole == "LECTURER")
                 {
                     <a class="nav-link @(IsActive("/Schedule") ? "active" : "")" href="/Schedule">
@@ -64,6 +67,9 @@
                 }
                 <a class="nav-link @(IsActive("/Notifications") ? "active" : "")" href="/Notifications">
                     <i class="bi bi-bell"></i> Notifications
+                </a>
+                <a class="nav-link @(IsActive("/Profile") ? "active" : "")" href="/Profile">
+                    <i class="bi bi-person"></i> Profile
                 </a>
                 @if (userRole == "STAFF")
                 {
@@ -98,10 +104,13 @@
                     </a>
                 }
 
-                <hr />
-                <a class="nav-link" href="/Logout">
-                    <i class="bi bi-box-arrow-right"></i> Logout
-                </a>
+                @if (userRole != "LECTURER")
+                {
+                    <hr />
+                    <a class="nav-link" href="/Logout">
+                        <i class="bi bi-box-arrow-right"></i> Logout
+                    </a>
+                }
             </nav>
         </aside>
 
@@ -110,6 +119,14 @@
             <header class="topbar">
                 <h5 class="mb-0">@ViewData["Title"]</h5>
                 <div class="d-flex align-items-center gap-3">
+                    <!-- Notification Bell -->
+                    <a href="/Notifications" class="text-secondary position-relative me-2" title="Notifications">
+                        <i class="bi bi-bell fs-5"></i>
+                        <span id="headerUnreadCount" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger d-none" style="font-size: 0.6rem; padding: 0.25em 0.4em;">
+                            0
+                        </span>
+                    </a>
+
                     <span class="badge bg-primary">@userRole</span>
                     <div class="dropdown">
                         <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">
@@ -141,6 +158,41 @@ else
 <script src="~/js/site.js" asp-append-version="true"></script>
 <script src="~/js/toast.js" asp-append-version="true"></script>
 <script src="~/js/table-paginate.js" asp-append-version="true"></script>
+
+@if (isAuthenticated)
+{
+    <script>
+        $(document).ready(function() {
+            const userId = "@Context.Session.GetString("UserId")";
+            const token = "@Context.Session.GetString("Token")";
+            // Get base URL from common local dev port or use window.location if hosted
+            const baseUrl = "https://localhost:7255/api"; 
+
+            function updateUnreadCount() {
+                if (!userId || !token) return;
+
+                fetch(`${baseUrl}/Notification/user/${userId}/unread-count`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                })
+                .then(res => res.json())
+                .then(data => {
+                    const count = data.count || 0;
+                    const badge = $('#headerUnreadCount');
+                    if (count > 0) {
+                        badge.text(count).removeClass('d-none');
+                    } else {
+                        badge.addClass('d-none');
+                    }
+                })
+                .catch(err => console.error('Error fetching notifications:', err));
+            }
+
+            // Initial load and poll every 10 seconds
+            updateUnreadCount();
+            setInterval(updateUnreadCount, 10000);
+        });
+    </script>
+}
 
 <partial name="_Toasts" />
 

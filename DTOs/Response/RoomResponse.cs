@@ -16,6 +16,7 @@ namespace AUCAPulse.DTOs.Response
         public string? CurrentLecturerName { get; set; }
         public DateTime? OccupiedAt { get; set; }
         public DateTime? OccupiedUntil { get; set; }
+        public string? CourseInfo { get; set; }
         public DateTime CreatedAt { get; set; }
     }
 }

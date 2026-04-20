@@ -192,9 +192,10 @@
         return status switch
         {
             "AVAILABLE" => "bg-success",
+            "AVAILABLE_FOR_APPOINTMENT" => "bg-info",
             "IN_CLASS" => "bg-danger",
             "IN_MEETING" => "bg-warning",
-            "ON_LEAVE" => "bg-secondary",
+            "AWAY" => "bg-secondary",
             "UNAVAILABLE" => "bg-dark",
             _ => "bg-secondary"
         };

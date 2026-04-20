@@ -153,10 +153,11 @@ namespace AUCAPulse.Services
                 throw new Exception("We couldn't verify your account. Please sign in again.");
             }
 
-            // Normalise Kind: HTML datetime-local inputs arrive as Unspecified, which
-            // Npgsql rejects for a "timestamp with time zone" column. Treat the
-            // value as UTC (simple and consistent for a single-timezone deployment).
-            var occupiedUntilUtc = DateTime.SpecifyKind(request.OccupiedUntil, DateTimeKind.Utc);
+            // Normalise Kind for PostgreSQL
+            var occupiedUntilUtc = request.OccupiedUntil.Kind == DateTimeKind.Unspecified
+                ? DateTime.SpecifyKind(request.OccupiedUntil, DateTimeKind.Utc)
+                : request.OccupiedUntil.ToUniversalTime();
+
             var nowUtc = DateTime.UtcNow;
 
             if (occupiedUntilUtc <= nowUtc)
@@ -168,7 +169,11 @@ namespace AUCAPulse.Services
             room.CurrentLecturerId = lecturerId;
             room.OccupiedAt = nowUtc;
             room.OccupiedUntil = occupiedUntilUtc;
+            room.CourseInfo = request.CourseInfo;
             room.UpdatedAt = nowUtc;
+
+            // Get current semester
+            var currentSemester = await _context.Semesters.FirstOrDefaultAsync(s => s.IsCurrent);
 
             // Also create a lecture schedule entry for audit/history
             var schedule = new LectureSchedule
@@ -178,7 +183,8 @@ namespace AUCAPulse.Services
                 DayOfWeek = nowUtc.DayOfWeek.ToString().ToUpper(),
                 StartTime = nowUtc.TimeOfDay,
                 EndTime = occupiedUntilUtc.TimeOfDay,
-                CourseName = "Manual Occupation",
+                CourseName = !string.IsNullOrWhiteSpace(request.CourseInfo) ? request.CourseInfo : "Manual Occupation / Room Reservation",
+                SemesterId = currentSemester?.Id,
                 CreatedAt = nowUtc
             };
             _context.LectureSchedules.Add(schedule);
@@ -247,6 +253,7 @@ namespace AUCAPulse.Services
                 CurrentLecturerName = room.CurrentLecturer?.Name,
                 OccupiedAt = room.OccupiedAt,
                 OccupiedUntil = room.OccupiedUntil,
+                CourseInfo = room.CourseInfo,
                 CreatedAt = room.CreatedAt
             };
         }

@@ -71,16 +71,30 @@
                             </div>
                         }
 
-                        @if (Model.Room.CurrentLecturerId.HasValue)
+                        @if (Model.Room.Status == "OCCUPIED" || Model.Room.Status == "RESERVED" || Model.Room.CurrentLecturerId.HasValue)
                         {
-                            <div class="alert alert-info">
-                                <i class="bi bi-info-circle me-2"></i>
-                                Currently occupied by
-                                <strong>@(Model.Room.CurrentLecturerName ?? $"user #{Model.Room.CurrentLecturerId}")</strong>
-                                @if (Model.Room.OccupiedUntil.HasValue)
-                                {
-                                    <span>until @Model.Room.OccupiedUntil.Value.ToLocalTime().ToString("MMM dd, yyyy HH:mm")</span>
-                                }
+                            <div class="card border-0 bg-light mb-4">
+                                <div class="card-body">
+                                    <h5 class="card-title text-primary"><i class="bi bi-info-circle me-2"></i>Occupancy Details</h5>
+                                    <div class="row mt-3">
+                                        <div class="col-md-6">
+                                            <p class="mb-1 text-muted small">Lecturer in Charge</p>
+                                            <p class="fw-bold">@(Model.Room.CurrentLecturerName ?? $"user #{Model.Room.CurrentLecturerId}")</p>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <p class="mb-1 text-muted small">Activity / Course</p>
+                                            <p class="fw-bold">@(string.IsNullOrEmpty(Model.Room.CourseInfo) ? "General Activity" : Model.Room.CourseInfo)</p>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <p class="mb-1 text-muted small">From</p>
+                                            <p class="fw-bold">@(Model.Room.OccupiedAt?.ToLocalTime().ToString("HH:mm") ?? "-")</p>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <p class="mb-1 text-muted small">Until</p>
+                                            <p class="fw-bold text-danger">@(Model.Room.OccupiedUntil?.ToLocalTime().ToString("HH:mm") ?? "-")</p>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         }
                     </div>
@@ -166,6 +180,21 @@
             </div>
 
             <div class="col-lg-4">
+                @if (TempData["SuccessMessage"] != null)
+                {
+                    <div class="alert alert-success alert-dismissible fade show mb-3">
+                        @TempData["SuccessMessage"]
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                }
+                @if (TempData["ErrorMessage"] != null)
+                {
+                    <div class="alert alert-danger alert-dismissible fade show mb-3">
+                        @TempData["ErrorMessage"]
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                }
+
                 <div class="card border-0 shadow-sm">
                     <div class="card-header bg-white">
                         <h5 class="mb-0">Actions</h5>
@@ -176,11 +205,26 @@
                             <form method="post" asp-page-handler="Occupy">
                                 <input type="hidden" name="roomId" value="@Model.Room.Id" />
                                 <div class="mb-3">
-                                    <label class="form-label">Occupy Until</label>
-                                    <input type="datetime-local" name="occupyUntil" class="form-control" required />
+                                    <label class="form-label">Reservation Date</label>
+                                    <input type="text" class="form-control" value="@DateTime.Today.ToString("MMMM dd, yyyy")" disabled />
+                                    <small class="text-muted">Reservations are for today only.</small>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Course or Activity</label>
+                                    <input type="text" name="courseInfo" class="form-control" placeholder="e.g., CS201 Lab, Faculty Meeting" required />
+                                </div>
+                                <div class="row mb-3">
+                                    <div class="col">
+                                        <label class="form-label">Start Time</label>
+                                        <input type="time" name="startTime" class="form-control" value="@DateTime.Now.ToString("HH:mm")" required />
+                                    </div>
+                                    <div class="col">
+                                        <label class="form-label">End Time</label>
+                                        <input type="time" name="endTime" class="form-control" value="@DateTime.Now.AddHours(2).ToString("HH:mm")" required />
+                                    </div>
                                 </div>
                                 <button type="submit" class="btn btn-primary w-100">
-                                    <i class="bi bi-lock me-2"></i>Occupy Room
+                                    <i class="bi bi-calendar-check me-2"></i>Reserve Room
                                 </button>
                             </form>
                         }

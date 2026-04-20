@@ -16,6 +16,7 @@ namespace AUCAPulse.Pages
             _configuration = configuration;
         }
 
+        public IConfiguration Configuration => _configuration;
         public List<LecturerDto> Lecturers { get; set; } = new();
         public string? SearchQuery { get; set; }
         public string? ErrorMessage { get; set; }
@@ -29,6 +30,7 @@ namespace AUCAPulse.Pages
             }
 
             SearchQuery = search;
+            var currentUserId = HttpContext.Session.GetString("UserId");
 
             try
             {
@@ -42,12 +44,14 @@ namespace AUCAPulse.Pages
                 if (response.IsSuccessStatusCode)
                 {
                     var content = await response.Content.ReadAsStringAsync();
-                    Lecturers = JsonSerializer.Deserialize<List<LecturerDto>>(content, new JsonSerializerOptions
+                    var allLecturers = JsonSerializer.Deserialize<List<LecturerDto>>(content, new JsonSerializerOptions
                     {
                         PropertyNameCaseInsensitive = true
                     }) ?? new List<LecturerDto>();
 
-                    // Apply search filter
+                    // Filter out the current user and apply search filter
+                    Lecturers = allLecturers.Where(l => l.Id.ToString() != currentUserId).ToList();
+
                     if (!string.IsNullOrEmpty(search))
                     {
                         Lecturers = Lecturers.Where(l =>
