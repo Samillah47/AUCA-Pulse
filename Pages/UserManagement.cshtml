@@ -77,6 +77,19 @@
                                     }
                                 </td>
                                 <td class="d-flex gap-1">
+                                    <button type="button" class="btn btn-outline-secondary btn-sm view-user-btn"
+                                            data-bs-toggle="modal" data-bs-target="#viewUserModal"
+                                            data-id="@user.Id"
+                                            data-name="@user.Name"
+                                            data-email="@user.Email"
+                                            data-idn="@user.IdentificationNumber"
+                                            data-phone="@(user.PhoneNumber ?? "")"
+                                            data-department="@(user.Department ?? "")"
+                                            data-role="@user.Role"
+                                            data-status="@user.Status"
+                                            title="View details">
+                                        <i class="bi bi-eye"></i>
+                                    </button>
                                     <button type="button" class="btn btn-outline-primary btn-sm edit-user-btn"
                                             data-bs-toggle="modal" data-bs-target="#editUserModal"
                                             data-id="@user.Id"
@@ -113,6 +126,61 @@
                         }
                     </tbody>
                 </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- View User Details Modal -->
+<div class="modal fade" id="viewUserModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-person-vcard me-2"></i>User Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="d-flex align-items-center mb-4 pb-3" style="border-bottom: 1px solid var(--border);">
+                    <div style="width:56px;height:56px;border-radius:14px;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;flex-shrink:0;">
+                        <i class="bi bi-person fs-3"></i>
+                    </div>
+                    <div class="ms-3 flex-grow-1">
+                        <h4 class="mb-1" id="vu-name">-</h4>
+                        <div class="d-flex gap-2 flex-wrap">
+                            <span class="badge bg-secondary" id="vu-role">-</span>
+                            <span class="badge" id="vu-status">-</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <div class="text-muted small text-uppercase" style="letter-spacing:0.06em;">Email</div>
+                        <div class="fw-semibold" id="vu-email">-</div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="text-muted small text-uppercase" style="letter-spacing:0.06em;">Identification number</div>
+                        <div class="fw-semibold" id="vu-idn">-</div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="text-muted small text-uppercase" style="letter-spacing:0.06em;">Phone</div>
+                        <div class="fw-semibold" id="vu-phone">-</div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="text-muted small text-uppercase" style="letter-spacing:0.06em;">Department</div>
+                        <div class="fw-semibold" id="vu-department">-</div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="text-muted small text-uppercase" style="letter-spacing:0.06em;">Account id</div>
+                        <div class="fw-semibold" id="vu-id">-</div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" id="vu-editBtn" data-bs-dismiss="modal">
+                    <i class="bi bi-pencil me-1"></i>Edit this user
+                </button>
             </div>
         </div>
     </div>
@@ -253,6 +321,46 @@
                 document.getElementById('editUserDept').value = btn.dataset.department || '';
                 document.getElementById('editUserRole').value = btn.dataset.role || 'STUDENT';
                 document.getElementById('editUserStatus').value = btn.dataset.status || 'APPROVED';
+            });
+        });
+
+        // View user details modal — populate read-only fields from the row's data-* attributes
+        const statusPills = {
+            APPROVED: { cls: 'bg-success', label: 'Approved' },
+            PENDING:  { cls: 'bg-warning text-dark', label: 'Pending' },
+            REJECTED: { cls: 'bg-danger', label: 'Rejected' }
+        };
+        document.querySelectorAll('.view-user-btn').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                document.getElementById('vu-id').textContent = '#' + btn.dataset.id;
+                document.getElementById('vu-name').textContent = btn.dataset.name || '—';
+                document.getElementById('vu-email').textContent = btn.dataset.email || '—';
+                document.getElementById('vu-idn').textContent = btn.dataset.idn || '—';
+                document.getElementById('vu-phone').textContent = btn.dataset.phone || '—';
+                document.getElementById('vu-department').textContent = btn.dataset.department || '—';
+                document.getElementById('vu-role').textContent = btn.dataset.role || '—';
+
+                const statusEl = document.getElementById('vu-status');
+                const info = statusPills[btn.dataset.status] || { cls: 'bg-secondary', label: btn.dataset.status || '—' };
+                statusEl.className = 'badge ' + info.cls;
+                statusEl.textContent = info.label;
+
+                // "Edit this user" button in the view modal should open the edit modal pre-filled
+                const editBtn = document.getElementById('vu-editBtn');
+                editBtn.onclick = function () {
+                    const matching = document.querySelector('.edit-user-btn[data-id="' + btn.dataset.id + '"]');
+                    if (matching) matching.click();
+                };
+            });
+        });
+
+        // Click the row (except the action buttons) to open the details modal
+        document.querySelectorAll('#usersTable tbody tr').forEach(function (row) {
+            row.style.cursor = 'pointer';
+            row.addEventListener('click', function (e) {
+                if (e.target.closest('button, form, a')) return;
+                const viewBtn = row.querySelector('.view-user-btn');
+                if (viewBtn) viewBtn.click();
             });
         });
 

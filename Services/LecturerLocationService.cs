@@ -10,7 +10,7 @@ namespace AUCAPulse.Services
     ///   1. Active LectureSchedule entry for today's day-of-week and current time → IN_CLASS
     ///   2. Latest LecturerStatus record (if within validity window) → IN_MEETING / AWAY / AVAILABLE
     ///   3. Assigned Office availability → IN_OFFICE when OPEN
-    ///   4. Fallback → UNKNOWN
+    ///   4. Fallback → AVAILABLE for approved lecturers, UNKNOWN otherwise
     /// </summary>
     public class LecturerLocationService : ILecturerLocationService
     {
@@ -139,7 +139,15 @@ namespace AUCAPulse.Services
                 return result;
             }
 
-            // 4. Fallback
+            // 4. Fallback: approved lecturers with no signal are assumed to be
+            //    available rather than "unknown" — they just haven't set a
+            //    status manually and have no class or open office this minute.
+            if (lecturer.Status == UserStatus.APPROVED)
+            {
+                result.Status = "AVAILABLE";
+                result.LocationLabel = "Available";
+                result.Source = "default";
+            }
             return result;
         }
     }

@@ -61,9 +61,39 @@ namespace AUCAPulse.Pages
                         ).ToList();
                     }
 
-                    // Get current status for each lecturer
+                    // Use the merged lecturer-locations endpoint — it combines
+                    // active LectureSchedule (for IN_CLASS), latest LecturerStatus,
+                    // and Office availability, and falls back to AVAILABLE for
+                    // approved lecturers. One call instead of N.
+                    var statusByLecturerId = new Dictionary<int, string>();
+                    try
+                    {
+                        var locRes = await client.GetAsync($"{apiUrl}/lecturer-locations");
+                        if (locRes.IsSuccessStatusCode)
+                        {
+                            var locContent = await locRes.Content.ReadAsStringAsync();
+                            var locs = JsonSerializer.Deserialize<List<LecturerLocationMini>>(locContent,
+                                new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new();
+                            foreach (var l in locs)
+                            {
+                                if (!string.IsNullOrWhiteSpace(l.Status))
+                                    statusByLecturerId[l.LecturerId] = l.Status!;
+                            }
+                        }
+                    }
+                    catch { /* fall through — each row still renders fine */ }
+
                     foreach (var lecturer in Lecturers)
                     {
+                        if (statusByLecturerId.TryGetValue(lecturer.Id, out var status))
+                        {
+                            lecturer.CurrentStatus = status;
+                            continue;
+                        }
+
+                        // STAFF members aren't returned by lecturer-locations (it
+                        // only considers LECTURERs). For them, fall back to the
+                        // single-user status endpoint or default to AVAILABLE.
                         try
                         {
                             var statusResponse = await client.GetAsync($"{apiUrl}/LecturerStatus/lecturer/{lecturer.Id}/current");
@@ -72,18 +102,16 @@ namespace AUCAPulse.Pages
                                 var statusContent = await statusResponse.Content.ReadAsStringAsync();
                                 var statusData = JsonSerializer.Deserialize<JsonElement>(statusContent);
                                 if (statusData.TryGetProperty("status", out var statusProp))
-                                {
                                     lecturer.CurrentStatus = statusProp.GetString();
-                                }
                                 else if (statusData.TryGetProperty("Status", out var statusPropCap))
-                                {
                                     lecturer.CurrentStatus = statusPropCap.GetString();
-                                }
                             }
+                            if (string.IsNullOrWhiteSpace(lecturer.CurrentStatus))
+                                lecturer.CurrentStatus = "AVAILABLE";
                         }
                         catch
                         {
-                            lecturer.CurrentStatus = "UNAVAILABLE";
+                            lecturer.CurrentStatus = "AVAILABLE";
                         }
                     }
                 }
@@ -111,5 +139,12 @@ namespace AUCAPulse.Pages
         public string? Department { get; set; }
         public string Role { get; set; } = string.Empty;
         public string? CurrentStatus { get; set; }
+    }
+
+    // Minimal shape of LecturerLocationResponse just for status lookups on this page
+    internal class LecturerLocationMini
+    {
+        public int LecturerId { get; set; }
+        public string? Status { get; set; }
     }
 }
