@@ -39,15 +39,15 @@ namespace AUCAPulse.Pages
 
                 var url = $"{api}/LectureSchedule/cancelled?date={EffectiveDate:yyyy-MM-dd}";
                 var res = await client.GetAsync(url);
+                var body = await res.Content.ReadAsStringAsync();
                 if (res.IsSuccessStatusCode)
                 {
-                    var body = await res.Content.ReadAsStringAsync();
                     Items = JsonSerializer.Deserialize<List<CancelledClassRow>>(body,
                         new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new();
                 }
                 else
                 {
-                    ErrorMessage = "We couldn't load cancelled classes right now.";
+                    ErrorMessage = $"Couldn't load cancelled classes ({(int)res.StatusCode} {res.StatusCode}). {body}";
                 }
             }
             catch (Exception ex)

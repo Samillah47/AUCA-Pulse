@@ -43,7 +43,7 @@ namespace AUCAPulse.Controllers
             }
         }
 
-        [HttpGet("{id}")]
+        [HttpGet("{id:int}")]
         public async Task<IActionResult> GetScheduleById(int id)
         {
             var schedule = await _lectureScheduleService.GetScheduleByIdAsync(id);
