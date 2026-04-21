@@ -2,7 +2,7 @@
 @model AUCAPulse.Pages.UpdateStatusModel
 @{
     ViewData["Title"] = "Update My Status - ACPulse";
-    var userRole = (Context.Session.GetString("UserRole") ?? "").ToUpperInvariant();
+    var userRole = (HttpContext.Session.GetString("UserRole") ?? "").ToUpperInvariant();
     var isStaff = userRole == "STAFF";
 }
 
