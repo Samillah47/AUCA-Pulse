@@ -21,7 +21,7 @@ namespace AUCAPulse.Controllers
         }
 
         [HttpPost]
-        [Authorize(Roles = "LECTURER,ADMIN")]
+        [Authorize(Roles = "LECTURER,STAFF,ADMIN")]
         public async Task<IActionResult> CreateStatus([FromBody] CreateLecturerStatusDto request)
         {
             try
@@ -81,7 +81,7 @@ namespace AUCAPulse.Controllers
         }
 
         [HttpGet("my-status")]
-        [Authorize(Roles = "LECTURER,ADMIN")]
+        [Authorize(Roles = "LECTURER,STAFF,ADMIN")]
         public async Task<IActionResult> GetMyCurrentStatus()
         {
             var userIdClaim = User.FindFirst("UserId")?.Value;
@@ -111,7 +111,7 @@ namespace AUCAPulse.Controllers
         }
 
         [HttpPut("{id}")]
-        [Authorize(Roles = "LECTURER,ADMIN")]
+        [Authorize(Roles = "LECTURER,STAFF,ADMIN")]
         public async Task<IActionResult> UpdateStatus(int id, [FromBody] CreateLecturerStatusDto request)
         {
             try
@@ -145,7 +145,7 @@ namespace AUCAPulse.Controllers
         }
 
         [HttpDelete("{id}")]
-        [Authorize(Roles = "LECTURER,ADMIN")]
+        [Authorize(Roles = "LECTURER,STAFF,ADMIN")]
         public async Task<IActionResult> DeleteStatus(int id)
         {
             try
