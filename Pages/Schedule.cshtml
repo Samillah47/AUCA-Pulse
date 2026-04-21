@@ -159,6 +159,38 @@
     </div>
 </div>
 
+<!-- Cancel / End Now confirm modal -->
+<div class="modal fade" id="cancelClassModal" tabindex="-1" aria-labelledby="cancelClassModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="cancelClassModalLabel">
+                    <i class="bi bi-x-circle text-danger me-2"></i>Cancel today's class
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="p-3 rounded mb-3" style="background: #fef2f2; border:1px solid #fecaca;">
+                    <div class="small text-muted mb-1">You're about to cancel</div>
+                    <div class="fw-semibold" id="cancelClassName">—</div>
+                </div>
+                <p class="text-muted small mb-3">
+                    The room will be released immediately and students will see this class isn't running today.
+                    Next week's occurrence stays on the timetable.
+                </p>
+                <label for="cancelReasonInput" class="form-label">Reason <span class="text-muted small">(optional)</span></label>
+                <textarea class="form-control" id="cancelReasonInput" rows="3" maxlength="255" placeholder="e.g. Not feeling well, travelling, conference..."></textarea>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Keep the class</button>
+                <button type="button" class="btn btn-danger" id="cancelConfirmBtn">
+                    <i class="bi bi-x-circle me-1"></i>Cancel for today
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 @section Scripts {
     <script>
     (function () {
@@ -166,20 +198,38 @@
         const API = window.location.protocol + '//' + window.location.host + '/api';
         const headers = { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + TOKEN };
 
-        document.querySelectorAll('.cancel-today-btn').forEach(btn => {
-            btn.addEventListener('click', async () => {
-                const id = btn.dataset.id;
-                const course = btn.dataset.course || 'this class';
-                const reason = prompt(`Cancel ${course} for today?\n\nThe room will be released immediately and students will see this class is not running today. Optional reason:`, '');
-                if (reason === null) return; // user cancelled
+        const cancelModalEl = document.getElementById('cancelClassModal');
+        const cancelModal = cancelModalEl ? new bootstrap.Modal(cancelModalEl) : null;
+        const cancelClassName = document.getElementById('cancelClassName');
+        const cancelReasonInput = document.getElementById('cancelReasonInput');
+        const cancelConfirmBtn = document.getElementById('cancelConfirmBtn');
 
-                btn.disabled = true;
+        let pendingCancel = { id: null, triggerBtn: null };
+
+        document.querySelectorAll('.cancel-today-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                pendingCancel = { id: btn.dataset.id, triggerBtn: btn };
+                cancelClassName.textContent = btn.dataset.course || 'this class';
+                cancelReasonInput.value = '';
+                cancelModal?.show();
+                setTimeout(() => cancelReasonInput.focus(), 300);
+            });
+        });
+
+        if (cancelConfirmBtn) {
+            cancelConfirmBtn.addEventListener('click', async () => {
+                if (!pendingCancel.id) return;
+                const id = pendingCancel.id;
+                const reason = cancelReasonInput.value.trim();
+                cancelConfirmBtn.disabled = true;
+                cancelConfirmBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Cancelling…';
                 try {
                     const res = await fetch(API + '/LectureSchedule/' + id + '/cancel-today', {
                         method: 'POST', headers,
                         body: JSON.stringify({ reason: reason || null })
                     });
                     if (res.ok) {
+                        cancelModal?.hide();
                         if (window.Toast) Toast.success('Class cancelled for today. Room released.');
                         setTimeout(() => window.location.reload(), 600);
                     } else {
@@ -187,10 +237,11 @@
                         if (window.Toast) Toast.error(j.message || 'Could not cancel the class.');
                     }
                 } finally {
-                    btn.disabled = false;
+                    cancelConfirmBtn.disabled = false;
+                    cancelConfirmBtn.innerHTML = '<i class="bi bi-x-circle me-1"></i>Cancel for today';
                 }
             });
-        });
+        }
 
         document.querySelectorAll('.reinstate-btn').forEach(btn => {
             btn.addEventListener('click', async () => {
