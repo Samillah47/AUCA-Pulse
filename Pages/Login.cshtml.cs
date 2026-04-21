@@ -49,10 +49,10 @@ namespace AUCAPulse.Pages
             {
                 var client = _httpClientFactory.CreateClient();
                 var baseUrl = _configuration["ApiSettings:BaseUrl"];
-                
+
                 if (string.IsNullOrEmpty(baseUrl))
                 {
-                    baseUrl = "http://localhost:5204/api";
+                    baseUrl = "http://localhost:5113/api";
                 }
 
                 var loginRequest = new

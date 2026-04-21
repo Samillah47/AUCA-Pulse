@@ -16,7 +16,8 @@ namespace AUCAPulse.Helpers
             if (expiryTime == null || DateTime.UtcNow > expiryTime)
                 return false;
 
-            return providedOtp == storedOtp;
+            // Trim whitespace and compare - fixes issues with form submissions that may include spaces
+            return providedOtp.Trim() == storedOtp.Trim();
         }
 
         public static DateTime GetOtpExpiry(int minutes = 5)

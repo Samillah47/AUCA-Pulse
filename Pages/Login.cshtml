@@ -251,6 +251,13 @@
                     <span asp-validation-for="Email" class="validation"></span>
                 </div>
 
+                @if (Request.Query.ContainsKey("resetSuccess"))
+                {
+                    <div class="auth-alert" style="background:#ecfdf5;border-color:#bbf7d0;color:#166534;">
+                        <i class="bi bi-check-circle-fill"></i>
+                        <span>Password reset successfully! Please sign in with your new password.</span>
+                    </div>
+                }
                 <div class="auth-field">
                     <label asp-for="Password">Password</label>
                     <input asp-for="Password" type="password" placeholder="••••••••" autocomplete="current-password" />

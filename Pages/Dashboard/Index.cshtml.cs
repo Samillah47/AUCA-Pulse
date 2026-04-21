@@ -60,6 +60,9 @@ namespace AUCAPulse.Pages.Dashboard
             // Students never see the admin-style dashboard
             if (UserRole == "STUDENT") return RedirectToPage("/Home");
 
+            // Staff members should use the StaffDashboard
+            if (UserRole == "STAFF") return RedirectToPage("/StaffDashboard");
+
             var client = _httpClientFactory.CreateClient();
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
             var baseUrl = _configuration["ApiSettings:BaseUrl"];

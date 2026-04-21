@@ -23,12 +23,22 @@ builder.Services.AddControllers()
     });
 
 // Add DbContext
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+if (string.IsNullOrEmpty(connectionString))
+{
+    throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
+}
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseNpgsql(connectionString));
 
 // Add JWT Authentication
 var jwtSettings = builder.Configuration.GetSection("JwtSettings");
 var secretKey = jwtSettings["SecretKey"];
+
+if (string.IsNullOrEmpty(secretKey))
+{
+    throw new InvalidOperationException("JWT SecretKey is not configured in appsettings.json. Please add JwtSettings:SecretKey.");
+}
 
 builder.Services.AddAuthentication(options =>
 {
@@ -40,11 +50,11 @@ builder.Services.AddAuthentication(options =>
     options.TokenValidationParameters = new TokenValidationParameters
     {
         ValidateIssuerSigningKey = true,
-        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey!)),
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey)),
         ValidateIssuer = true,
-        ValidIssuer = jwtSettings["Issuer"],
+        ValidIssuer = jwtSettings["Issuer"] ?? "AUCAPulse",
         ValidateAudience = true,
-        ValidAudience = jwtSettings["Audience"],
+        ValidAudience = jwtSettings["Audience"] ?? "AUCAPulseUsers",
         ValidateLifetime = true,
         ClockSkew = TimeSpan.Zero
     };
@@ -60,6 +70,7 @@ builder.Services.AddScoped<IVerificationRequestService, VerificationRequestServi
 builder.Services.AddScoped<ILocationService, LocationService>();
 builder.Services.AddScoped<IRoomService, RoomService>();
 builder.Services.AddScoped<IOfficeService, OfficeService>();
+builder.Services.AddScoped<IAppointmentService, AppointmentService>();
 builder.Services.AddScoped<ILecturerStatusService, LecturerStatusService>();
 builder.Services.AddScoped<ILectureScheduleService, LectureScheduleService>();
 builder.Services.AddScoped<INotificationService, NotificationService>();

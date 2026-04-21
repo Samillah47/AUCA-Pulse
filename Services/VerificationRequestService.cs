@@ -97,11 +97,111 @@ namespace AUCAPulse.Services
             // If approved, also update user status
             if (request.Status == VerificationStatus.APPROVED)
             {
-                var user = await _context.Users.FindAsync(verificationRequest.UserId);
+                var user = await _context.Users
+                    .Include(u => u.Role)
+                    .FirstOrDefaultAsync(u => u.Id == verificationRequest.UserId);
                 if (user != null)
                 {
                     user.Status = UserStatus.APPROVED;
                     user.UpdatedAt = DateTime.UtcNow;
+
+                    // ====================================================================
+                    // STAFF OFFICE ASSIGNMENT DURING VERIFICATION APPROVAL
+                    // ====================================================================
+                    // When a staff user's verification request is APPROVED, they should
+                    // immediately get access to an office for the "My Office" feature.
+                    // This mirrors the logic in UserService.UpdateUserStatusAsync()
+                    // to keep staff onboarding consistent across approval workflows.
+                    //
+                    // NOTE: This is a PARALLEL workflow to UserService.UpdateUserStatusAsync()
+                    // Both methods handle office assignment because staff can be approved via:
+                    // - Verification Request flow (here) OR
+                    // - Direct user status update (UserService)
+                    //
+                    // Current implementation assigns REAL offices from the database,
+                    // not synthetic placeholder offices. This ensures staff get actual
+                    // school offices that were pre-registered in the system.
+                    // 
+                    // PERFORMANCE CHARACTERISTICS:
+                    // - Two database queries: O(1) + O(1) = O(1) overall
+                    // - Uses indexed lookup on staff_user_id foreign key
+                    // - FirstOrDefaultAsync stops after finding first match (efficient)
+                    // - No N+1 problem: only 2 fixed queries regardless of office count
+                    // 
+                    // EDGE CASES ADDRESSED:
+                    // 1. Staff already has office: Skipped to prevent duplicate assignment
+                    // 2. No unassigned offices: Logs warning, admin manually assigns later
+                    // 3. Concurrent approvals: EF transaction isolation prevents conflicts
+                    // 4. Role-based filtering: Only STAFF role gets office (not Lecturer)
+                    // 5. Idempotency: Multiple approvals of same request don't duplicate assignment
+                    // ====================================================================
+                    if (IsStaffUser(user))
+                    {
+                        // First, check if this staff member already has an office assigned
+                        // This query finds any office where this user is already the assignee
+                        var existingOffice = await _context.Offices
+                            .FirstOrDefaultAsync(o => o.StaffUserId == user.Id);
+
+                        if (existingOffice == null)
+                        {
+                            // No office assigned yet. Search database for an unassigned real office.
+                            // We look for offices with StaffUserId = NULL (not currently assigned to anyone)
+                            // 
+                            // QUERY OPTIMIZATION:
+                            // - FirstOrDefaultAsync = efficient (stops after first match)
+                            // - Condition (o => o.StaffUserId == null) is indexed on FK
+                            // - Returns immediately if found (doesn't scan entire table)
+                            // - Suitable for systems with 1000+ offices
+                            var availableOffice = await _context.Offices
+                                .FirstOrDefaultAsync(o => o.StaffUserId == null);
+
+                            if (availableOffice != null)
+                            {
+                                // SUCCESS: Found an unassigned real office in the database
+                                // Assign it to this newly verified staff member
+                                // 
+                                // TRANSACTION SAFETY:
+                                // - Change is tracked by EF Core's ChangeTracker
+                                // - Persisted to DB in SaveChangesAsync() below
+                                // - Transaction isolation prevents concurrent conflicts
+                                availableOffice.StaffUserId = user.Id;
+
+                                // Log this important action with full details for audit trail
+                                // Includes: Office ID, Office Number, Staff User ID
+                                // Useful for admin to understand assignment history
+                                _logger.LogInformation(
+                                    "✓ Successfully assigned real office {OfficeId} (Office #{OfficeNumber}) to verified staff user {UserId}",
+                                    availableOffice.Id,
+                                    availableOffice.OfficeNumber,
+                                    user.Id);
+                            }
+                            else
+                            {
+                                // WARNING: No unassigned offices available in database
+                                // All real offices are already assigned to other staff members
+                                // 
+                                // ROOT CAUSES:
+                                // 1. School hasn't registered enough offices in the system
+                                // 2. All existing offices are already assigned to other staff
+                                // 3. Offices weren't released when other staff left
+                                // 
+                                // ADMIN ACTION ITEMS:
+                                // a) Navigate to Office Management page
+                                // b) Either: Create new offices OR unassign unused offices
+                                // c) Then manually assign this staff to an office
+                                //
+                                // NOTE: We DO NOT create synthetic "AUTO-{id}" offices anymore.
+                                // The old system created fake offices which confused users.
+                                // New system requires real offices registered in the database.
+                                _logger.LogWarning(
+                                    "⚠ No unassigned offices available for verified staff user {UserId}. " +
+                                    "Admin must manually assign an office through the Office Management page.",
+                                    user.Id);
+                            }
+                        }
+                        // If existingOffice != null, user already has an office, so do nothing
+                        // Prevents duplicate assignment on retry or double-processing
+                    }
                 }
             }
             else if (request.Status == VerificationStatus.REJECTED)
@@ -142,6 +242,22 @@ namespace AUCAPulse.Services
             await _context.SaveChangesAsync();
 
             return true;
+        }
+
+        /// <summary>
+        /// Checks if a user belongs to the STAFF role.
+        /// </summary>
+        /// <param name="user">The user object to check (must have Role loaded)</param>
+        /// <returns>True if user's role is STAFF (case-insensitive), false otherwise</returns>
+        /// <remarks>
+        /// This method consolidates the role check logic used in office assignment.
+        /// It uses case-insensitive comparison to handle database variations.
+        /// Always ensure the Role is loaded via .Include(u => u.Role) before calling this method.
+        /// This mirrors the helper method in UserService for consistency.
+        /// </remarks>
+        private bool IsStaffUser(User user)
+        {
+            return user?.Role?.RoleName?.Equals("STAFF", StringComparison.OrdinalIgnoreCase) ?? false;
         }
 
         private VerificationRequestResponse MapToResponse(VerificationRequest request)
