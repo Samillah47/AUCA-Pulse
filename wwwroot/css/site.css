@@ -846,11 +846,15 @@ a:hover { color: var(--accent-hover); text-decoration: underline; }
    ========================================================================== */
 
 @keyframes pulse-fade-in {
-    from { opacity: 0; transform: translateY(4px); }
-    to   { opacity: 1; transform: translateY(0); }
+    from { opacity: 0; }
+    to   { opacity: 1; }
 }
+/* Page-level fade uses opacity only. A transform here would create a
+   stacking context on the page container, which traps Bootstrap's
+   position:fixed modal backdrop inside the page and visually "locks"
+   the UI until a reload. Keep animations on individual tiles/hero. */
 .main-content .page, .student-page {
-    animation: pulse-fade-in .35s var(--ease) both;
+    animation: pulse-fade-in .3s var(--ease) backwards;
 }
 
 /* Stagger — apply .stagger to a parent grid/row and each direct child
