@@ -23,5 +23,10 @@ namespace AUCAPulse.Services
 
         /// <summary>Clear a previous cancellation for today.</summary>
         Task<LectureScheduleResponse?> ReinstateForTodayAsync(int scheduleId, int lecturerId);
+
+        /// <summary>List every schedule row whose CancelledOn falls on the
+        /// given date (defaults to today). Used by the admin "cancelled
+        /// classes" dashboard.</summary>
+        Task<List<LectureScheduleResponse>> GetCancelledClassesAsync(DateTime? date = null);
     }
 }

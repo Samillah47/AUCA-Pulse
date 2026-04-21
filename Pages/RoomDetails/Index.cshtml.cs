@@ -22,6 +22,12 @@ namespace AUCAPulse.Pages.RoomDetails
         public bool CanOccupy { get; set; }
         public List<RoomScheduleEntry> Schedule { get; set; } = new();
 
+        /// <summary>The scheduled class (if any) happening in this room right
+        /// now — derived from the full weekly schedule by matching today's
+        /// day-of-week and the current time, then excluding any row the
+        /// lecturer cancelled for today.</summary>
+        public RoomScheduleEntry? ActiveNow { get; set; }
+
         public async Task<IActionResult> OnGetAsync(int id)
         {
             var token = HttpContext.Session.GetString("Token");
@@ -63,6 +69,21 @@ namespace AUCAPulse.Pages.RoomDetails
                             Schedule = JsonSerializer.Deserialize<List<RoomScheduleEntry>>(schedContent,
                                 new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new();
                         }
+
+                        // Pick out the entry happening right now (if any) so
+                        // the UI can tell users "Room {n} is currently holding
+                        // {CourseCode} with {Lecturer}".
+                        var nowUtc = DateTime.UtcNow;
+                        var today = nowUtc.Date;
+                        var todayName = nowUtc.DayOfWeek.ToString().ToUpperInvariant();
+                        var nowOfDay = nowUtc.TimeOfDay;
+
+                        ActiveNow = Schedule.FirstOrDefault(s =>
+                            string.Equals(s.DayOfWeek, todayName, StringComparison.OrdinalIgnoreCase)
+                            && TimeSpan.TryParse(s.StartTime, out var st)
+                            && TimeSpan.TryParse(s.EndTime, out var et)
+                            && st <= nowOfDay && et >= nowOfDay
+                            && (!s.CancelledOn.HasValue || s.CancelledOn.Value.Date != today));
                     }
                 }
             }
@@ -214,5 +235,7 @@ namespace AUCAPulse.Pages.RoomDetails
         public string? RoomNumber { get; set; }
         public string? GroupName { get; set; }
         public string? SemesterName { get; set; }
+        public DateTime? CancelledOn { get; set; }
+        public string? CancellationReason { get; set; }
     }
 }

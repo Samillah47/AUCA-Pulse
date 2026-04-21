@@ -312,6 +312,20 @@ namespace AUCAPulse.Services
             return MapToResponse(schedule);
         }
 
+        public async Task<List<LectureScheduleResponse>> GetCancelledClassesAsync(DateTime? date = null)
+        {
+            var target = (date ?? DateTime.UtcNow).Date;
+
+            var schedules = await _context.LectureSchedules
+                .Include(s => s.Lecturer)
+                .Include(s => s.Semester)
+                .Where(s => s.CancelledOn.HasValue && s.CancelledOn.Value.Date == target)
+                .OrderBy(s => s.StartTime)
+                .ToListAsync();
+
+            return schedules.Select(MapToResponse).ToList();
+        }
+
         private LectureScheduleResponse MapToResponse(LectureSchedule schedule)
         {
             return new LectureScheduleResponse

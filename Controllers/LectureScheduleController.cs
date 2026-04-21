@@ -197,6 +197,14 @@ namespace AUCAPulse.Controllers
             public string? Reason { get; set; }
         }
 
+        [HttpGet("cancelled")]
+        [Authorize(Roles = "ADMIN,STAFF")]
+        public async Task<IActionResult> GetCancelled([FromQuery] DateTime? date)
+        {
+            var items = await _lectureScheduleService.GetCancelledClassesAsync(date);
+            return Ok(items);
+        }
+
         [HttpDelete("{id}")]
         [Authorize(Roles = "LECTURER,ADMIN")]
         public async Task<IActionResult> DeleteSchedule(int id)
