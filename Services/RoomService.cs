@@ -50,7 +50,39 @@ namespace AUCAPulse.Services
                 .Include(r => r.CurrentLecturer)
                 .FirstOrDefaultAsync(r => r.Id == roomId);
 
-            return room == null ? null : MapToResponse(room);
+            if (room == null) return null;
+            var busy = await GetRoomNumbersWithActiveClassAsync();
+            return MapToResponse(room, busy);
+        }
+
+        /// <summary>
+        /// Returns the set of RoomNumbers that currently have an active class
+        /// (i.e. a LectureSchedule entry matching today, inside the active
+        /// semester window, with the current time falling between StartTime
+        /// and EndTime). These rooms are considered OCCUPIED even if their
+        /// stored Room.Status is AVAILABLE.
+        /// </summary>
+        private async Task<HashSet<string>> GetRoomNumbersWithActiveClassAsync()
+        {
+            var now = DateTime.UtcNow;
+            var today = now.Date;
+            var currentDay = now.DayOfWeek.ToString().ToUpperInvariant();
+            var currentTime = now.TimeOfDay;
+
+            var roomNumbers = await _context.LectureSchedules
+                .Include(s => s.Semester)
+                .Where(s => !string.IsNullOrEmpty(s.RoomNumber)
+                         && s.DayOfWeek.ToUpper() == currentDay
+                         && s.StartTime <= currentTime
+                         && s.EndTime >= currentTime
+                         && s.Semester != null
+                         && s.Semester.StartDate <= today
+                         && s.Semester.EndDate >= today)
+                .Select(s => s.RoomNumber!)
+                .Distinct()
+                .ToListAsync();
+
+            return new HashSet<string>(roomNumbers, StringComparer.OrdinalIgnoreCase);
         }
 
         public async Task<List<RoomResponse>> GetAllRoomsAsync()
@@ -62,7 +94,8 @@ namespace AUCAPulse.Services
                 .ThenBy(r => r.RoomNumber)
                 .ToListAsync();
 
-            return rooms.Select(MapToResponse).ToList();
+            var busyRoomNumbers = await GetRoomNumbersWithActiveClassAsync();
+            return rooms.Select(r => MapToResponse(r, busyRoomNumbers)).ToList();
         }
 
         public async Task<List<RoomResponse>> GetRoomsByStatusAsync(RoomStatus status)
@@ -75,7 +108,8 @@ namespace AUCAPulse.Services
                 .ThenBy(r => r.RoomNumber)
                 .ToListAsync();
 
-            return rooms.Select(MapToResponse).ToList();
+            var busyRoomNumbers = await GetRoomNumbersWithActiveClassAsync();
+            return rooms.Select(r => MapToResponse(r, busyRoomNumbers)).ToList();
         }
 
         public async Task<List<RoomResponse>> GetRoomsByTypeAsync(RoomType type)
@@ -88,11 +122,16 @@ namespace AUCAPulse.Services
                 .ThenBy(r => r.RoomNumber)
                 .ToListAsync();
 
-            return rooms.Select(MapToResponse).ToList();
+            var busyRoomNumbers = await GetRoomNumbersWithActiveClassAsync();
+            return rooms.Select(r => MapToResponse(r, busyRoomNumbers)).ToList();
         }
 
         public async Task<List<RoomResponse>> GetAvailableRoomsAsync()
         {
+            // "Available" means Status=AVAILABLE in the DB AND no active class
+            // in this room right now (via the timetable).
+            var busyRoomNumbers = await GetRoomNumbersWithActiveClassAsync();
+
             var rooms = await _context.Rooms
                 .Include(r => r.CurrentLecturer)
                 .Where(r => r.Status == RoomStatus.AVAILABLE)
@@ -101,7 +140,10 @@ namespace AUCAPulse.Services
                 .ThenBy(r => r.RoomNumber)
                 .ToListAsync();
 
-            return rooms.Select(MapToResponse).ToList();
+            return rooms
+                .Where(r => !busyRoomNumbers.Contains(r.RoomNumber))
+                .Select(r => MapToResponse(r, busyRoomNumbers))
+                .ToList();
         }
 
         public async Task<RoomResponse?> UpdateRoomAsync(int roomId, CreateRoomDto request)
@@ -237,8 +279,19 @@ namespace AUCAPulse.Services
             return true;
         }
 
-        private RoomResponse MapToResponse(Room room)
+        private RoomResponse MapToResponse(Room room, HashSet<string>? busyRoomNumbers = null)
         {
+            var isScheduled = busyRoomNumbers != null
+                && !string.IsNullOrEmpty(room.RoomNumber)
+                && busyRoomNumbers.Contains(room.RoomNumber);
+
+            // A room shown as AVAILABLE but currently holding a scheduled class
+            // must appear OCCUPIED in the UI. Keep the stored Status untouched;
+            // only override what the caller sees.
+            var effectiveStatus = (isScheduled && room.Status == RoomStatus.AVAILABLE)
+                ? RoomStatus.OCCUPIED.ToString()
+                : room.Status.ToString();
+
             return new RoomResponse
             {
                 Id = room.Id,
@@ -248,7 +301,7 @@ namespace AUCAPulse.Services
                 Building = room.Building,
                 Floor = room.Floor,
                 RoomType = room.RoomType.ToString(),
-                Status = room.Status.ToString(),
+                Status = effectiveStatus,
                 CurrentLecturerId = room.CurrentLecturerId,
                 CurrentLecturerName = room.CurrentLecturer?.Name,
                 OccupiedAt = room.OccupiedAt,

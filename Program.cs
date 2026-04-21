@@ -142,6 +142,10 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.UseSession();
 
+// Route protection for Razor Pages — must run after UseSession (reads role
+// from session) and before MapRazorPages (redirects before the page executes).
+app.UseMiddleware<RoleGuardMiddleware>();
+
 app.MapRazorPages();
 app.MapControllers(); // Map API controllers
 

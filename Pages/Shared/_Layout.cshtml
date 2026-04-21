@@ -153,12 +153,13 @@
                 <h5 class="mb-0">@ViewData["Title"]</h5>
                 <div class="d-flex align-items-center gap-3">
                     <!-- Notification Bell -->
-                    <a href="/Notifications" class="text-secondary position-relative me-2" title="Notifications">
+                    <button type="button" class="btn btn-link text-secondary position-relative me-2 p-1" id="notifBellBtn"
+                            data-bs-toggle="modal" data-bs-target="#notificationsModal" title="Notifications">
                         <i class="bi bi-bell fs-5"></i>
                         <span id="headerUnreadCount" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger d-none" style="font-size: 0.6rem; padding: 0.25em 0.4em;">
                             0
                         </span>
-                    </a>
+                    </button>
 
                     <span class="badge bg-primary">@userRole</span>
                     <div class="dropdown">
@@ -178,6 +179,29 @@
             </main>
         </div>
     </div>
+
+    <!-- Notifications Modal (admin / lecturer / staff) -->
+    <div class="modal fade" id="notificationsModal" tabindex="-1" aria-labelledby="notificationsModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-scrollable modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="notificationsModalLabel">
+                        <i class="bi bi-bell me-2"></i>Notifications
+                    </h5>
+                    <div class="ms-auto d-flex align-items-center gap-2">
+                        <button type="button" id="notifMarkAllRead" class="btn btn-link btn-sm p-0 d-none">Mark all as read</button>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                </div>
+                <div class="modal-body p-0" id="notifModalBody">
+                    <div class="text-center text-muted py-5">
+                        <div class="spinner-border spinner-border-sm me-2" role="status"></div>
+                        Loading notifications...
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 }
 else
 {
@@ -195,35 +219,118 @@ else
 @if (isAuthenticated)
 {
     <script>
-        $(document).ready(function() {
-            const userId = "@Context.Session.GetString("UserId")";
-            const token = "@Context.Session.GetString("Token")";
-            // Get base URL from common local dev port or use window.location if hosted
-            const baseUrl = "https://localhost:7255/api"; 
+    (function () {
+        const USER_ID = '@(Context.Session.GetString("UserId") ?? "")';
+        const TOKEN = @Html.Raw(Json.Serialize(Context.Session.GetString("Token") ?? ""));
+        // Derive the API base URL from the current origin so it works on any port
+        const API = window.location.protocol + '//' + window.location.host + '/api';
+        const authHeaders = { 'Authorization': 'Bearer ' + TOKEN };
 
-            function updateUnreadCount() {
-                if (!userId || !token) return;
+        if (!USER_ID || !TOKEN) return;
 
-                fetch(`${baseUrl}/Notification/user/${userId}/unread-count`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                })
-                .then(res => res.json())
-                .then(data => {
-                    const count = data.count || 0;
-                    const badge = $('#headerUnreadCount');
-                    if (count > 0) {
-                        badge.text(count).removeClass('d-none');
-                    } else {
-                        badge.addClass('d-none');
-                    }
-                })
-                .catch(err => console.error('Error fetching notifications:', err));
+        const badge = document.getElementById('headerUnreadCount');
+        const body = document.getElementById('notifModalBody');
+        const markAll = document.getElementById('notifMarkAllRead');
+
+        function esc(s) {
+            return (s || '').replace(/[&<>"']/g, c =>
+                ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+        }
+
+        function timeAgo(iso) {
+            try {
+                const d = new Date(iso);
+                const diff = (Date.now() - d.getTime()) / 1000;
+                if (diff < 60) return 'just now';
+                if (diff < 3600) return Math.floor(diff / 60) + 'm ago';
+                if (diff < 86400) return Math.floor(diff / 3600) + 'h ago';
+                if (diff < 604800) return Math.floor(diff / 86400) + 'd ago';
+                return d.toLocaleDateString();
+            } catch { return ''; }
+        }
+
+        async function updateBadge() {
+            try {
+                const res = await fetch(API + '/notification/user/' + USER_ID + '/unread-count', { headers: authHeaders });
+                if (!res.ok) return;
+                const json = await res.json();
+                const count = json.count || 0;
+                if (!badge) return;
+                if (count > 0) {
+                    badge.textContent = count > 99 ? '99+' : count;
+                    badge.classList.remove('d-none');
+                } else {
+                    badge.classList.add('d-none');
+                }
+            } catch {}
+        }
+
+        async function loadList() {
+            if (!body) return;
+            body.innerHTML = '<div class="text-center text-muted py-5"><div class="spinner-border spinner-border-sm me-2"></div>Loading notifications...</div>';
+            try {
+                const res = await fetch(API + '/notification/user/' + USER_ID, { headers: authHeaders });
+                if (!res.ok) {
+                    body.innerHTML = '<div class="text-center text-muted py-5"><i class="bi bi-exclamation-circle d-block mb-2" style="font-size:1.5rem;"></i>Could not load notifications.</div>';
+                    return;
+                }
+                const json = await res.json();
+                const list = (json && json.data) || (Array.isArray(json) ? json : []);
+                if (!list.length) {
+                    body.innerHTML = '<div class="text-center text-muted py-5"><i class="bi bi-inbox d-block mb-2" style="font-size:2rem;"></i><div>No notifications yet.</div><div class="small">You\'re all caught up.</div></div>';
+                    markAll && markAll.classList.add('d-none');
+                    return;
+                }
+                const hasUnread = list.some(n => !n.isRead);
+                if (markAll) markAll.classList.toggle('d-none', !hasUnread);
+
+                body.innerHTML = list.map(n => `
+                    <div class="notif-row ${n.isRead ? '' : 'unread'}" data-id="${n.id}">
+                        <div class="notif-dot"></div>
+                        <div class="notif-content">
+                            <div class="notif-title">${esc(n.title)}</div>
+                            <div class="notif-message">${esc(n.message)}</div>
+                            <div class="notif-meta">${timeAgo(n.createdAt)}${n.type ? ' · ' + esc(n.type) : ''}</div>
+                        </div>
+                        ${n.isRead ? '' : '<button type="button" class="btn btn-link btn-sm notif-mark" title="Mark as read"><i class="bi bi-check2"></i></button>'}
+                    </div>
+                `).join('');
+
+                body.querySelectorAll('.notif-mark').forEach(btn => {
+                    btn.addEventListener('click', async (e) => {
+                        e.stopPropagation();
+                        const row = btn.closest('.notif-row');
+                        const id = row.getAttribute('data-id');
+                        try {
+                            await fetch(API + '/notification/' + id + '/mark-read', { method: 'PUT', headers: authHeaders });
+                            row.classList.remove('unread');
+                            btn.remove();
+                            await updateBadge();
+                            if (!body.querySelector('.notif-row.unread') && markAll) markAll.classList.add('d-none');
+                        } catch {}
+                    });
+                });
+            } catch {
+                body.innerHTML = '<div class="text-center text-muted py-5">Could not load notifications.</div>';
             }
+        }
 
-            // Initial load and poll every 10 seconds
-            updateUnreadCount();
-            setInterval(updateUnreadCount, 10000);
-        });
+        if (markAll) {
+            markAll.addEventListener('click', async () => {
+                try {
+                    await fetch(API + '/notification/user/' + USER_ID + '/mark-all-read', { method: 'PUT', headers: authHeaders });
+                    await loadList();
+                    await updateBadge();
+                } catch {}
+            });
+        }
+
+        const modal = document.getElementById('notificationsModal');
+        if (modal) modal.addEventListener('show.bs.modal', loadList);
+
+        updateBadge();
+        setInterval(updateBadge, 30000);
+    })();
     </script>
 }
 
