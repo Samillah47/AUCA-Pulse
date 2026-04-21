@@ -11,6 +11,10 @@
     var assignByCourse = Model.Assignments
         .GroupBy(a => new { a.CourseId, a.CourseCode, a.CourseName, a.Credits })
         .OrderBy(g => g.Key.CourseCode);
+
+    var cancelledToday = Model.Schedule
+        .Where(s => s.CancelledOn.HasValue && s.CancelledOn.Value.Date == DateTime.UtcNow.Date)
+        .ToList();
 }
 
 <div class="container-fluid">
@@ -44,12 +48,71 @@
                         }
                     </div>
                 </div>
-                <div>
-                    <span class="badge bg-primary">@Model.Assignments.Count course group@(Model.Assignments.Count == 1 ? "" : "s")</span>
-                    <span class="badge bg-secondary">@Model.Schedule.Count class@(Model.Schedule.Count == 1 ? "" : "es") / week</span>
+                <div class="text-end">
+                    @{
+                        string statusBadgeClass = Model.CurrentStatus switch
+                        {
+                            "IN_CLASS"    => "bg-danger",
+                            "IN_OFFICE"   => "bg-success",
+                            "AVAILABLE"   => "bg-success",
+                            "IN_MEETING"  => "bg-warning text-dark",
+                            "AWAY"        => "bg-secondary",
+                            "UNAVAILABLE" => "bg-dark",
+                            _             => "bg-light text-dark"
+                        };
+                    }
+                    @if (!string.IsNullOrWhiteSpace(Model.CurrentStatus))
+                    {
+                        <div class="mb-1">
+                            <span class="badge @statusBadgeClass fs-6">
+                                <i class="bi bi-circle-fill me-1" style="font-size:7px;"></i>@Model.CurrentStatus.Replace('_', ' ')
+                            </span>
+                        </div>
+                        @if (!string.IsNullOrWhiteSpace(Model.CurrentLocationLabel))
+                        {
+                            <div class="small text-muted">@Model.CurrentLocationLabel</div>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(Model.CurrentUntilTime))
+                        {
+                            <div class="small text-muted">until @Model.CurrentUntilTime</div>
+                        }
+                    }
+                    <div class="mt-1">
+                        <span class="badge bg-primary">@Model.Assignments.Count course group@(Model.Assignments.Count == 1 ? "" : "s")</span>
+                        <span class="badge bg-secondary">@Model.Schedule.Count class@(Model.Schedule.Count == 1 ? "" : "es") / week</span>
+                    </div>
                 </div>
             </div>
         </div>
+
+        @if (cancelledToday.Any())
+        {
+            <div class="alert alert-warning mb-4">
+                <div class="d-flex align-items-start gap-2">
+                    <i class="bi bi-exclamation-triangle-fill fs-5 mt-1"></i>
+                    <div class="flex-grow-1">
+                        <strong>@cancelledToday.Count class@(cancelledToday.Count == 1 ? "" : "es") cancelled today</strong>
+                        <ul class="mb-0 mt-1 small">
+                            @foreach (var c in cancelledToday)
+                            {
+                                <li>
+                                    <strong>@c.CourseCode</strong> @c.CourseName ·
+                                    @c.StartTime.Substring(0, Math.Min(5, c.StartTime.Length))-@c.EndTime.Substring(0, Math.Min(5, c.EndTime.Length))
+                                    @if (!string.IsNullOrWhiteSpace(c.RoomNumber))
+                                    {
+                                        <span> · Room @c.RoomNumber</span>
+                                    }
+                                    @if (!string.IsNullOrWhiteSpace(c.CancellationReason))
+                                    {
+                                        <span class="text-muted"> — @c.CancellationReason</span>
+                                    }
+                                </li>
+                            }
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        }
 
         <div class="row g-4">
             <!-- Courses taught -->

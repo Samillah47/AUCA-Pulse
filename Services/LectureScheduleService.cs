@@ -10,11 +10,45 @@ namespace AUCAPulse.Services
     {
         private readonly ApplicationDbContext _context;
         private readonly ILogger<LectureScheduleService> _logger;
+        private readonly INotificationService _notificationService;
 
-        public LectureScheduleService(ApplicationDbContext context, ILogger<LectureScheduleService> logger)
+        public LectureScheduleService(
+            ApplicationDbContext context,
+            ILogger<LectureScheduleService> logger,
+            INotificationService notificationService)
         {
             _context = context;
             _logger = logger;
+            _notificationService = notificationService;
+        }
+
+        private async Task NotifyAdminsAsync(string title, string message, string link, NotificationType type = NotificationType.INFO)
+        {
+            try
+            {
+                var adminIds = await _context.Users
+                    .Include(u => u.Role)
+                    .Where(u => u.Role != null && u.Role.RoleName == "ADMIN"
+                             && u.Status == UserStatus.APPROVED)
+                    .Select(u => u.Id)
+                    .ToListAsync();
+
+                foreach (var adminId in adminIds)
+                {
+                    await _notificationService.CreateNotificationAsync(new CreateNotificationDto
+                    {
+                        UserId = adminId,
+                        Title = title,
+                        Message = message,
+                        Type = type,
+                        Link = link
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to broadcast admin notification: {Title}", title);
+            }
         }
 
         public async Task<LectureScheduleResponse> CreateScheduleAsync(int lecturerId, CreateLectureScheduleDto request)
@@ -230,6 +264,21 @@ namespace AUCAPulse.Services
             }
 
             await _context.SaveChangesAsync();
+
+            // Alert admins so they know the room was freed and the class is off today
+            var lecturerName = schedule.Lecturer?.Name ?? "A lecturer";
+            var course = !string.IsNullOrWhiteSpace(schedule.CourseCode)
+                ? $"{schedule.CourseCode} {schedule.CourseName}".Trim()
+                : (schedule.CourseName ?? "a class");
+            var timeLabel = $"{schedule.StartTime:hh\\:mm}-{schedule.EndTime:hh\\:mm}";
+            var roomPart = string.IsNullOrWhiteSpace(schedule.RoomNumber) ? "" : $" in {schedule.RoomNumber}";
+            var reasonPart = string.IsNullOrWhiteSpace(schedule.CancellationReason) ? "" : $" Reason: {schedule.CancellationReason}.";
+            await NotifyAdminsAsync(
+                title: $"Class cancelled today: {course}",
+                message: $"{lecturerName} cancelled {course} ({timeLabel}{roomPart}) for today.{reasonPart}",
+                link: $"/Lecturers/{lecturerId}",
+                type: NotificationType.WARNING);
+
             return MapToResponse(schedule);
         }
 
@@ -249,6 +298,17 @@ namespace AUCAPulse.Services
             schedule.UpdatedAt = DateTime.UtcNow;
 
             await _context.SaveChangesAsync();
+
+            var lecturerName = schedule.Lecturer?.Name ?? "A lecturer";
+            var course = !string.IsNullOrWhiteSpace(schedule.CourseCode)
+                ? $"{schedule.CourseCode} {schedule.CourseName}".Trim()
+                : (schedule.CourseName ?? "a class");
+            await NotifyAdminsAsync(
+                title: $"Class reinstated today: {course}",
+                message: $"{lecturerName} reinstated {course} for today.",
+                link: $"/Lecturers/{lecturerId}",
+                type: NotificationType.INFO);
+
             return MapToResponse(schedule);
         }
 

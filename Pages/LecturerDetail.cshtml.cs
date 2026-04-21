@@ -21,6 +21,12 @@ namespace AUCAPulse.Pages
         public List<LecturerScheduleRow> Schedule { get; set; } = new();
         public string? ErrorMessage { get; set; }
 
+        // Live status + location (from /api/lecturer-locations)
+        public string? CurrentStatus { get; set; }
+        public string? CurrentLocationLabel { get; set; }
+        public string? CurrentCourseInfo { get; set; }
+        public string? CurrentUntilTime { get; set; }
+
         public async Task<IActionResult> OnGetAsync(int id)
         {
             var token = HttpContext.Session.GetString("Token");
@@ -62,6 +68,22 @@ namespace AUCAPulse.Pages
                     Schedule = JsonSerializer.Deserialize<List<LecturerScheduleRow>>(
                         await schedRes.Content.ReadAsStringAsync(), opts) ?? new();
                 }
+
+                // 4. Live location (in-class / in-office / available / away)
+                try
+                {
+                    var locRes = await client.GetAsync($"{api}/lecturer-locations/{id}");
+                    if (locRes.IsSuccessStatusCode)
+                    {
+                        var loc = JsonSerializer.Deserialize<JsonElement>(
+                            await locRes.Content.ReadAsStringAsync());
+                        if (loc.TryGetProperty("status", out var s)) CurrentStatus = s.GetString();
+                        if (loc.TryGetProperty("locationLabel", out var l)) CurrentLocationLabel = l.GetString();
+                        if (loc.TryGetProperty("courseInfo", out var c)) CurrentCourseInfo = c.GetString();
+                        if (loc.TryGetProperty("untilTime", out var u)) CurrentUntilTime = u.GetString();
+                    }
+                }
+                catch { /* non-critical */ }
             }
             catch (Exception ex)
             {
@@ -105,5 +127,7 @@ namespace AUCAPulse.Pages
         public string? RoomNumber { get; set; }
         public string? GroupName { get; set; }
         public string? SemesterName { get; set; }
+        public DateTime? CancelledOn { get; set; }
+        public string? CancellationReason { get; set; }
     }
 }

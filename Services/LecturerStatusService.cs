@@ -10,11 +10,46 @@ namespace AUCAPulse.Services
     {
         private readonly ApplicationDbContext _context;
         private readonly ILogger<LecturerStatusService> _logger;
+        private readonly INotificationService _notificationService;
 
-        public LecturerStatusService(ApplicationDbContext context, ILogger<LecturerStatusService> logger)
+        public LecturerStatusService(
+            ApplicationDbContext context,
+            ILogger<LecturerStatusService> logger,
+            INotificationService notificationService)
         {
             _context = context;
             _logger = logger;
+            _notificationService = notificationService;
+        }
+
+        /// <summary>Broadcast a notification to every ADMIN user.</summary>
+        private async Task NotifyAdminsAsync(string title, string message, string link, NotificationType type = NotificationType.INFO)
+        {
+            try
+            {
+                var adminIds = await _context.Users
+                    .Include(u => u.Role)
+                    .Where(u => u.Role != null && u.Role.RoleName == "ADMIN"
+                             && u.Status == UserStatus.APPROVED)
+                    .Select(u => u.Id)
+                    .ToListAsync();
+
+                foreach (var adminId in adminIds)
+                {
+                    await _notificationService.CreateNotificationAsync(new CreateNotificationDto
+                    {
+                        UserId = adminId,
+                        Title = title,
+                        Message = message,
+                        Type = type,
+                        Link = link
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to broadcast admin notification: {Title}", title);
+            }
         }
 
         public async Task<LecturerStatusResponse> CreateStatusAsync(int lecturerId, CreateLecturerStatusDto request)
@@ -36,6 +71,15 @@ namespace AUCAPulse.Services
 
             _context.LecturerStatuses.Add(lecturerStatus);
             await _context.SaveChangesAsync();
+
+            // Let admins know the lecturer just changed their status
+            var statusLabel = request.Status.ToString().Replace('_', ' ');
+            var note = string.IsNullOrWhiteSpace(request.Notes) ? "" : $" — {request.Notes.Trim()}";
+            await NotifyAdminsAsync(
+                title: $"{lecturer.Name} is now {statusLabel}",
+                message: $"{lecturer.Name} updated their status to {statusLabel}{note}.",
+                link: $"/Lecturers/{lecturerId}",
+                type: request.Status == Status.UNAVAILABLE ? NotificationType.WARNING : NotificationType.INFO);
 
             return await GetStatusByIdAsync(lecturerStatus.Id) ?? throw new Exception("Failed to create status");
         }
