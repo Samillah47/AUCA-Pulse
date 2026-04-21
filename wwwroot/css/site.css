@@ -595,14 +595,29 @@ a:hover { color: var(--accent-hover); text-decoration: underline; }
 }
 
 .hero-greeting {
-    padding: 1.5rem 1.75rem;
-    background: var(--surface);
+    position: relative;
+    padding: 1.75rem 1.75rem;
+    background: linear-gradient(135deg, #ffffff 0%, #f7faff 100%);
     border: 1px solid var(--border);
-    border-radius: var(--radius);
+    border-radius: var(--radius-lg);
     box-shadow: var(--shadow-sm);
     margin-bottom: 1.5rem;
+    overflow: hidden;
 }
-.hero-greeting h1 { margin-bottom: 0.25rem; font-size: 1.5rem; }
+.hero-greeting::before {
+    content: '';
+    position: absolute;
+    top: -30%;
+    right: -10%;
+    width: 260px;
+    height: 260px;
+    background: radial-gradient(circle, rgba(37, 99, 235, 0.10), transparent 70%);
+    border-radius: 50%;
+    pointer-events: none;
+    animation: float-slow 6s ease-in-out infinite;
+}
+.hero-greeting > * { position: relative; z-index: 1; }
+.hero-greeting h1 { margin-bottom: 0.25rem; font-size: 1.625rem; letter-spacing: -0.02em; }
 .hero-greeting .text-muted { font-size: 0.9375rem; }
 
 .quick-tile {
@@ -826,13 +841,163 @@ a:hover { color: var(--accent-hover); text-decoration: underline; }
     max-width: 100%;
 }
 
-/* Subtle fade-in on page load so transitions feel modern */
+/* ==========================================================================
+   Animations — stagger, shine, pulse, float
+   ========================================================================== */
+
 @keyframes pulse-fade-in {
     from { opacity: 0; transform: translateY(4px); }
     to   { opacity: 1; transform: translateY(0); }
 }
 .main-content .page, .student-page {
     animation: pulse-fade-in .35s var(--ease) both;
+}
+
+/* Stagger — apply .stagger to a parent grid/row and each direct child
+   fades up with an increasing delay. Works nicely on KPI rows, tile
+   grids and card rows. */
+@keyframes stagger-up {
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+.stagger > * {
+    animation: stagger-up .45s var(--ease) both;
+}
+.stagger > *:nth-child(1) { animation-delay: .02s; }
+.stagger > *:nth-child(2) { animation-delay: .08s; }
+.stagger > *:nth-child(3) { animation-delay: .14s; }
+.stagger > *:nth-child(4) { animation-delay: .20s; }
+.stagger > *:nth-child(5) { animation-delay: .26s; }
+.stagger > *:nth-child(6) { animation-delay: .32s; }
+.stagger > *:nth-child(7) { animation-delay: .38s; }
+.stagger > *:nth-child(8) { animation-delay: .44s; }
+.stagger > *:nth-child(n+9) { animation-delay: .50s; }
+
+/* Shine sweep on hover — only on KPI + quick tiles (cards keep overflow:visible
+   so dropdowns/tooltips inside them aren't clipped) */
+.kpi-card, .quick-tile {
+    position: relative;
+    overflow: hidden;
+}
+.card { position: relative; }
+.kpi-card::before, .quick-tile::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -75%;
+    width: 50%;
+    height: 100%;
+    background: linear-gradient(120deg,
+        rgba(255, 255, 255, 0) 0%,
+        rgba(255, 255, 255, 0.35) 50%,
+        rgba(255, 255, 255, 0) 100%);
+    transform: skewX(-20deg);
+    transition: left .6s var(--ease);
+    pointer-events: none;
+    z-index: 1;
+}
+.kpi-card:hover::before, .quick-tile:hover::before {
+    left: 130%;
+}
+.kpi-card > *, .quick-tile > * { position: relative; z-index: 2; }
+
+/* Gentle float on dashboard hero art */
+@keyframes float-slow {
+    0%, 100% { transform: translateY(0); }
+    50%      { transform: translateY(-6px); }
+}
+.dash-hero-art {
+    animation: float-slow 4s ease-in-out infinite;
+}
+
+/* Notification badge pulse — draws the eye when there's something new */
+@keyframes notif-pulse {
+    0%   { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.55); }
+    70%  { box-shadow: 0 0 0 8px rgba(239, 68, 68, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+}
+.notif-badge {
+    animation: notif-pulse 2s var(--ease) infinite;
+}
+
+/* Subtle glow around focused inputs — modern, branded */
+.form-control:focus, .form-select:focus {
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.14) !important;
+}
+
+/* Modal entrance — slide up with fade */
+@keyframes modal-slide-up {
+    from { opacity: 0; transform: translateY(16px) scale(0.98); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+.modal.fade.show .modal-dialog {
+    animation: modal-slide-up .28s var(--ease);
+}
+
+/* Button ripple-ish press feedback */
+.btn-primary, .btn-success, .btn-danger, .btn-warning {
+    position: relative;
+    overflow: hidden;
+}
+
+/* Animated nav-link underline on hover (student nav + topbar) */
+.student-nav .nav-links a, .topbar a {
+    position: relative;
+}
+.student-nav .nav-links a::after {
+    content: '';
+    position: absolute;
+    left: 0.75rem; right: 0.75rem; bottom: 4px;
+    height: 2px;
+    background: var(--accent);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform .22s var(--ease);
+    border-radius: 2px;
+}
+.student-nav .nav-links a:hover::after,
+.student-nav .nav-links a.active::after {
+    transform: scaleX(1);
+}
+
+/* Hero greeting animation — gentle rise + fade */
+.hero-greeting, .dash-hero {
+    animation: pulse-fade-in .5s var(--ease) both;
+}
+
+/* Appointments / class-cards enter from the right in sequence */
+@keyframes slide-in-right {
+    from { opacity: 0; transform: translateX(12px); }
+    to   { opacity: 1; transform: translateX(0); }
+}
+.class-card {
+    animation: slide-in-right .4s var(--ease) both;
+}
+.class-card:nth-child(1) { animation-delay: .05s; }
+.class-card:nth-child(2) { animation-delay: .12s; }
+.class-card:nth-child(3) { animation-delay: .19s; }
+.class-card:nth-child(4) { animation-delay: .26s; }
+.class-card:nth-child(n+5) { animation-delay: .33s; }
+
+/* Links & buttons inside tables get a subtle lift on hover */
+.table tbody tr { transition: transform .18s var(--ease); }
+
+/* Dash hero — subtle animated background shimmer using blue accent */
+.dash-hero {
+    position: relative;
+    overflow: hidden;
+}
+.dash-hero::after {
+    content: '';
+    position: absolute;
+    top: -50%;
+    right: -10%;
+    width: 340px;
+    height: 340px;
+    background: radial-gradient(circle, rgba(37, 99, 235, 0.10), transparent 70%);
+    border-radius: 50%;
+    pointer-events: none;
+    animation: float-slow 6s ease-in-out infinite;
 }
 
 /* Honor the user's motion preference */
