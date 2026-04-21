@@ -82,7 +82,9 @@ namespace AUCAPulse.Services
                          && s.EndTime >= currentTime
                          && s.Semester != null
                          && s.Semester.StartDate <= today
-                         && s.Semester.EndDate >= today)
+                         && s.Semester.EndDate >= today
+                         // Exclude classes the lecturer cancelled / ended for today
+                         && (s.CancelledOn == null || s.CancelledOn != today))
                 .OrderBy(s => s.StartTime)
                 .FirstOrDefaultAsync();
 

@@ -23,6 +23,7 @@ namespace AUCAPulse.Services
                 Title = dto.Title,
                 Message = dto.Message,
                 Type = dto.Type,
+                Link = dto.Link,
                 IsRead = false,
                 CreatedAt = DateTime.UtcNow
             };
@@ -111,6 +112,7 @@ namespace AUCAPulse.Services
                 Title = notification.Title,
                 Message = notification.Message,
                 Type = notification.Type,
+                Link = notification.Link,
                 IsRead = notification.IsRead,
                 ReadAt = notification.ReadAt,
                 CreatedAt = notification.CreatedAt

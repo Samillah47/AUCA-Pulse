@@ -195,6 +195,63 @@ namespace AUCAPulse.Services
             return true;
         }
 
+        public async Task<LectureScheduleResponse?> CancelForTodayAsync(int scheduleId, int lecturerId, string? reason)
+        {
+            var schedule = await _context.LectureSchedules
+                .Include(s => s.Lecturer)
+                .Include(s => s.Semester)
+                .FirstOrDefaultAsync(s => s.Id == scheduleId);
+
+            if (schedule == null) return null;
+            if (schedule.LecturerId != lecturerId)
+                throw new UnauthorizedAccessException("You can only cancel your own classes.");
+
+            var today = DateTime.UtcNow.Date;
+            schedule.CancelledOn = today;
+            schedule.CancellationReason = string.IsNullOrWhiteSpace(reason) ? null : reason.Trim();
+            schedule.UpdatedAt = DateTime.UtcNow;
+
+            // If the lecturer was holding the room, free it right now so
+            // everyone else can book it.
+            if (!string.IsNullOrWhiteSpace(schedule.RoomNumber))
+            {
+                var room = await _context.Rooms
+                    .FirstOrDefaultAsync(r => r.RoomNumber == schedule.RoomNumber
+                                           && r.CurrentLecturerId == lecturerId);
+                if (room != null)
+                {
+                    room.Status = RoomStatus.AVAILABLE;
+                    room.CurrentLecturerId = null;
+                    room.OccupiedAt = null;
+                    room.OccupiedUntil = null;
+                    room.CourseInfo = null;
+                    room.UpdatedAt = DateTime.UtcNow;
+                }
+            }
+
+            await _context.SaveChangesAsync();
+            return MapToResponse(schedule);
+        }
+
+        public async Task<LectureScheduleResponse?> ReinstateForTodayAsync(int scheduleId, int lecturerId)
+        {
+            var schedule = await _context.LectureSchedules
+                .Include(s => s.Lecturer)
+                .Include(s => s.Semester)
+                .FirstOrDefaultAsync(s => s.Id == scheduleId);
+
+            if (schedule == null) return null;
+            if (schedule.LecturerId != lecturerId)
+                throw new UnauthorizedAccessException("You can only manage your own classes.");
+
+            schedule.CancelledOn = null;
+            schedule.CancellationReason = null;
+            schedule.UpdatedAt = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync();
+            return MapToResponse(schedule);
+        }
+
         private LectureScheduleResponse MapToResponse(LectureSchedule schedule)
         {
             return new LectureScheduleResponse
@@ -211,6 +268,8 @@ namespace AUCAPulse.Services
                 RoomNumber = schedule.RoomNumber,
                 GroupName = schedule.GroupName,
                 SemesterId = schedule.SemesterId,
+                CancelledOn = schedule.CancelledOn,
+                CancellationReason = schedule.CancellationReason,
                 SemesterName = schedule.Semester?.Name,
                 CreatedAt = schedule.CreatedAt,
                 UpdatedAt = schedule.UpdatedAt

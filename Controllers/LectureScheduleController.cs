@@ -137,6 +137,66 @@ namespace AUCAPulse.Controllers
             }
         }
 
+        [HttpPost("{id}/cancel-today")]
+        [Authorize(Roles = "LECTURER,ADMIN")]
+        public async Task<IActionResult> CancelToday(int id, [FromBody] CancelTodayRequest? request)
+        {
+            try
+            {
+                var userIdClaim = User.FindFirst(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Sub)?.Value
+                                  ?? User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value
+                                  ?? User.FindFirst("UserId")?.Value;
+                if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out int lecturerId))
+                    return Unauthorized(new { message = "Please sign in again." });
+
+                var result = await _lectureScheduleService.CancelForTodayAsync(id, lecturerId, request?.Reason);
+                if (result == null) return NotFound(new { message = "Class not found." });
+
+                return Ok(new { message = "Class cancelled for today and the room has been released.", data = result });
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return StatusCode(403, new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to cancel class {ScheduleId}", id);
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        [HttpPost("{id}/reinstate-today")]
+        [Authorize(Roles = "LECTURER,ADMIN")]
+        public async Task<IActionResult> ReinstateToday(int id)
+        {
+            try
+            {
+                var userIdClaim = User.FindFirst(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Sub)?.Value
+                                  ?? User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value
+                                  ?? User.FindFirst("UserId")?.Value;
+                if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out int lecturerId))
+                    return Unauthorized(new { message = "Please sign in again." });
+
+                var result = await _lectureScheduleService.ReinstateForTodayAsync(id, lecturerId);
+                if (result == null) return NotFound(new { message = "Class not found." });
+
+                return Ok(new { message = "Class reinstated for today.", data = result });
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return StatusCode(403, new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        public class CancelTodayRequest
+        {
+            public string? Reason { get; set; }
+        }
+
         [HttpDelete("{id}")]
         [Authorize(Roles = "LECTURER,ADMIN")]
         public async Task<IActionResult> DeleteSchedule(int id)

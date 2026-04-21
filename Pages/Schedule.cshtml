@@ -109,16 +109,42 @@
                 <div class="list-group">
                     @foreach (var schedule in todaySchedules.OrderBy(s => s.StartTime))
                     {
+                        var cancelledToday = schedule.CancelledOn.HasValue
+                            && schedule.CancelledOn.Value.Date == DateTime.UtcNow.Date;
                         <div class="list-group-item">
-                            <div class="d-flex justify-content-between align-items-center">
+                            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
                                 <div>
-                                    <h6 class="mb-1">@schedule.CourseName</h6>
+                                    <h6 class="mb-1">
+                                        @schedule.CourseName
+                                        @if (cancelledToday)
+                                        {
+                                            <span class="badge bg-danger ms-2">Cancelled today</span>
+                                        }
+                                    </h6>
                                     <p class="mb-0 text-muted">
                                         <i class="bi bi-clock me-1"></i>@schedule.StartTime - @schedule.EndTime
                                         <span class="ms-3">
                                             <i class="bi bi-door-open me-1"></i>Room @schedule.RoomNumber
                                         </span>
                                     </p>
+                                    @if (cancelledToday && !string.IsNullOrEmpty(schedule.CancellationReason))
+                                    {
+                                        <div class="text-muted small mt-1"><em>@schedule.CancellationReason</em></div>
+                                    }
+                                </div>
+                                <div class="d-flex gap-2">
+                                    @if (cancelledToday)
+                                    {
+                                        <button type="button" class="btn btn-outline-success btn-sm reinstate-btn" data-id="@schedule.Id">
+                                            <i class="bi bi-arrow-counterclockwise me-1"></i>Reinstate
+                                        </button>
+                                    }
+                                    else
+                                    {
+                                        <button type="button" class="btn btn-outline-danger btn-sm cancel-today-btn" data-id="@schedule.Id" data-course="@schedule.CourseName">
+                                            <i class="bi bi-x-circle me-1"></i>Suspend / End now
+                                        </button>
+                                    }
                                 </div>
                             </div>
                         </div>
@@ -132,6 +158,63 @@
         </div>
     </div>
 </div>
+
+@section Scripts {
+    <script>
+    (function () {
+        const TOKEN = '@(Model.AccessToken ?? "")';
+        const API = window.location.protocol + '//' + window.location.host + '/api';
+        const headers = { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + TOKEN };
+
+        document.querySelectorAll('.cancel-today-btn').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                const id = btn.dataset.id;
+                const course = btn.dataset.course || 'this class';
+                const reason = prompt(`Cancel ${course} for today?\n\nThe room will be released immediately and students will see this class is not running today. Optional reason:`, '');
+                if (reason === null) return; // user cancelled
+
+                btn.disabled = true;
+                try {
+                    const res = await fetch(API + '/LectureSchedule/' + id + '/cancel-today', {
+                        method: 'POST', headers,
+                        body: JSON.stringify({ reason: reason || null })
+                    });
+                    if (res.ok) {
+                        if (window.Toast) Toast.success('Class cancelled for today. Room released.');
+                        setTimeout(() => window.location.reload(), 600);
+                    } else {
+                        const j = await res.json().catch(() => ({}));
+                        if (window.Toast) Toast.error(j.message || 'Could not cancel the class.');
+                    }
+                } finally {
+                    btn.disabled = false;
+                }
+            });
+        });
+
+        document.querySelectorAll('.reinstate-btn').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                const id = btn.dataset.id;
+                btn.disabled = true;
+                try {
+                    const res = await fetch(API + '/LectureSchedule/' + id + '/reinstate-today', {
+                        method: 'POST', headers
+                    });
+                    if (res.ok) {
+                        if (window.Toast) Toast.success('Class reinstated for today.');
+                        setTimeout(() => window.location.reload(), 600);
+                    } else {
+                        const j = await res.json().catch(() => ({}));
+                        if (window.Toast) Toast.error(j.message || 'Could not reinstate the class.');
+                    }
+                } finally {
+                    btn.disabled = false;
+                }
+            });
+        });
+    })();
+    </script>
+}
 
 @functions {
     string GetStatusBadgeClass(string status)

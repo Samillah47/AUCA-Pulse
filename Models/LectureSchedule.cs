@@ -46,6 +46,21 @@ namespace AUCAPulse.Models
         [Column("semester_id")]
         public int? SemesterId { get; set; }
 
+        /// <summary>
+        /// When the lecturer cancels today's occurrence of this weekly slot
+        /// (either "suspend today" or "end now"), we stamp this column with
+        /// today's date. The "is this class active right now?" query skips
+        /// rows whose CancelledOn == today — so the room frees up immediately
+        /// and the lecturer's live location is no longer IN_CLASS. Tomorrow
+        /// the same weekly slot is active again automatically.
+        /// </summary>
+        [Column("cancelled_on")]
+        public DateTime? CancelledOn { get; set; }
+
+        [Column("cancellation_reason")]
+        [MaxLength(255)]
+        public string? CancellationReason { get; set; }
+
         [Column("created_at")]
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 

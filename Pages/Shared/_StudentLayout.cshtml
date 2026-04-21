@@ -196,7 +196,7 @@
             markAll.classList.toggle('d-none', !hasUnread);
 
             body.innerHTML = list.map(n => `
-                <div class="notif-row ${n.isRead ? '' : 'unread'}" data-id="${n.id}">
+                <div class="notif-row ${n.isRead ? '' : 'unread'} ${n.link ? 'has-link' : ''}" data-id="${n.id}" data-link="${esc(n.link || '')}" ${n.link ? 'style="cursor:pointer;"' : ''}>
                     <div class="notif-dot"></div>
                     <div class="notif-content">
                         <div class="notif-title">${esc(n.title)}</div>
@@ -205,6 +205,20 @@
                     </div>
                 </div>
             `).join('');
+
+            // Clicking a notification with a link marks it read and navigates
+            body.querySelectorAll('.notif-row.has-link').forEach(row => {
+                row.addEventListener('click', async () => {
+                    const id = row.getAttribute('data-id');
+                    const link = row.getAttribute('data-link');
+                    if (row.classList.contains('unread')) {
+                        try {
+                            await fetch(API + '/notification/' + id + '/mark-read', { method: 'PUT', headers: authHeaders });
+                        } catch {}
+                    }
+                    if (link) window.location.href = link;
+                });
+            });
 
         } catch {
             body.innerHTML = '<div class="text-center text-muted py-5">Could not load notifications.</div>';

@@ -17,6 +17,8 @@ namespace AUCAPulse.DTOs.Response
         public string? GroupName { get; set; }
         public int? SemesterId { get; set; }
         public string? SemesterName { get; set; }
+        public DateTime? CancelledOn { get; set; }
+        public string? CancellationReason { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime? UpdatedAt { get; set; }
     }

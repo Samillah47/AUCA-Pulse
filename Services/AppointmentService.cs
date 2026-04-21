@@ -78,7 +78,8 @@ namespace AUCAPulse.Services
                     Title = "New appointment request",
                     Message = $"{student.Name} requested an appointment on {localWhen}. " +
                               (string.IsNullOrWhiteSpace(request.Reason) ? "" : $"Reason: {request.Reason}"),
-                    Type = NotificationType.INFO
+                    Type = NotificationType.INFO,
+                    Link = "/Appointments"
                 });
             }
             catch (Exception ex)
@@ -186,7 +187,8 @@ namespace AUCAPulse.Services
                         UserId = appointment.StudentUserId,
                         Title = title,
                         Message = body,
-                        Type = type
+                        Type = type,
+                        Link = "/Student/MyAppointments"
                     });
                 }
                 catch (Exception ex)

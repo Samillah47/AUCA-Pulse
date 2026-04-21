@@ -285,7 +285,7 @@ else
                 if (markAll) markAll.classList.toggle('d-none', !hasUnread);
 
                 body.innerHTML = list.map(n => `
-                    <div class="notif-row ${n.isRead ? '' : 'unread'}" data-id="${n.id}">
+                    <div class="notif-row ${n.isRead ? '' : 'unread'} ${n.link ? 'has-link' : ''}" data-id="${n.id}" data-link="${esc(n.link || '')}" ${n.link ? 'style="cursor:pointer;"' : ''}>
                         <div class="notif-dot"></div>
                         <div class="notif-content">
                             <div class="notif-title">${esc(n.title)}</div>
@@ -308,6 +308,21 @@ else
                             await updateBadge();
                             if (!body.querySelector('.notif-row.unread') && markAll) markAll.classList.add('d-none');
                         } catch {}
+                    });
+                });
+
+                // Clicking a notification with a link: mark it read + navigate
+                body.querySelectorAll('.notif-row.has-link').forEach(row => {
+                    row.addEventListener('click', async (e) => {
+                        if (e.target.closest('.notif-mark')) return;
+                        const id = row.getAttribute('data-id');
+                        const link = row.getAttribute('data-link');
+                        if (row.classList.contains('unread')) {
+                            try {
+                                await fetch(API + '/notification/' + id + '/mark-read', { method: 'PUT', headers: authHeaders });
+                            } catch {}
+                        }
+                        if (link) window.location.href = link;
                     });
                 });
             } catch {

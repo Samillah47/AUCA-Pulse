@@ -37,6 +37,13 @@ namespace AUCAPulse.Models
         [Column("type")]
         public NotificationType Type { get; set; }
 
+        /// <summary>Optional target path the UI should navigate to when the
+        /// user clicks this notification (e.g. "/Appointments" or
+        /// "/Student/MyAppointments").</summary>
+        [Column("link")]
+        [MaxLength(255)]
+        public string? Link { get; set; }
+
         [Column("is_read")]
         public bool IsRead { get; set; } = false;
 

@@ -20,6 +20,7 @@ namespace AUCAPulse.Pages
         public string? CurrentStatus { get; set; }
         public string? ErrorMessage { get; set; }
         public string? SuccessMessage { get; set; }
+        public string? AccessToken { get; set; }
 
         public async Task<IActionResult> OnGetAsync()
         {
@@ -28,6 +29,7 @@ namespace AUCAPulse.Pages
             {
                 return RedirectToPage("/Login");
             }
+            AccessToken = token;
 
             var userId = HttpContext.Session.GetString("UserId");
             var userRole = HttpContext.Session.GetString("UserRole");
@@ -92,5 +94,7 @@ namespace AUCAPulse.Pages
         public string CourseName { get; set; } = string.Empty;
         public string RoomNumber { get; set; } = string.Empty;
         public string SemesterName { get; set; } = string.Empty;
+        public DateTime? CancelledOn { get; set; }
+        public string? CancellationReason { get; set; }
     }
 }

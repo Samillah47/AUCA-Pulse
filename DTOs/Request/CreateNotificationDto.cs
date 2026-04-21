@@ -17,5 +17,10 @@ namespace AUCAPulse.DTOs.Request
 
         [Required]
         public NotificationType Type { get; set; }
+
+        /// <summary>Optional path to navigate to when the user clicks the
+        /// notification (e.g. "/Appointments").</summary>
+        [MaxLength(255)]
+        public string? Link { get; set; }
     }
 }
