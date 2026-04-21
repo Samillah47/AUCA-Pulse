@@ -60,7 +60,7 @@ namespace AUCAPulse.Middleware
             ("/Groups",               new[] { "ADMIN" }),
             ("/TimetableGenerator",   new[] { "ADMIN" }),
             ("/Reports",              new[] { "ADMIN" }),
-            ("/CancelledClasses",     new[] { "ADMIN", "STAFF" }),
+            ("/CancelledClasses",     new[] { "ADMIN" }),
 
             // Shared pages — anyone signed in
             ("/Appointments",      new[] { "STAFF", "LECTURER", "STUDENT", "ADMIN" }),

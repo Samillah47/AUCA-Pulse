@@ -97,9 +97,6 @@
                     <a class="nav-link @(IsActive("/Rooms") ? "active" : "")" href="/Rooms">
                         <i class="bi bi-door-open"></i> Rooms
                     </a>
-                    <a class="nav-link @(IsActive("/CancelledClasses") ? "active" : "")" href="/CancelledClasses">
-                        <i class="bi bi-x-octagon"></i> Cancelled Classes
-                    </a>
                 }
                 @if (userRole == "ADMIN")
                 {

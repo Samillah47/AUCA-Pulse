@@ -29,7 +29,7 @@ namespace AUCAPulse.Pages
             var token = HttpContext.Session.GetString("Token");
             var role = HttpContext.Session.GetString("UserRole");
             if (string.IsNullOrEmpty(token)) return RedirectToPage("/Login");
-            if (role != "ADMIN" && role != "STAFF") return RedirectToPage("/AccessDenied");
+            if (role != "ADMIN") return RedirectToPage("/AccessDenied");
 
             try
             {

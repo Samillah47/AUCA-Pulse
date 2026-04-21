@@ -16,12 +16,25 @@ namespace AUCAPulse.Pages
     public class OfficeManagementModel : PageModel
     {
         private readonly IOfficeService _officeService;
+        private readonly IUserService _userService;
         private readonly ILogger<OfficeManagementModel> _logger;
 
-        public OfficeManagementModel(IOfficeService officeService, ILogger<OfficeManagementModel> logger)
+        public OfficeManagementModel(IOfficeService officeService, IUserService userService, ILogger<OfficeManagementModel> logger)
         {
             _officeService = officeService;
+            _userService = userService;
             _logger = logger;
+        }
+
+        /// <summary>APPROVED staff users — choices for the "assign to" dropdowns.</summary>
+        public List<StaffOption> StaffOptions { get; set; } = new();
+
+        public class StaffOption
+        {
+            public int Id { get; set; }
+            public string Name { get; set; } = string.Empty;
+            public string Email { get; set; } = string.Empty;
+            public bool AlreadyHasOffice { get; set; }
         }
 
         // ===============================================================
@@ -87,6 +100,19 @@ namespace AUCAPulse.Pages
                 _logger.LogInformation("Loading all offices for admin");
                 Offices = await _officeService.GetAllOfficesAsync();
                 _logger.LogInformation($"Successfully loaded {Offices.Count} offices");
+
+                var staffUsers = await _userService.GetUsersByRoleNameAsync("STAFF");
+                StaffOptions = staffUsers
+                    .Where(u => string.Equals(u.Status, "APPROVED", StringComparison.OrdinalIgnoreCase))
+                    .Select(u => new StaffOption
+                    {
+                        Id = u.Id,
+                        Name = u.Name,
+                        Email = u.Email,
+                        AlreadyHasOffice = Offices.Any(o => o.StaffUserId == u.Id)
+                    })
+                    .OrderBy(s => s.Name)
+                    .ToList();
             }
             catch (Exception ex)
             {

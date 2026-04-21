@@ -198,7 +198,7 @@ namespace AUCAPulse.Controllers
         }
 
         [HttpGet("cancelled")]
-        [Authorize(Roles = "ADMIN,STAFF")]
+        [Authorize(Roles = "ADMIN")]
         public async Task<IActionResult> GetCancelled([FromQuery] DateTime? date)
         {
             var items = await _lectureScheduleService.GetCancelledClassesAsync(date);
