@@ -1,0 +1,184 @@
+@page
+@model AUCAPulse.Pages.HomeModel
+@{
+    ViewData["Title"] = "Home";
+    Layout = "_StudentLayout";
+    var today = DateTime.Now.ToString("dddd, d MMMM yyyy");
+}
+
+<section class="hero-greeting">
+    <h1 class="mb-1">Welcome back, @Model.FirstName</h1>
+    <div class="text-muted">
+        @today ·
+        @if (Model.TodayClasses.Count == 0)
+        {
+            <span>You have no classes scheduled today.</span>
+        }
+        else
+        {
+            <span>You have <strong>@Model.TodayClasses.Count</strong> class@(Model.TodayClasses.Count == 1 ? "" : "es") today.</span>
+        }
+    </div>
+</section>
+
+<!-- Quick Action Cards -->
+<div class="row g-3 mb-4 justify-content-center">
+    <div class="col-sm-6 col-md-4 col-lg-4 col-xl-3">
+        <a href="/Lecturers" class="quick-tile">
+            <div class="tile-icon"><i class="bi bi-people"></i></div>
+            <div class="tile-title">Lecturers & Staff</div>
+            <div class="tile-sub">@Model.AvailableLecturerCount available now</div>
+        </a>
+    </div>
+    <div class="col-sm-6 col-md-4 col-lg-4 col-xl-3">
+        <a href="/Rooms?status=AVAILABLE" class="quick-tile">
+            <div class="tile-icon"><i class="bi bi-door-open"></i></div>
+            <div class="tile-title">Available Rooms</div>
+            <div class="tile-sub">@Model.AvailableRoomCount rooms free now</div>
+        </a>
+    </div>
+    <div class="col-sm-6 col-md-4 col-lg-4 col-xl-3">
+        <a href="/Student/MyAppointments" class="quick-tile">
+            <div class="tile-icon"><i class="bi bi-calendar-check"></i></div>
+            <div class="tile-title">My Appointments</div>
+            <div class="tile-sub">@Model.UpcomingAppointments.Count pending/approved</div>
+        </a>
+    </div>
+</div>
+
+<div class="row g-4 mb-4">
+    <!-- Today's Classes -->
+    <div class="col-lg-8">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-calendar-day me-2"></i>Today's Classes</h5>
+            </div>
+            <div class="card-body">
+                @if (Model.TodayClasses.Count == 0)
+                {
+                    <div class="empty-state">
+                        <i class="bi bi-calendar-check"></i>
+                        <h5>No Classes Today</h5>
+                        <div>Enjoy your day off. Your next class is just around the corner.</div>
+                    </div>
+                }
+                else
+                {
+                    <div class="d-flex gap-3 overflow-auto pb-2">
+                        @foreach (var c in Model.TodayClasses)
+                        {
+                            <div class="class-card">
+                                <div class="small text-muted mb-1">
+                                    <i class="bi bi-clock me-1"></i>@c.StartTime.Substring(0, Math.Min(5, c.StartTime.Length)) - @c.EndTime.Substring(0, Math.Min(5, c.EndTime.Length))
+                                </div>
+                                <div style="font-weight:600;margin-bottom:0.25rem;">@c.CourseCode</div>
+                                <div class="small mb-2">@c.CourseName</div>
+                                <div class="small text-muted mb-2">
+                                    <i class="bi bi-person me-1"></i>@c.LecturerName
+                                </div>
+                                <div class="small d-flex gap-1 flex-wrap">
+                                    @if (!string.IsNullOrEmpty(c.GroupName))
+                                    {
+                                        <span class="badge bg-primary">Group @c.GroupName</span>
+                                    }
+                                    @if (!string.IsNullOrEmpty(c.RoomNumber))
+                                    {
+                                        <span class="badge bg-secondary"><i class="bi bi-door-closed me-1"></i>@c.RoomNumber</span>
+                                    }
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- Upcoming Appointments -->
+    <div class="col-lg-4">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="bi bi-calendar-event me-2"></i>Appointments</h5>
+                <a href="/Student/MyAppointments" class="btn btn-link btn-sm p-0">View All →</a>
+            </div>
+            <div class="card-body p-0">
+                @if (Model.UpcomingAppointments.Count == 0)
+                {
+                    <div class="p-4 text-center text-muted">
+                        <i class="bi bi-calendar-x d-block mb-2" style="font-size: 2rem;"></i>
+                        <div class="small">No upcoming appointments.</div>
+                        <a href="/Lecturers" class="btn btn-sm btn-outline-primary mt-2">Book Appointment</a>
+                    </div>
+                }
+                else
+                {
+                    @foreach (var app in Model.UpcomingAppointments)
+                    {
+                        <div class="p-3 border-bottom last-child-no-border">
+                            <div class="d-flex justify-content-between align-items-start mb-1">
+                                <div class="fw-bold small">@app.StaffName</div>
+                                <span class="badge @(app.Status == "APPROVED" ? "bg-success" : app.Status == "PENDING" ? "bg-warning" : "bg-secondary")" style="font-size: 0.65rem;">
+                                    @app.Status
+                                </span>
+                            </div>
+                            <div class="text-muted" style="font-size: 0.75rem;">
+                                <i class="bi bi-clock me-1"></i>@app.AppointmentDate.ToLocalTime().ToString("MMM dd, HH:mm")
+                            </div>
+                            @if (!string.IsNullOrEmpty(app.Reason))
+                            {
+                                <div class="text-muted mt-1" style="font-size: 0.7rem;">
+                                    <i class="bi bi-chat-left-text me-1"></i>@app.Reason
+                                </div>
+                            }
+                        </div>
+                    }
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Campus Announcements -->
+<div class="card border-0 shadow-sm">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0"><i class="bi bi-megaphone me-2"></i>Campus Announcements</h5>
+        <a href="/Notifications" class="btn btn-link btn-sm p-0">View All →</a>
+    </div>
+    <div class="card-body p-0">
+        @if (Model.Announcements.Count == 0)
+        {
+            <div class="empty-state">
+                <i class="bi bi-megaphone"></i>
+                <h5>No Announcements</h5>
+                <div>New campus announcements will appear here.</div>
+            </div>
+        }
+        else
+        {
+            @foreach (var a in Model.Announcements)
+            {
+                <div class="p-3 border-bottom last-child-no-border">
+                    <div class="d-flex justify-content-between align-items-start gap-3">
+                        <div class="flex-grow-1">
+                            <div class="d-flex align-items-center gap-2 mb-1">
+                                @if (a.Type == "WARNING")
+                                {
+                                    <i class="bi bi-exclamation-triangle-fill text-warning"></i>
+                                }
+                                else
+                                {
+                                    <i class="bi bi-info-circle-fill text-primary"></i>
+                                }
+                                <div style="font-weight:600;">@a.Title</div>
+                            </div>
+                            <div class="small text-muted">@a.Message</div>
+                        </div>
+                        <div class="small text-muted text-nowrap" style="min-width:60px;text-align:right;">
+                            @a.CreatedAt.ToLocalTime().ToString("MMM d")
+                        </div>
+                    </div>
+                </div>
+            }
+        }
+    </div>
+</div>

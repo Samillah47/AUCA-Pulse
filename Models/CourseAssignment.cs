@@ -22,6 +22,10 @@ namespace AUCAPulse.Models
         [Column("semester_id")]
         public int SemesterId { get; set; }
 
+        [Required]
+        [Column("group_id")]
+        public int GroupId { get; set; }
+
         [Column("assigned_at")]
         public DateTime AssignedAt { get; set; } = DateTime.UtcNow;
 
@@ -34,5 +38,8 @@ namespace AUCAPulse.Models
 
         [ForeignKey("SemesterId")]
         public virtual Semester? Semester { get; set; }
+
+        [ForeignKey("GroupId")]
+        public virtual Group? Group { get; set; }
     }
 }

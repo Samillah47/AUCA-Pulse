@@ -1,0 +1,232 @@
+@{
+    var token = Context.Session.GetString("Token");
+    var userName = Context.Session.GetString("UserName") ?? "Student";
+    var userId = Context.Session.GetString("UserId");
+    var isAuthenticated = !string.IsNullOrEmpty(token);
+
+    string NavClass(string prefix) =>
+        (Context.Request.Path.Value ?? "").StartsWith(prefix, StringComparison.OrdinalIgnoreCase) ? "active" : "";
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] · AUCA Pulse</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+</head>
+
+<body class="student-shell">
+
+@if (isAuthenticated)
+{
+    <header class="student-nav">
+        <div class="nav-inner">
+            <a href="/Home" class="d-flex align-items-center gap-2" style="text-decoration:none;color:var(--text);">
+                <div style="width:32px;height:32px;border-radius:8px;background:var(--accent);display:grid;place-items:center;color:#fff;">
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 2v8" />
+                        <path d="M4.9 9.1l5.7 5.7" />
+                        <path d="M19.1 9.1l-5.7 5.7" />
+                        <circle cx="12" cy="17" r="4" />
+                    </svg>
+                </div>
+                <div>
+                    <div style="font-weight:600;line-height:1.1;">AUCA Pulse</div>
+                    <div style="font-size:0.75rem;color:var(--text-muted);line-height:1;">Student portal</div>
+                </div>
+            </a>
+
+            <nav class="nav-links">
+                <a href="/Home" class="@NavClass("/Home")">Home</a>
+                <a href="/Lecturers" class="@NavClass("/Lecturers")">Lecturers & Staff</a>
+                <a href="/Student/MyAppointments" class="@NavClass("/Student/MyAppointments")">My Appointments</a>
+                <a href="/Rooms" class="@NavClass("/Rooms")">Rooms</a>
+
+                <button type="button" id="notificationsBtn" class="notif-btn" data-bs-toggle="modal" data-bs-target="#notificationsModal">
+                    <i class="bi bi-bell"></i>
+                    <span id="notifBadge" class="notif-badge d-none">0</span>
+                </button>
+
+                <div class="dropdown">
+                    <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                        <i class="bi bi-person-circle me-1"></i>@userName
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li><a class="dropdown-item" href="/Profile">Profile</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="/Logout">Logout</a></li>
+                    </ul>
+                </div>
+            </nav>
+        </div>
+    </header>
+}
+
+<main class="student-page">
+    @RenderBody()
+</main>
+
+<footer class="student-footer">
+    © @DateTime.Now.Year AUCA Pulse · Adventist University of Central Africa
+</footer>
+
+@if (isAuthenticated)
+{
+    <!-- Notifications Modal -->
+    <div class="modal fade" id="notificationsModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-scrollable modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="bi bi-bell me-2"></i>Notifications
+                    </h5>
+                    <div class="ms-auto d-flex align-items-center gap-2">
+                        <button type="button" id="notifMarkAllRead" class="btn btn-link btn-sm p-0 d-none">
+                            Mark all as read
+                        </button>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                </div>
+
+                <div class="modal-body p-0" id="notifModalBody">
+                    <div class="text-center text-muted py-5">
+                        <div class="spinner-border spinner-border-sm me-2"></div>
+                        Loading notifications...
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<script src="~/lib/jquery/dist/jquery.min.js"></script>
+<script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+<script src="~/js/toast.js"></script>
+<script src="~/js/table-paginate.js"></script>
+
+<partial name="_Toasts" />
+
+@if (isAuthenticated && !string.IsNullOrEmpty(userId))
+{
+<script>
+(function () {
+    const USER_ID = '@userId';
+    const API = window.location.protocol + '//' + window.location.host + '/api';
+    const TOKEN = @Html.Raw(Json.Serialize(token ?? ""));
+
+    const authHeaders = { 'Authorization': 'Bearer ' + TOKEN };
+
+    const badge = document.getElementById('notifBadge');
+    const body = document.getElementById('notifModalBody');
+    const markAll = document.getElementById('notifMarkAllRead');
+
+    if (!badge || !body || !markAll) return;
+
+    function esc(s) {
+        return (s || '').replace(/[&<>"']/g, c =>
+            ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    }
+
+    function timeAgo(iso) {
+        try {
+            const d = new Date(iso);
+            const diff = (Date.now() - d.getTime()) / 1000;
+            if (diff < 60) return 'just now';
+            if (diff < 3600) return Math.floor(diff / 60) + 'm ago';
+            if (diff < 86400) return Math.floor(diff / 3600) + 'h ago';
+            if (diff < 604800) return Math.floor(diff / 86400) + 'd ago';
+            return d.toLocaleDateString();
+        } catch { return ''; }
+    }
+
+    async function updateBadge() {
+        try {
+            const res = await fetch(API + '/notification/user/' + USER_ID + '/unread-count', { headers: authHeaders });
+            if (!res.ok) return;
+            const json = await res.json();
+            const count = json.count || 0;
+
+            if (count > 0) {
+                badge.textContent = count > 99 ? '99+' : count;
+                badge.classList.remove('d-none');
+            } else {
+                badge.classList.add('d-none');
+            }
+        } catch {}
+    }
+
+    async function loadList() {
+        body.innerHTML = `
+            <div class="text-center text-muted py-5">
+                <div class="spinner-border spinner-border-sm me-2"></div>
+                Loading notifications...
+            </div>
+        `;
+
+        try {
+            const res = await fetch(API + '/notification/user/' + USER_ID, { headers: authHeaders });
+            if (!res.ok) {
+                body.innerHTML = '<div class="text-center text-muted py-5">Could not load notifications.</div>';
+                return;
+            }
+
+            const json = await res.json();
+            const list = json.data || [];
+
+            if (!list.length) {
+                body.innerHTML = `
+                    <div class="text-center text-muted py-5">
+                        <i class="bi bi-inbox d-block mb-2" style="font-size:2rem;"></i>
+                        <div>No notifications yet.</div>
+                        <div class="small">You're all caught up.</div>
+                    </div>
+                `;
+                markAll.classList.add('d-none');
+                return;
+            }
+
+            const hasUnread = list.some(n => !n.isRead);
+            markAll.classList.toggle('d-none', !hasUnread);
+
+            body.innerHTML = list.map(n => `
+                <div class="notif-row ${n.isRead ? '' : 'unread'}" data-id="${n.id}">
+                    <div class="notif-dot"></div>
+                    <div class="notif-content">
+                        <div class="notif-title">${esc(n.title)}</div>
+                        <div class="notif-message">${esc(n.message)}</div>
+                        <div class="notif-meta">${timeAgo(n.createdAt)}</div>
+                    </div>
+                </div>
+            `).join('');
+
+        } catch {
+            body.innerHTML = '<div class="text-center text-muted py-5">Could not load notifications.</div>';
+        }
+    }
+
+    markAll.addEventListener('click', async () => {
+        await fetch(API + '/notification/user/' + USER_ID + '/mark-all-read',
+            { method: 'PUT', headers: authHeaders });
+        await loadList();
+        await updateBadge();
+    });
+
+    document.getElementById('notificationsModal')
+        .addEventListener('show.bs.modal', loadList);
+
+    updateBadge();
+    setInterval(updateBadge, 60000);
+})();
+</script>
+}
+
+@await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

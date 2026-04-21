@@ -17,12 +17,12 @@ namespace AUCAPulse.Helpers
         public string GenerateToken(int userId, string email, string role)
         {
             var jwtSettings = _configuration.GetSection("JwtSettings");
-            var secretKey = jwtSettings["SecretKey"];
-            var issuer = jwtSettings["Issuer"];
-            var audience = jwtSettings["Audience"];
+            var secretKey = jwtSettings["SecretKey"] ?? throw new InvalidOperationException("JWT SecretKey is not configured.");
+            var issuer = jwtSettings["Issuer"] ?? "AUCAPulse";
+            var audience = jwtSettings["Audience"] ?? "AUCAPulseUsers";
             var expirationMinutes = int.Parse(jwtSettings["ExpirationMinutes"] ?? "1440");
 
-            var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey!));
+            var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey));
             var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
 
             var claims = new[]
@@ -47,12 +47,12 @@ namespace AUCAPulse.Helpers
         public ClaimsPrincipal? ValidateToken(string token)
         {
             var jwtSettings = _configuration.GetSection("JwtSettings");
-            var secretKey = jwtSettings["SecretKey"];
-            var issuer = jwtSettings["Issuer"];
-            var audience = jwtSettings["Audience"];
+            var secretKey = jwtSettings["SecretKey"] ?? throw new InvalidOperationException("JWT SecretKey is not configured.");
+            var issuer = jwtSettings["Issuer"] ?? "AUCAPulse";
+            var audience = jwtSettings["Audience"] ?? "AUCAPulseUsers";
 
             var tokenHandler = new JwtSecurityTokenHandler();
-            var key = Encoding.UTF8.GetBytes(secretKey!);
+            var key = Encoding.UTF8.GetBytes(secretKey);
 
             try
             {

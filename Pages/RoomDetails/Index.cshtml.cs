@@ -19,6 +19,8 @@ namespace AUCAPulse.Pages.RoomDetails
 
         public RoomDetailDto? Room { get; set; }
         public bool CanRelease { get; set; }
+        public bool CanOccupy { get; set; }
+        public List<RoomScheduleEntry> Schedule { get; set; } = new();
 
         public async Task<IActionResult> OnGetAsync(int id)
         {
@@ -46,7 +48,22 @@ namespace AUCAPulse.Pages.RoomDetails
 
                     // Check if current user can release the room
                     var userId = HttpContext.Session.GetString("UserId");
-                    CanRelease = Room?.OccupiedBy?.ToString() == userId;
+                    var userRole = HttpContext.Session.GetString("UserRole");
+                    CanRelease = Room?.CurrentLecturerId?.ToString() == userId || userRole == "ADMIN";
+                    // Only lecturers can claim a room for a class session
+                    CanOccupy = string.Equals(userRole, "LECTURER", StringComparison.OrdinalIgnoreCase);
+
+                    // Load the weekly schedule for this room
+                    if (!string.IsNullOrWhiteSpace(Room?.RoomNumber))
+                    {
+                        var schedRes = await client.GetAsync($"{apiUrl}/LectureSchedule/room/{Uri.EscapeDataString(Room.RoomNumber)}");
+                        if (schedRes.IsSuccessStatusCode)
+                        {
+                            var schedContent = await schedRes.Content.ReadAsStringAsync();
+                            Schedule = JsonSerializer.Deserialize<List<RoomScheduleEntry>>(schedContent,
+                                new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new();
+                        }
+                    }
                 }
             }
             catch (Exception)
@@ -57,18 +74,27 @@ namespace AUCAPulse.Pages.RoomDetails
             return Page();
         }
 
-        public async Task<IActionResult> OnPostOccupyAsync(int roomId, DateTime occupyUntil)
+        public async Task<IActionResult> OnPostOccupyAsync(int roomId, TimeSpan startTime, TimeSpan endTime, string? courseInfo)
         {
             var token = HttpContext.Session.GetString("Token");
-            if (string.IsNullOrEmpty(token))
-            {
-                return RedirectToPage("/Login");
-            }
+            if (string.IsNullOrEmpty(token)) return RedirectToPage("/Login");
 
             try
             {
-                var userId = int.Parse(HttpContext.Session.GetString("UserId") ?? "0");
-                // Token is already retrieved at line 62
+                // Create local date times and then convert to UTC for the database
+                var today = DateTime.Today;
+                var startLocal = today.Add(startTime);
+                var endLocal = today.Add(endTime);
+
+                if (endLocal <= startLocal)
+                {
+                    TempData["ErrorMessage"] = "End time must be after start time.";
+                    return RedirectToPage(new { id = roomId });
+                }
+
+                // Ensure Kind is Local so ToUniversalTime works correctly
+                var startDateTime = DateTime.SpecifyKind(startLocal, DateTimeKind.Local).ToUniversalTime();
+                var endDateTime = DateTime.SpecifyKind(endLocal, DateTimeKind.Local).ToUniversalTime();
 
                 var client = _httpClientFactory.CreateClient();
                 client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
@@ -76,26 +102,29 @@ namespace AUCAPulse.Pages.RoomDetails
 
                 var occupyRequest = new
                 {
-                    occupiedUntil = occupyUntil
+                    occupiedUntil = endDateTime,
+                    courseInfo = courseInfo
                 };
 
                 var json = JsonSerializer.Serialize(occupyRequest);
                 var content = new StringContent(json, Encoding.UTF8, "application/json");
 
                 var response = await client.PostAsync($"{apiUrl}/Room/{roomId}/occupy", content);
+                var body = await response.Content.ReadAsStringAsync();
 
                 if (response.IsSuccessStatusCode)
                 {
-                    TempData["SuccessMessage"] = "Room occupied successfully!";
+                    TempData["SuccessMessage"] = "Room occupied successfully.";
                 }
                 else
                 {
-                    TempData["ErrorMessage"] = "Failed to occupy room. Please try again.";
+                    TempData["ErrorMessage"] = ExtractMessage(body)
+                        ?? "We couldn't occupy this room. Please try again.";
                 }
             }
             catch (Exception ex)
             {
-                TempData["ErrorMessage"] = $"An error occurred: {ex.Message}";
+                TempData["ErrorMessage"] = $"Something went wrong: {ex.Message}";
             }
 
             return RedirectToPage(new { id = roomId });
@@ -116,22 +145,40 @@ namespace AUCAPulse.Pages.RoomDetails
                 var apiUrl = _configuration["ApiSettings:BaseUrl"] ?? "https://localhost:5204/api";
 
                 var response = await client.PostAsync($"{apiUrl}/Room/{roomId}/release", null);
+                var body = await response.Content.ReadAsStringAsync();
 
                 if (response.IsSuccessStatusCode)
                 {
-                    TempData["SuccessMessage"] = "Room released successfully!";
+                    TempData["SuccessMessage"] = "Room released successfully.";
                 }
                 else
                 {
-                    TempData["ErrorMessage"] = "Failed to release room. Please try again.";
+                    TempData["ErrorMessage"] = ExtractMessage(body)
+                        ?? "We couldn't release this room. Please try again.";
                 }
             }
             catch (Exception ex)
             {
-                TempData["ErrorMessage"] = $"An error occurred: {ex.Message}";
+                TempData["ErrorMessage"] = $"Something went wrong: {ex.Message}";
             }
 
             return RedirectToPage(new { id = roomId });
+        }
+
+        private static string? ExtractMessage(string raw)
+        {
+            if (string.IsNullOrWhiteSpace(raw)) return null;
+            try
+            {
+                using var doc = JsonDocument.Parse(raw);
+                if (doc.RootElement.TryGetProperty("message", out var m))
+                {
+                    var msg = m.GetString();
+                    if (!string.IsNullOrWhiteSpace(msg)) return msg;
+                }
+            }
+            catch { }
+            return null;
         }
     }
 
@@ -139,14 +186,33 @@ namespace AUCAPulse.Pages.RoomDetails
     {
         public int Id { get; set; }
         public string RoomNumber { get; set; } = string.Empty;
+        public string RoomName { get; set; } = string.Empty;
         public string Building { get; set; } = string.Empty;
         public string? Floor { get; set; }
-        public int Capacity { get; set; }
+        public int? Capacity { get; set; }
         public string RoomType { get; set; } = string.Empty;
         public string Status { get; set; } = string.Empty;
         public string? Description { get; set; }
-        public int? OccupiedBy { get; set; }
+        public int? CurrentLecturerId { get; set; }
+        public string? CurrentLecturerName { get; set; }
+        public DateTime? OccupiedAt { get; set; }
         public DateTime? OccupiedUntil { get; set; }
         public DateTime CreatedAt { get; set; }
+        public string? CourseInfo { get; set; }
+    }
+
+    public class RoomScheduleEntry
+    {
+        public int Id { get; set; }
+        public int LecturerId { get; set; }
+        public string LecturerName { get; set; } = string.Empty;
+        public string DayOfWeek { get; set; } = string.Empty;
+        public string StartTime { get; set; } = string.Empty;
+        public string EndTime { get; set; } = string.Empty;
+        public string? CourseCode { get; set; }
+        public string? CourseName { get; set; }
+        public string? RoomNumber { get; set; }
+        public string? GroupName { get; set; }
+        public string? SemesterName { get; set; }
     }
 }

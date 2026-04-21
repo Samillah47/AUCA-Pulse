@@ -138,36 +138,54 @@ namespace AUCAPulse.Services
 
             if (room.Status == RoomStatus.OCCUPIED)
             {
-                throw new Exception("Room is already occupied");
+                throw new Exception("This room is already occupied by someone else.");
             }
 
             if (room.Status == RoomStatus.MAINTENANCE)
             {
-                throw new Exception("Room is under maintenance");
+                throw new Exception("This room is currently under maintenance.");
             }
 
-            // Verify lecturer exists
-            var lecturer = await _context.Users.FindAsync(lecturerId);
-            if (lecturer == null)
+            // Verify the user exists (lecturer, staff, or admin — anyone who reached this endpoint)
+            var user = await _context.Users.FindAsync(lecturerId);
+            if (user == null)
             {
-                throw new Exception("Lecturer not found");
+                throw new Exception("We couldn't verify your account. Please sign in again.");
+            }
+
+            // Normalise Kind for PostgreSQL
+            var occupiedUntilUtc = request.OccupiedUntil.Kind == DateTimeKind.Unspecified
+                ? DateTime.SpecifyKind(request.OccupiedUntil, DateTimeKind.Utc)
+                : request.OccupiedUntil.ToUniversalTime();
+
+            var nowUtc = DateTime.UtcNow;
+
+            if (occupiedUntilUtc <= nowUtc)
+            {
+                throw new Exception("Please choose an end time in the future.");
             }
 
             room.Status = RoomStatus.OCCUPIED;
             room.CurrentLecturerId = lecturerId;
-            room.OccupiedAt = DateTime.UtcNow;
-            room.OccupiedUntil = request.OccupiedUntil;
+            room.OccupiedAt = nowUtc;
+            room.OccupiedUntil = occupiedUntilUtc;
+            room.CourseInfo = request.CourseInfo;
+            room.UpdatedAt = nowUtc;
 
-            // Also create a lecture schedule entry
+            // Get current semester
+            var currentSemester = await _context.Semesters.FirstOrDefaultAsync(s => s.IsCurrent);
+
+            // Also create a lecture schedule entry for audit/history
             var schedule = new LectureSchedule
             {
                 LecturerId = lecturerId,
                 RoomNumber = room.RoomNumber,
-                DayOfWeek = DateTime.UtcNow.DayOfWeek.ToString().ToUpper(),
-                StartTime = DateTime.UtcNow.TimeOfDay,
-                EndTime = request.OccupiedUntil.TimeOfDay,
-                CourseName = "Manual Occupation",
-                CreatedAt = DateTime.UtcNow
+                DayOfWeek = nowUtc.DayOfWeek.ToString().ToUpper(),
+                StartTime = nowUtc.TimeOfDay,
+                EndTime = occupiedUntilUtc.TimeOfDay,
+                CourseName = !string.IsNullOrWhiteSpace(request.CourseInfo) ? request.CourseInfo : "Manual Occupation / Room Reservation",
+                SemesterId = currentSemester?.Id,
+                CreatedAt = nowUtc
             };
             _context.LectureSchedules.Add(schedule);
 
@@ -181,20 +199,22 @@ namespace AUCAPulse.Services
             var room = await _context.Rooms.FindAsync(roomId);
             if (room == null) return null;
 
-            if (room.Status != RoomStatus.OCCUPIED)
+            // Allow release for either OCCUPIED (manual) or RESERVED (auto-assigned) rooms
+            if (room.Status != RoomStatus.OCCUPIED && room.Status != RoomStatus.RESERVED)
             {
-                throw new Exception("Room is not occupied");
+                throw new Exception("This room is not currently occupied or reserved.");
             }
 
             if (room.CurrentLecturerId != lecturerId)
             {
-                throw new Exception("You are not the current occupant of this room");
+                throw new Exception("You can only release a room you currently hold.");
             }
 
             room.Status = RoomStatus.AVAILABLE;
             room.CurrentLecturerId = null;
             room.OccupiedAt = null;
             room.OccupiedUntil = null;
+            room.UpdatedAt = DateTime.UtcNow;
 
             await _context.SaveChangesAsync();
 
@@ -233,6 +253,7 @@ namespace AUCAPulse.Services
                 CurrentLecturerName = room.CurrentLecturer?.Name,
                 OccupiedAt = room.OccupiedAt,
                 OccupiedUntil = room.OccupiedUntil,
+                CourseInfo = room.CourseInfo,
                 CreatedAt = room.CreatedAt
             };
         }

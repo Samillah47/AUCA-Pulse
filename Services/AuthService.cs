@@ -171,19 +171,23 @@ namespace AUCAPulse.Services
 
             if (user == null)
             {
-                throw new Exception("Invalid credentials");
+                throw new Exception("The email or password you entered doesn't match our records.");
             }
 
             // Verify password
             if (!BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
             {
-                throw new Exception("Invalid credentials");
+                throw new Exception("The email or password you entered doesn't match our records.");
             }
 
             // Check if user account is approved
-            if (user.Status != UserStatus.APPROVED)
+            if (user.Status == UserStatus.PENDING)
             {
-                throw new Exception($"Account is {user.Status.ToString().ToLower()}");
+                throw new Exception("Your account is pending approval. You'll be able to sign in once an administrator approves it.");
+            }
+            if (user.Status == UserStatus.REJECTED)
+            {
+                throw new Exception("Your account has been rejected. Please contact an administrator for help.");
             }
 
             // Generate and save OTP
@@ -240,71 +244,87 @@ namespace AUCAPulse.Services
 
         public async Task ForgotPasswordAsync(string email)
         {
+            // Don't leak whether the email exists — silently no-op if not found
             var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
             if (user == null)
             {
-                throw new Exception($"User not found with email: {email}");
+                _logger.LogInformation("Password reset requested for unknown email {Email}", email);
+                return;
             }
 
-            // Generate token immediately upon request
-            var token = Guid.NewGuid().ToString();
+            // Invalidate any previous pending tokens for this user
+            var pending = await _context.PasswordResetRequests
+                .Where(r => r.UserId == user.Id && r.Status == RequestStatus.PENDING)
+                .ToListAsync();
+            foreach (var p in pending) p.Status = RequestStatus.REJECTED;
+
+            // Generate a random token; store only its SHA-256 hash
+            var rawToken = Guid.NewGuid().ToString("N") + Guid.NewGuid().ToString("N");
+            var tokenHash = HashToken(rawToken);
 
             var resetRequest = new PasswordResetRequest
             {
                 UserId = user.Id,
-                Token = token,
-                ExpiryDate = DateTime.UtcNow.AddHours(1),
-                Status = RequestStatus.PENDING,
+                Token = tokenHash,
+                // Approve immediately — no admin gate for password reset
+                Status = RequestStatus.APPROVED,
+                ExpiryDate = DateTime.UtcNow.AddMinutes(30),
                 CreatedAt = DateTime.UtcNow
             };
 
             _context.PasswordResetRequests.Add(resetRequest);
             await _context.SaveChangesAsync();
+
+            // Send the raw token in the email; we only keep the hash
+            try
+            {
+                await _emailService.SendPasswordResetEmailAsync(user.Email, user.Name, rawToken);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to send password reset email to {Email}", user.Email);
+                // Swallow — we don't reveal email delivery failures to the caller
+            }
         }
 
         public async Task ResetPasswordAsync(string token, string newPassword)
         {
+            if (string.IsNullOrWhiteSpace(token))
+                throw new Exception("This password reset link is missing its token. Please start over.");
+
+            if (string.IsNullOrWhiteSpace(newPassword) || newPassword.Length < 6)
+                throw new Exception("Your new password must be at least 6 characters long.");
+
+            var tokenHash = HashToken(token);
+
             var request = await _context.PasswordResetRequests
                 .Include(r => r.User)
-                .FirstOrDefaultAsync(r => r.Token == token);
+                .FirstOrDefaultAsync(r => r.Token == tokenHash);
 
             if (request == null)
-            {
-                throw new Exception("Invalid or expired password reset token.");
-            }
+                throw new Exception("This password reset link is invalid or has already been used.");
 
-            // Check if already used
             if (request.Status == RequestStatus.COMPLETED)
-            {
                 throw new Exception("This password reset link has already been used. Please request a new one.");
-            }
 
-            // Check if rejected
             if (request.Status == RequestStatus.REJECTED)
-            {
-                throw new Exception("This password reset request was rejected. Please contact support.");
-            }
+                throw new Exception("This password reset link is no longer valid. Please request a new one.");
 
-            // Check if not approved yet
-            if (request.Status != RequestStatus.APPROVED)
-            {
-                throw new Exception("Password reset request is pending admin approval.");
-            }
-
-            // Check expiration
             if (DateTime.UtcNow > request.ExpiryDate)
-            {
                 throw new Exception("This password reset link has expired. Please request a new one.");
-            }
 
-            // Reset password
             request.User.PasswordHash = BCrypt.Net.BCrypt.HashPassword(newPassword);
-            
-            // Mark as completed
             request.Status = RequestStatus.COMPLETED;
             request.ReviewedAt = DateTime.UtcNow;
 
             await _context.SaveChangesAsync();
+        }
+
+        private static string HashToken(string token)
+        {
+            using var sha = System.Security.Cryptography.SHA256.Create();
+            var bytes = sha.ComputeHash(System.Text.Encoding.UTF8.GetBytes(token));
+            return Convert.ToHexString(bytes);
         }
     }
 }

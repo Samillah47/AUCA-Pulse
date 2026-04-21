@@ -21,6 +21,22 @@ namespace AUCAPulse.Controllers
             _logger = logger;
         }
 
+        [HttpPost]
+        [Authorize(Roles = "ADMIN")]
+        public async Task<IActionResult> CreateUser([FromBody] AdminCreateUserDto request)
+        {
+            try
+            {
+                var user = await _userService.AdminCreateUserAsync(request);
+                return Ok(new { message = "User created successfully", data = user });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Admin failed to create user for email {Email}", request.Email);
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
         [HttpGet("{id}")]
         public async Task<IActionResult> GetUserById(int id)
         {
@@ -57,6 +73,14 @@ namespace AUCAPulse.Controllers
             var users = await _userService.GetAllUsersAsync();
             var lecturers = users.Where(u => u.Role == "LECTURER").ToList();
             return Ok(lecturers);
+        }
+
+        [HttpGet("staff")]
+        public async Task<IActionResult> GetAllStaff()
+        {
+            var users = await _userService.GetAllUsersAsync();
+            var staff = users.Where(u => u.Role == "STAFF" || u.Role == "LECTURER").ToList();
+            return Ok(staff);
         }
 
         [HttpGet("status/{status}")]
@@ -100,6 +124,24 @@ namespace AUCAPulse.Controllers
             }
 
             return Ok(user);
+        }
+
+        [HttpPut("{id}/admin-update")]
+        [Authorize(Roles = "ADMIN")]
+        public async Task<IActionResult> AdminUpdateUser(int id, [FromBody] AdminUpdateUserRequest request)
+        {
+            try
+            {
+                var user = await _userService.AdminUpdateUserAsync(id, request);
+                if (user == null)
+                    return NotFound(new { message = "User not found" });
+                return Ok(new { message = "User updated successfully", data = user });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Admin update failed for user {UserId}", id);
+                return BadRequest(new { message = ex.Message });
+            }
         }
 
         [HttpPut("{id}/status")]

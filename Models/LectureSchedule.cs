@@ -39,6 +39,10 @@ namespace AUCAPulse.Models
         [MaxLength(50)]
         public string? RoomNumber { get; set; }
 
+        [Column("group_name")]
+        [MaxLength(50)]
+        public string? GroupName { get; set; }
+
         [Column("semester_id")]
         public int? SemesterId { get; set; }
 

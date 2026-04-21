@@ -1,5 +1,369 @@
 @page
+@model AUCAPulse.Pages.IndexModel
 @{
-    // Redirect to login page
-    Response.Redirect("/Login");
+    ViewData["Title"] = "Welcome";
+    Layout = null; // Landing page has its own layout
 }
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AUCA Pulse · Check availability. Book appointments.</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <style>
+        :root {
+            --lp-bg: #ffffff;
+            --lp-text: #111827;
+            --lp-accent: #2563eb;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            color: var(--lp-text);
+            background: var(--lp-bg);
+            overflow-x: hidden;
+        }
+        .navbar-lp {
+            padding: 1.25rem 0;
+            transition: all 0.3s ease;
+        }
+        .btn-lp-primary {
+            background: var(--lp-accent);
+            color: #fff;
+            font-weight: 600;
+            padding: 0.75rem 1.5rem;
+            border-radius: 12px;
+            transition: all 0.2s ease;
+            border: none;
+        }
+        .btn-lp-primary:hover {
+            background: #1d4ed8;
+            color: #fff;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
+        }
+        .btn-lp-outline {
+            background: transparent;
+            color: var(--lp-text);
+            font-weight: 600;
+            padding: 0.75rem 1.5rem;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            transition: all 0.2s ease;
+        }
+        .btn-lp-outline:hover {
+            background: var(--surface-alt);
+            border-color: var(--border-strong);
+        }
+        
+        /* Hero */
+        .hero-section {
+            padding: 8rem 0 6rem;
+            text-align: center;
+        }
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.5rem 1rem;
+            background: var(--accent-soft);
+            color: var(--lp-accent);
+            border-radius: 100px;
+            font-weight: 600;
+            font-size: 0.875rem;
+            margin-bottom: 2rem;
+        }
+        .hero-title {
+            font-size: 4rem;
+            font-weight: 800;
+            letter-spacing: -0.04em;
+            line-height: 1.1;
+            margin-bottom: 1.5rem;
+        }
+        .hero-subtitle {
+            font-size: 1.25rem;
+            color: var(--text-muted);
+            max-width: 600px;
+            margin: 0 auto 2.5rem;
+        }
+
+        /* Features */
+        .feature-card {
+            padding: 2.5rem;
+            border-radius: 24px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            height: 100%;
+            transition: transform 0.3s ease;
+        }
+        .feature-card:hover {
+            transform: translateY(-5px);
+        }
+        .feature-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            background: var(--accent-soft);
+            color: var(--lp-accent);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        /* How it works */
+        .step-num {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--lp-accent);
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            margin-bottom: 1.25rem;
+        }
+
+        /* Preview section */
+        .preview-window {
+            background: #f9fafb;
+            border-radius: 24px;
+            border: 8px solid #f3f4f6;
+            box-shadow: var(--shadow-lg);
+            overflow: hidden;
+            margin-top: 4rem;
+        }
+        
+        .footer-lp {
+            padding: 4rem 0 2rem;
+            border-top: 1px solid var(--border);
+            margin-top: 6rem;
+        }
+
+        @@media (max-width: 768px) {
+            .hero-title { font-size: 2.75rem; }
+        }
+    </style>
+</head>
+<body>
+
+<nav class="navbar navbar-expand-lg navbar-lp sticky-top bg-white">
+    <div class="container">
+        <a class="navbar-brand d-flex align-items-center gap-2" href="#">
+            <div class="auth-brand-mark">
+                <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 2v8" />
+                    <path d="M4.9 9.1l5.7 5.7" />
+                    <path d="M19.1 9.1l-5.7 5.7" />
+                    <circle cx="12" cy="17" r="4" />
+                </svg>
+            </div>
+            <span class="auth-brand-text fs-4">AUCA Pulse</span>
+        </a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav ms-auto align-items-center gap-3 mt-3 mt-lg-0">
+                <li class="nav-item">
+                    <a class="nav-link fw-medium" href="#features">Features</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link fw-medium" href="#how-it-works">How it works</a>
+                </li>
+                <li class="nav-item ms-lg-3">
+                    <a href="/Login" class="btn-lp-outline">Log in</a>
+                </li>
+                <li class="nav-item">
+                    <a href="/Signup" class="btn-lp-primary">Get started</a>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<main>
+    <!-- Hero -->
+    <section class="hero-section">
+        <div class="container">
+            <div class="hero-badge">
+                <i class="bi bi-stars me-2"></i> Elevating Campus Connectivity
+            </div>
+            <h1 class="hero-title">AUCA Pulse</h1>
+            <p class="hero-subtitle">Check availability. Book appointments. Find campus resources in real time.</p>
+            <div class="d-flex flex-column flex-sm-row justify-content-center gap-3">
+                <a href="/Login" class="btn-lp-primary px-5 py-3 fs-5">Login to Portal</a>
+                <a href="/Signup" class="btn-lp-outline px-5 py-3 fs-5">Create Account</a>
+            </div>
+
+            <div class="preview-window mx-auto" style="max-width: 1000px;">
+                <div class="bg-white border-bottom p-3 d-flex gap-2">
+                    <div style="width:12px;height:12px;border-radius:50%;background:#ff5f56"></div>
+                    <div style="width:12px;height:12px;border-radius:50%;background:#ffbd2e"></div>
+                    <div style="width:12px;height:12px;border-radius:50%;background:#27c93f"></div>
+                </div>
+                <img src="https://images.unsplash.com/photo-1531403009284-440f080d1e12?q=80&w=2070&auto=format&fit=crop" alt="Dashboard Preview" class="img-fluid" style="filter: grayscale(0.1);">
+            </div>
+        </div>
+    </section>
+
+    <!-- Features -->
+    <section id="features" class="py-5">
+        <div class="container">
+            <div class="text-center mb-5">
+                <h2 class="display-5 fw-bold mb-3">Everything you need</h2>
+                <p class="text-muted">A comprehensive tool for AUCA students and staff.</p>
+            </div>
+            <div class="row g-4">
+                <div class="col-md-4">
+                    <div class="feature-card">
+                        <div class="feature-icon"><i class="bi bi-calendar-check"></i></div>
+                        <h4>Book Appointments</h4>
+                        <p class="text-muted mb-0">Instantly book time slots with lecturers and staff members without the back-and-forth emails.</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="feature-card">
+                        <div class="feature-icon"><i class="bi bi-broadcast"></i></div>
+                        <h4>Real-time Tracking</h4>
+                        <p class="text-muted mb-0">See exactly where lecturers are and their current availability status at any moment.</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="feature-card">
+                        <div class="feature-icon"><i class="bi bi-door-open"></i></div>
+                        <h4>Room Availability</h4>
+                        <p class="text-muted mb-0">Find free classrooms or meeting spaces for your study groups in seconds.</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="feature-card">
+                        <div class="feature-icon"><i class="bi bi-bell"></i></div>
+                        <h4>Smart Notifications</h4>
+                        <p class="text-muted mb-0">Get alerted about appointment confirmations, reminders, and important campus updates.</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="feature-card">
+                        <div class="feature-icon"><i class="bi bi-megaphone"></i></div>
+                        <h4>Announcements</h4>
+                        <p class="text-muted mb-0">Stay informed with real-time official announcements from university administration.</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="feature-card">
+                        <div class="feature-icon"><i class="bi bi-shield-check"></i></div>
+                        <h4>Secure Access</h4>
+                        <p class="text-muted mb-0">Role-based access ensures that your data is protected and only accessible to authorized users.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- How it works -->
+    <section id="how-it-works" class="py-5 bg-light rounded-5 mx-lg-4">
+        <div class="container py-5">
+            <div class="row align-items-center g-5">
+                <div class="col-lg-6">
+                    <h2 class="display-5 fw-bold mb-4">How it works</h2>
+                    <div class="d-flex gap-4 mb-4">
+                        <div class="step-num">1</div>
+                        <div>
+                            <h5>Select Lecturer</h5>
+                            <p class="text-muted">Browse the faculty directory and find the staff member you need to meet.</p>
+                        </div>
+                    </div>
+                    <div class="d-flex gap-4 mb-4">
+                        <div class="step-num">2</div>
+                        <div>
+                            <h5>View Availability</h5>
+                            <p class="text-muted">Check their real-time status and see available time slots for today.</p>
+                        </div>
+                    </div>
+                    <div class="d-flex gap-4">
+                        <div class="step-num">3</div>
+                        <div>
+                            <h5>Book Instantly</h5>
+                            <p class="text-muted">Pick a slot, add a reason, and get an immediate confirmation for your appointment.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-6">
+                    <div class="card border-0 shadow-lg p-2 rounded-4">
+                        <img src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?q=80&w=2071&auto=format&fit=crop" class="img-fluid rounded-3" alt="Students working">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Security -->
+    <section class="py-5 mt-5">
+        <div class="container">
+            <div class="card bg-dark text-white p-5 rounded-5 border-0">
+                <div class="row align-items-center">
+                    <div class="col-md-8">
+                        <h2 class="fw-bold mb-3">Built with security in mind</h2>
+                        <p class="text-white-50 mb-0 fs-5">Your privacy is our priority. AUCA Pulse uses secure login, role-based access control, and protected data storage to keep your information safe.</p>
+                    </div>
+                    <div class="col-md-4 text-md-end mt-4 mt-md-0">
+                        <i class="bi bi-shield-lock" style="font-size: 5rem; opacity: 0.2;"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+</main>
+
+<footer class="footer-lp">
+    <div class="container">
+        <div class="row g-4">
+            <div class="col-md-4">
+                <div class="d-flex align-items-center gap-2 mb-3">
+                    <div class="auth-brand-mark" style="width: 28px; height: 28px;">
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5">
+                            <path d="M12 2v8" />
+                            <path d="M4.9 9.1l5.7 5.7" />
+                            <path d="M19.1 9.1l-5.7 5.7" />
+                            <circle cx="12" cy="17" r="4" />
+                        </svg>
+                    </div>
+                    <span class="fw-bold">AUCA Pulse</span>
+                </div>
+                <p class="text-muted small">Adventist University of Central Africa. A smart campus solution for modern education.</p>
+            </div>
+            <div class="col-md-2 ms-auto">
+                <h6 class="fw-bold mb-3">System</h6>
+                <ul class="list-unstyled small text-muted">
+                    <li class="mb-2"><a href="/Login" class="text-reset">Login</a></li>
+                    <li class="mb-2"><a href="/Signup" class="text-reset">Sign Up</a></li>
+                    <li class="mb-2"><a href="/Privacy" class="text-reset">Privacy Policy</a></li>
+                </ul>
+            </div>
+            <div class="col-md-2">
+                <h6 class="fw-bold mb-3">Navigation</h6>
+                <ul class="list-unstyled small text-muted">
+                    <li class="mb-2"><a href="#features" class="text-reset">Features</a></li>
+                    <li class="mb-2"><a href="#how-it-works" class="text-reset">How it works</a></li>
+                    <li class="mb-2"><a href="#" class="text-reset">Back to top</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="pt-4 mt-4 border-top text-center text-muted small">
+            &copy; @DateTime.Now.Year AUCA Pulse · All rights reserved.
+        </div>
+    </div>
+</footer>
+
+<script src="~/lib/jquery/dist/jquery.min.js"></script>
+<script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

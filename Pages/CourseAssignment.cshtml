@@ -2,49 +2,40 @@
 @model AUCAPulse.Pages.CourseAssignmentModel
 @{
     ViewData["Title"] = "Assign Courses to Lecturers";
+
+    var groupedByCourse = Model.Assignments
+        .GroupBy(a => new { a.CourseId, a.CourseCode, a.CourseName })
+        .OrderBy(g => g.Key.CourseCode);
 }
 
 <div class="container-fluid">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2><i class="bi bi-journal-check me-2"></i>Assign Courses to Lecturers</h2>
-        <span class="badge bg-primary fs-6">@Model.Assignments.Count Assignments</span>
+        <div class="d-flex gap-2 align-items-center flex-wrap">
+            <span class="badge bg-primary fs-6">@Model.Assignments.Count Assignments</span>
+            <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-toggle="modal" data-bs-target="#copySemesterModal">
+                <i class="bi bi-files me-1"></i>Copy from another semester
+            </button>
+            <a href="/Groups" class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-people me-1"></i>Manage Groups
+            </a>
+        </div>
     </div>
 
-    @if (TempData["SuccessMessage"] != null)
-    {
-        <div class="alert alert-success alert-dismissible fade show">
-            @TempData["SuccessMessage"]
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-    }
-    @if (TempData["ErrorMessage"] != null)
-    {
-        <div class="alert alert-danger alert-dismissible fade show">
-            @TempData["ErrorMessage"]
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-    }
     @if (!string.IsNullOrEmpty(Model.ErrorMessage))
     {
         <div class="alert alert-danger">@Model.ErrorMessage</div>
     }
 
     <div class="card mb-4">
-        <div class="card-header"><strong>New Assignment</strong></div>
+        <div class="card-header">
+            <strong>New Assignment</strong>
+            <span class="text-muted ms-1">— one lecturer teaches one group of a course in a semester</span>
+        </div>
         <div class="card-body">
             <form method="post" asp-page-handler="Assign" class="row g-3">
-                <div class="col-md-4">
-                    <label class="form-label">Lecturer</label>
-                    <select asp-for="LecturerId" class="form-select" required>
-                        <option value="">-- Select Lecturer --</option>
-                        @foreach (var l in Model.Lecturers)
-                        {
-                            <option value="@l.Id">@l.Name (@l.Email)</option>
-                        }
-                    </select>
-                </div>
-                <div class="col-md-4">
-                    <label class="form-label">Course</label>
+                <div class="col-md-3">
+                    <label class="form-label">Course *</label>
                     <select asp-for="CourseId" class="form-select" required>
                         <option value="">-- Select Course --</option>
                         @foreach (var c in Model.Courses)
@@ -54,12 +45,33 @@
                     </select>
                 </div>
                 <div class="col-md-3">
-                    <label class="form-label">Semester</label>
+                    <label class="form-label">Semester *</label>
                     <select asp-for="SemesterId" class="form-select" required>
                         <option value="">-- Select Semester --</option>
                         @foreach (var s in Model.Semesters)
                         {
-                            <option value="@s.Id">@s.Name @(s.IsCurrent ? "(Current)" : "")</option>
+                            var sel = s.IsCurrent ? "selected" : "";
+                            <option value="@s.Id" selected="@(s.IsCurrent)">@s.Name @(s.IsCurrent ? "(Current)" : "")</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Lecturer *</label>
+                    <select asp-for="LecturerId" class="form-select" required>
+                        <option value="">-- Select Lecturer --</option>
+                        @foreach (var l in Model.Lecturers)
+                        {
+                            <option value="@l.Id">@l.Name (@l.Email)</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Group *</label>
+                    <select asp-for="GroupId" class="form-select" required>
+                        <option value="">-- Group --</option>
+                        @foreach (var g in Model.Groups)
+                        {
+                            <option value="@g.Id">@g.Name</option>
                         }
                     </select>
                 </div>
@@ -67,57 +79,121 @@
                     <button type="submit" class="btn btn-primary w-100">Assign</button>
                 </div>
             </form>
-            @if (!Model.Lecturers.Any() || !Model.Courses.Any() || !Model.Semesters.Any())
+            @if (!Model.Lecturers.Any() || !Model.Courses.Any() || !Model.Semesters.Any() || !Model.Groups.Any())
             {
                 <div class="alert alert-warning mt-3 mb-0">
                     <i class="bi bi-exclamation-triangle me-1"></i>
-                    You need at least one approved Lecturer, one Course, and one Semester before you can assign.
+                    You need at least one approved Lecturer, one Course, one Semester, and one Group before you can assign.
                 </div>
             }
         </div>
     </div>
 
     <div class="card">
-        <div class="card-header"><strong>Current Assignments</strong></div>
+        <div class="card-header"><strong>Current Assignments — grouped by course</strong></div>
         <div class="card-body">
-            <div class="table-responsive">
-                <table class="table table-hover">
-                    <thead>
-                        <tr>
-                            <th>Lecturer</th>
-                            <th>Course</th>
-                            <th>Credits</th>
-                            <th>Semester</th>
-                            <th>Assigned</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @if (!Model.Assignments.Any())
-                        {
-                            <tr><td colspan="6" class="text-center text-muted">No assignments yet.</td></tr>
-                        }
-                        @foreach (var a in Model.Assignments)
-                        {
-                            <tr>
-                                <td>@a.LecturerName<br /><small class="text-muted">@a.LecturerEmail</small></td>
-                                <td><strong>@a.CourseCode</strong> — @a.CourseName</td>
-                                <td>@a.Credits</td>
-                                <td>@a.SemesterName</td>
-                                <td>@a.AssignedAt.ToString("yyyy-MM-dd")</td>
-                                <td>
-                                    <form method="post" class="d-inline">
-                                        <input type="hidden" name="assignmentId" value="@a.Id" />
-                                        <button type="submit" asp-page-handler="Delete" class="btn btn-danger btn-sm" onclick="return confirm('Remove this assignment?')">
-                                            <i class="bi bi-trash"></i>
-                                        </button>
-                                    </form>
-                                </td>
-                            </tr>
-                        }
-                    </tbody>
-                </table>
-            </div>
+            @if (!Model.Assignments.Any())
+            {
+                <div class="empty-state">
+                    <i class="bi bi-journal-x"></i>
+                    <h5>No assignments yet</h5>
+                    <div>Use the form above to assign a lecturer to a course group.</div>
+                </div>
+            }
+            else
+            {
+                <div data-paginate-children="5">
+                @foreach (var group in groupedByCourse)
+                {
+                    <div class="mb-4 course-assignment-block">
+                        <h5 class="mb-1">
+                            <span class="badge bg-info me-2">@group.Key.CourseCode</span>
+                            @group.Key.CourseName
+                        </h5>
+                        <div class="text-muted small mb-2">
+                            @group.Count() group(s) assigned
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-sm mb-0" data-paginate="5">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th style="width: 90px;">Group</th>
+                                        <th>Lecturer</th>
+                                        <th>Semester</th>
+                                        <th>Assigned</th>
+                                        <th style="width: 80px;">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var a in group.OrderBy(x => x.GroupName).ThenBy(x => x.SemesterName))
+                                    {
+                                        <tr>
+                                            <td><span class="badge bg-primary">Group @a.GroupName</span></td>
+                                            <td>@a.LecturerName<br /><small class="text-muted">@a.LecturerEmail</small></td>
+                                            <td>@a.SemesterName</td>
+                                            <td>@a.AssignedAt.ToString("yyyy-MM-dd")</td>
+                                            <td>
+                                                <form method="post" class="d-inline">
+                                                    <input type="hidden" name="assignmentId" value="@a.Id" />
+                                                    <button type="submit" asp-page-handler="Delete" class="btn btn-outline-danger btn-sm" onclick="return confirm('Remove this assignment?')">
+                                                        <i class="bi bi-trash"></i>
+                                                    </button>
+                                                </form>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                }
+                </div>
+            }
         </div>
+    </div>
+</div>
+
+<!-- Copy-from-semester modal -->
+<div class="modal fade" id="copySemesterModal" tabindex="-1">
+    <div class="modal-dialog">
+        <form method="post" asp-page-handler="Copy">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="bi bi-files me-2"></i>Copy assignments from another semester</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-muted small">
+                        Every lecturer-course-group assignment from the source semester is copied
+                        into the target semester. Assignments that already exist in the target
+                        (same course and group) are skipped automatically.
+                    </p>
+                    <div class="mb-3">
+                        <label class="form-label">Copy from</label>
+                        <select asp-for="CopySourceSemesterId" class="form-select" required>
+                            <option value="">-- Source semester --</option>
+                            @foreach (var s in Model.Semesters)
+                            {
+                                <option value="@s.Id">@s.Name</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="mb-0">
+                        <label class="form-label">Copy into</label>
+                        <select asp-for="CopyTargetSemesterId" class="form-select" required>
+                            <option value="">-- Target semester --</option>
+                            @foreach (var s in Model.Semesters)
+                            {
+                                <option value="@s.Id" selected="@(s.IsCurrent)">@s.Name @(s.IsCurrent ? "(Current)" : "")</option>
+                            }
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Copy assignments</button>
+                </div>
+            </div>
+        </form>
     </div>
 </div>

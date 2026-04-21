@@ -96,6 +96,13 @@ namespace AUCAPulse.Controllers
             return Ok(schedules);
         }
 
+        [HttpGet("room/{roomNumber}")]
+        public async Task<IActionResult> GetSchedulesByRoom(string roomNumber)
+        {
+            var schedules = await _lectureScheduleService.GetSchedulesByRoomAsync(roomNumber);
+            return Ok(schedules);
+        }
+
         [HttpPut("{id}")]
         [Authorize(Roles = "LECTURER,ADMIN")]
         public async Task<IActionResult> UpdateSchedule(int id, [FromBody] CreateLectureScheduleDto request)

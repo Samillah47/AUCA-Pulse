@@ -1,3 +1,10 @@
-﻿@{
-    Layout = "_Layout";
+@{
+    // Students always see the student portal layout (top nav, no sidebar).
+    // Admins, lecturers, and staff see the admin-style sidebar layout.
+    // Pages that explicitly set Layout = null (Login, Signup, ForgotPassword,
+    // ResetPassword) override this, which is what we want for public pages.
+    var role = Context.Session.GetString("UserRole");
+    Layout = string.Equals(role, "STUDENT", StringComparison.OrdinalIgnoreCase)
+        ? "_StudentLayout"
+        : "_Layout";
 }

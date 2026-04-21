@@ -52,6 +52,7 @@ namespace AUCAPulse.Helpers
                         Department = "Administration",
                         CreatedAt = DateTime.UtcNow
                     };
+                    
 
                     context.Users.Add(admin);
                     await context.SaveChangesAsync();

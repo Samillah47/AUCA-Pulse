@@ -16,6 +16,7 @@ namespace AUCAPulse.Data
         public DbSet<Location> Locations { get; set; }
         public DbSet<Room> Rooms { get; set; }
         public DbSet<Office> Offices { get; set; }
+        public DbSet<Appointment> Appointments { get; set; }
         public DbSet<LecturerStatus> LecturerStatuses { get; set; }
         public DbSet<LectureSchedule> LectureSchedules { get; set; }
         public DbSet<Semester> Semesters { get; set; }
@@ -24,10 +25,26 @@ namespace AUCAPulse.Data
         public DbSet<Notification> Notifications { get; set; }
         public DbSet<Course> Courses { get; set; }
         public DbSet<CourseAssignment> CourseAssignments { get; set; }
+        public DbSet<Group> Groups { get; set; }
+        public DbSet<ChatMessage> ChatMessages { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
+
+            // Configure ChatMessage entity
+            modelBuilder.Entity<ChatMessage>(entity =>
+            {
+                entity.HasOne(e => e.Sender)
+                    .WithMany()
+                    .HasForeignKey(e => e.SenderId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(e => e.Receiver)
+                    .WithMany()
+                    .HasForeignKey(e => e.ReceiverId)
+                    .OnDelete(DeleteBehavior.Restrict);
+            });
 
             // Configure User entity
             modelBuilder.Entity<User>(entity =>
@@ -98,6 +115,23 @@ namespace AUCAPulse.Data
                 
                 entity.Property(e => e.AvailabilityStatus)
                     .HasConversion<string>();
+            });
+
+            // Configure Appointment entity
+            modelBuilder.Entity<Appointment>(entity =>
+            {
+                entity.Property(e => e.Status)
+                    .HasConversion<string>();
+
+                entity.HasOne(e => e.StudentUser)
+                    .WithMany(u => u.StudentAppointments)
+                    .HasForeignKey(e => e.StudentUserId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(e => e.StaffUser)
+                    .WithMany(u => u.StaffAppointments)
+                    .HasForeignKey(e => e.StaffUserId)
+                    .OnDelete(DeleteBehavior.Cascade);
             });
 
             // Configure LecturerStatus entity
@@ -173,10 +207,19 @@ namespace AUCAPulse.Data
                 entity.HasIndex(e => e.CourseCode).IsUnique();
             });
 
+            // Configure Group entity
+            modelBuilder.Entity<Group>(entity =>
+            {
+                entity.HasIndex(e => e.Name).IsUnique();
+            });
+
             // Configure CourseAssignment entity
             modelBuilder.Entity<CourseAssignment>(entity =>
             {
-                entity.HasIndex(e => new { e.LecturerId, e.CourseId, e.SemesterId }).IsUnique();
+                // One lecturer per (course, semester, group). A course can have
+                // many groups and a lecturer can teach multiple groups of the
+                // same course.
+                entity.HasIndex(e => new { e.CourseId, e.SemesterId, e.GroupId }).IsUnique();
 
                 entity.HasOne(e => e.Lecturer)
                     .WithMany()
@@ -192,6 +235,11 @@ namespace AUCAPulse.Data
                     .WithMany()
                     .HasForeignKey(e => e.SemesterId)
                     .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(e => e.Group)
+                    .WithMany(g => g.CourseAssignments)
+                    .HasForeignKey(e => e.GroupId)
+                    .OnDelete(DeleteBehavior.Restrict);
             });
 
             // Seed initial data
@@ -241,9 +289,45 @@ namespace AUCAPulse.Data
                 new Office { Id = 4, OfficeNumber = "Admin-202", OfficeName = "Academic Affairs", Building = "Admin Building", Floor = "2nd Floor", AvailabilityStatus = AvailabilityStatus.CLOSED, RegularOpenTime = new TimeSpan(8, 0, 0), RegularCloseTime = new TimeSpan(17, 0, 0), CreatedAt = seedDate }
             );
 
-            // Seed Semester
+            // Seed three semesters for the 2025/2026 academic year. The middle
+            // trimester (Jan - Apr 2026) is flagged as the current one because
+            // its window contains today's date.
             modelBuilder.Entity<Semester>().HasData(
-                new Semester { Id = 1, Name = "Fall 2024/2025", StartDate = new DateTime(2024, 9, 1, 0, 0, 0, DateTimeKind.Utc), EndDate = new DateTime(2025, 1, 31, 0, 0, 0, DateTimeKind.Utc), IsCurrent = true, CreatedAt = seedDate }
+                new Semester
+                {
+                    Id = 1,
+                    Name = "Semester 1, 2025/2026",
+                    StartDate = new DateTime(2025, 9, 1, 0, 0, 0, DateTimeKind.Utc),
+                    EndDate = new DateTime(2025, 12, 20, 0, 0, 0, DateTimeKind.Utc),
+                    IsCurrent = false,
+                    CreatedAt = seedDate
+                },
+                new Semester
+                {
+                    Id = 2,
+                    Name = "Semester 2, 2025/2026",
+                    StartDate = new DateTime(2026, 1, 12, 0, 0, 0, DateTimeKind.Utc),
+                    EndDate = new DateTime(2026, 4, 30, 0, 0, 0, DateTimeKind.Utc),
+                    IsCurrent = true,
+                    CreatedAt = seedDate
+                },
+                new Semester
+                {
+                    Id = 3,
+                    Name = "Semester 3, 2025/2026",
+                    StartDate = new DateTime(2026, 5, 18, 0, 0, 0, DateTimeKind.Utc),
+                    EndDate = new DateTime(2026, 8, 21, 0, 0, 0, DateTimeKind.Utc),
+                    IsCurrent = false,
+                    CreatedAt = seedDate
+                }
+            );
+
+            // Seed default groups A-D (admin can add more)
+            modelBuilder.Entity<Group>().HasData(
+                new Group { Id = 1, Name = "A", Description = "Group A", CreatedAt = seedDate },
+                new Group { Id = 2, Name = "B", Description = "Group B", CreatedAt = seedDate },
+                new Group { Id = 3, Name = "C", Description = "Group C", CreatedAt = seedDate },
+                new Group { Id = 4, Name = "D", Description = "Group D", CreatedAt = seedDate }
             );
         }
     }

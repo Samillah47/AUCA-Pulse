@@ -22,6 +22,97 @@ namespace AUCAPulse.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("AUCAPulse.Models.ChatMessage", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Content")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("content");
+
+                    b.Property<bool>("IsRead")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_read");
+
+                    b.Property<DateTime?>("ReadAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("read_at");
+
+                    b.Property<int>("ReceiverId")
+                        .HasColumnType("integer")
+                        .HasColumnName("receiver_id");
+
+                    b.Property<int>("SenderId")
+                        .HasColumnType("integer")
+                        .HasColumnName("sender_id");
+
+                    b.Property<DateTime>("SentAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("sent_at");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ReceiverId");
+
+                    b.HasIndex("SenderId");
+
+                    b.ToTable("chat_messages");
+                });
+
+            modelBuilder.Entity("AUCAPulse.Models.Appointment", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("AppointmentDate")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("appointment_date");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("Reason")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("reason");
+
+                    b.Property<int>("StaffUserId")
+                        .HasColumnType("integer")
+                        .HasColumnName("staff_user_id");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("status");
+
+                    b.Property<int>("StudentUserId")
+                        .HasColumnType("integer")
+                        .HasColumnName("student_user_id");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("StaffUserId");
+
+                    b.HasIndex("StudentUserId");
+
+                    b.ToTable("appointments");
+                });
+
             modelBuilder.Entity("AUCAPulse.Models.Course", b =>
                 {
                     b.Property<int>("Id")
@@ -85,6 +176,10 @@ namespace AUCAPulse.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("course_id");
 
+                    b.Property<int>("GroupId")
+                        .HasColumnType("integer")
+                        .HasColumnName("group_id");
+
                     b.Property<int>("LecturerId")
                         .HasColumnType("integer")
                         .HasColumnName("lecturer_id");
@@ -95,14 +190,77 @@ namespace AUCAPulse.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("CourseId");
+                    b.HasIndex("GroupId");
+
+                    b.HasIndex("LecturerId");
 
                     b.HasIndex("SemesterId");
 
-                    b.HasIndex("LecturerId", "CourseId", "SemesterId")
+                    b.HasIndex("CourseId", "SemesterId", "GroupId")
                         .IsUnique();
 
                     b.ToTable("course_assignments");
+                });
+
+            modelBuilder.Entity("AUCAPulse.Models.Group", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("text")
+                        .HasColumnName("description");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("name");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Name")
+                        .IsUnique();
+
+                    b.ToTable("groups");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Group A",
+                            Name = "A"
+                        },
+                        new
+                        {
+                            Id = 2,
+                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Group B",
+                            Name = "B"
+                        },
+                        new
+                        {
+                            Id = 3,
+                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Group C",
+                            Name = "C"
+                        },
+                        new
+                        {
+                            Id = 4,
+                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Group D",
+                            Name = "D"
+                        });
                 });
 
             modelBuilder.Entity("AUCAPulse.Models.LectureSchedule", b =>
@@ -137,6 +295,11 @@ namespace AUCAPulse.Migrations
                     b.Property<TimeSpan>("EndTime")
                         .HasColumnType("interval")
                         .HasColumnName("end_time");
+
+                    b.Property<string>("GroupName")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("group_name");
 
                     b.Property<int>("LecturerId")
                         .HasColumnType("integer")
@@ -632,6 +795,11 @@ namespace AUCAPulse.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("capacity");
 
+                    b.Property<string>("CourseInfo")
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("course_info");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
@@ -803,10 +971,28 @@ namespace AUCAPulse.Migrations
                         {
                             Id = 1,
                             CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            EndDate = new DateTime(2025, 1, 31, 0, 0, 0, 0, DateTimeKind.Utc),
+                            EndDate = new DateTime(2025, 12, 20, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsCurrent = false,
+                            Name = "Semester 1, 2025/2026",
+                            StartDate = new DateTime(2025, 9, 1, 0, 0, 0, 0, DateTimeKind.Utc)
+                        },
+                        new
+                        {
+                            Id = 2,
+                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            EndDate = new DateTime(2026, 4, 30, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsCurrent = true,
-                            Name = "Fall 2024/2025",
-                            StartDate = new DateTime(2024, 9, 1, 0, 0, 0, 0, DateTimeKind.Utc)
+                            Name = "Semester 2, 2025/2026",
+                            StartDate = new DateTime(2026, 1, 12, 0, 0, 0, 0, DateTimeKind.Utc)
+                        },
+                        new
+                        {
+                            Id = 3,
+                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            EndDate = new DateTime(2026, 8, 21, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsCurrent = false,
+                            Name = "Semester 3, 2025/2026",
+                            StartDate = new DateTime(2026, 5, 18, 0, 0, 0, 0, DateTimeKind.Utc)
                         });
                 });
 
@@ -949,12 +1135,56 @@ namespace AUCAPulse.Migrations
                     b.ToTable("verification_requests");
                 });
 
+            modelBuilder.Entity("AUCAPulse.Models.ChatMessage", b =>
+                {
+                    b.HasOne("AUCAPulse.Models.User", "Receiver")
+                        .WithMany()
+                        .HasForeignKey("ReceiverId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("AUCAPulse.Models.User", "Sender")
+                        .WithMany()
+                        .HasForeignKey("SenderId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Receiver");
+
+                    b.Navigation("Sender");
+                });
+
+            modelBuilder.Entity("AUCAPulse.Models.Appointment", b =>
+                {
+                    b.HasOne("AUCAPulse.Models.User", "StaffUser")
+                        .WithMany("StaffAppointments")
+                        .HasForeignKey("StaffUserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("AUCAPulse.Models.User", "StudentUser")
+                        .WithMany("StudentAppointments")
+                        .HasForeignKey("StudentUserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("StaffUser");
+
+                    b.Navigation("StudentUser");
+                });
+
             modelBuilder.Entity("AUCAPulse.Models.CourseAssignment", b =>
                 {
                     b.HasOne("AUCAPulse.Models.Course", "Course")
                         .WithMany("CourseAssignments")
                         .HasForeignKey("CourseId")
                         .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("AUCAPulse.Models.Group", "Group")
+                        .WithMany("CourseAssignments")
+                        .HasForeignKey("GroupId")
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.HasOne("AUCAPulse.Models.User", "Lecturer")
@@ -970,6 +1200,8 @@ namespace AUCAPulse.Migrations
                         .IsRequired();
 
                     b.Navigation("Course");
+
+                    b.Navigation("Group");
 
                     b.Navigation("Lecturer");
 
@@ -1091,6 +1323,11 @@ namespace AUCAPulse.Migrations
                     b.Navigation("CourseAssignments");
                 });
 
+            modelBuilder.Entity("AUCAPulse.Models.Group", b =>
+                {
+                    b.Navigation("CourseAssignments");
+                });
+
             modelBuilder.Entity("AUCAPulse.Models.Location", b =>
                 {
                     b.Navigation("Children");
@@ -1121,6 +1358,10 @@ namespace AUCAPulse.Migrations
                     b.Navigation("Office");
 
                     b.Navigation("PasswordResetRequests");
+
+                    b.Navigation("StaffAppointments");
+
+                    b.Navigation("StudentAppointments");
 
                     b.Navigation("VerificationRequests");
                 });

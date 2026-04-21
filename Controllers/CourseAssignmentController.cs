@@ -33,6 +33,21 @@ namespace AUCAPulse.Controllers
             }
         }
 
+        [HttpPost("copy-from-semester")]
+        [Authorize(Roles = "ADMIN")]
+        public async Task<IActionResult> CopyFromSemester([FromBody] CopySemesterAssignmentsDto dto)
+        {
+            try
+            {
+                var (copied, skipped) = await _service.CopyAssignmentsFromSemesterAsync(dto.SourceSemesterId, dto.TargetSemesterId);
+                return Ok(new { copied, skipped, message = $"{copied} copied, {skipped} skipped as duplicates." });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(int id)
         {

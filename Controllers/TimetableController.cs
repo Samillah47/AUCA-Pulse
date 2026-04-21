@@ -6,7 +6,6 @@ using Microsoft.AspNetCore.Mvc;
 namespace AUCAPulse.Controllers
 {
     [ApiController]
-    [Route("api/[controller]")]
     [Route("api/timetable")]
     [Authorize]
     public class TimetableController : ControllerBase

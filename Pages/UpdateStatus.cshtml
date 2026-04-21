@@ -1,0 +1,85 @@
+@page
+@model AUCAPulse.Pages.UpdateStatusModel
+@{
+    ViewData["Title"] = "Update My Status - ACPulse";
+}
+
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white py-3">
+                    <h5 class="mb-0"><i class="bi bi-person-badge me-2 text-primary"></i>Update My Status</h5>
+                </div>
+                <div class="card-body p-4">
+                    <p class="text-muted mb-4">Select your current status to let others know where you are or if you're available.</p>
+
+                    @if (!string.IsNullOrEmpty(Model.SuccessMessage))
+                    {
+                        <div class="alert alert-success alert-dismissible fade show" role="alert">
+                            <i class="bi bi-check-circle me-1"></i> @Model.SuccessMessage
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    }
+
+                    @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+                    {
+                        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                            <i class="bi bi-exclamation-triangle me-1"></i> @Model.ErrorMessage
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    }
+
+                    <form method="post">
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">Current Status</label>
+                            <div class="d-grid gap-2">
+                                <input type="radio" class="btn-check" name="SelectedStatus" id="status_available" value="AVAILABLE" @(Model.CurrentStatus == "AVAILABLE" ? "checked" : "") required>
+                                <label class="btn btn-outline-success text-start py-3" for="status_available">
+                                    <i class="bi bi-check-circle-fill me-2"></i> Available
+                                </label>
+
+                                <input type="radio" class="btn-check" name="SelectedStatus" id="status_appointment" value="AVAILABLE_FOR_APPOINTMENT" @(Model.CurrentStatus == "AVAILABLE_FOR_APPOINTMENT" ? "checked" : "")>
+                                <label class="btn btn-outline-info text-start py-3" for="status_appointment">
+                                    <i class="bi bi-calendar-check me-2"></i> Available for Appointment
+                                </label>
+
+                                <input type="radio" class="btn-check" name="SelectedStatus" id="status_class" value="IN_CLASS" @(Model.CurrentStatus == "IN_CLASS" ? "checked" : "")>
+                                <label class="btn btn-outline-danger text-start py-3" for="status_class">
+                                    <i class="bi bi-easel-fill me-2"></i> In Class
+                                </label>
+
+                                <input type="radio" class="btn-check" name="SelectedStatus" id="status_away" value="AWAY" @(Model.CurrentStatus == "AWAY" ? "checked" : "")>
+                                <label class="btn btn-outline-secondary text-start py-3" for="status_away">
+                                    <i class="bi bi-box-arrow-right me-2"></i> Away
+                                </label>
+
+                                <input type="radio" class="btn-check" name="SelectedStatus" id="status_unavailable" value="UNAVAILABLE" @(Model.CurrentStatus == "UNAVAILABLE" ? "checked" : "")>
+                                <label class="btn btn-outline-dark text-start py-3" for="status_unavailable">
+                                    <i class="bi bi-dash-circle-fill me-2"></i> Not Available
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label asp-for="Notes" class="form-label fw-bold">Additional Notes (Optional)</label>
+                            <textarea asp-for="Notes" class="form-control" rows="3" placeholder="e.g., Back in 20 minutes, or reach me via email"></textarea>
+                        </div>
+
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="bi bi-save me-2"></i> Save Status
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div class="text-center mt-4">
+                <a href="/Dashboard/Index" class="text-muted text-decoration-none">
+                    <i class="bi bi-arrow-left me-1"></i> Back to Dashboard
+                </a>
+            </div>
+        </div>
+    </div>
+</div>

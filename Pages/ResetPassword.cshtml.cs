@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using System.ComponentModel.DataAnnotations;
+using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
 
@@ -17,28 +17,15 @@ namespace AUCAPulse.Pages
             _configuration = configuration;
         }
 
-        [BindProperty(SupportsGet = true)]
-        public string Token { get; set; } = string.Empty;
-
-        [BindProperty(SupportsGet = true)]
-        public string Email { get; set; } = string.Empty;
-
-        [BindProperty]
-        [Required(ErrorMessage = "New password is required")]
-        [MinLength(8, ErrorMessage = "Password must be at least 8 characters")]
-        public string NewPassword { get; set; } = string.Empty;
-
-        [BindProperty]
-        [Required(ErrorMessage = "Confirm password is required")]
-        [Compare("NewPassword", ErrorMessage = "Passwords do not match")]
-        public string ConfirmPassword { get; set; } = string.Empty;
-
-        public string? ErrorMessage { get; set; }
+        [BindProperty(SupportsGet = true)] public string? Token { get; set; }
+        [BindProperty] public string NewPassword { get; set; } = string.Empty;
+        [BindProperty] public string ConfirmPassword { get; set; } = string.Empty;
 
         public IActionResult OnGet()
         {
-            if (string.IsNullOrEmpty(Token))
+            if (string.IsNullOrWhiteSpace(Token))
             {
+                TempData["ErrorMessage"] = "This reset link is missing its token. Please request a new one.";
                 return RedirectToPage("/ForgotPassword");
             }
             return Page();
@@ -46,48 +33,61 @@ namespace AUCAPulse.Pages
 
         public async Task<IActionResult> OnPostAsync()
         {
-            if (!ModelState.IsValid)
+            if (string.IsNullOrWhiteSpace(Token))
             {
+                TempData["ErrorMessage"] = "This reset link is no longer valid. Please request a new one.";
+                return RedirectToPage("/ForgotPassword");
+            }
+            if (string.IsNullOrWhiteSpace(NewPassword) || NewPassword.Length < 6)
+            {
+                TempData["ErrorMessage"] = "Your new password must be at least 6 characters long.";
+                return Page();
+            }
+            if (NewPassword != ConfirmPassword)
+            {
+                TempData["ErrorMessage"] = "The two passwords you entered don't match.";
                 return Page();
             }
 
             try
             {
                 var client = _httpClientFactory.CreateClient();
-                var apiUrl = _configuration["ApiSettings:BaseUrl"] ?? "https://localhost:7255/api";
+                var baseUrl = _configuration["ApiSettings:BaseUrl"];
 
-                var resetRequest = new
-                {
-                    token = Token,
-                    password = NewPassword
-                };
+                var body = JsonSerializer.Serialize(new { token = Token, newPassword = NewPassword });
+                var response = await client.PostAsync($"{baseUrl}/auth/reset-password",
+                    new StringContent(body, Encoding.UTF8, "application/json"));
 
-                var json = JsonSerializer.Serialize(resetRequest);
-                var content = new StringContent(json, Encoding.UTF8, "application/json");
-
-                var response = await client.PostAsync($"{apiUrl}/Auth/reset-password", content);
-                var responseContent = await response.Content.ReadAsStringAsync();
-
+                var content = await response.Content.ReadAsStringAsync();
                 if (response.IsSuccessStatusCode)
                 {
-                    return RedirectToPage("/Login", new { resetSuccess = true });
+                    TempData["SuccessMessage"] = "Your password has been updated. Please sign in with your new password.";
+                    return RedirectToPage("/Login");
                 }
-                else
-                {
-                    try {
-                        var error = JsonSerializer.Deserialize<JsonElement>(responseContent);
-                        ErrorMessage = error.TryGetProperty("message", out var msg) ? msg.GetString() : "An error occurred while resetting your password.";
-                    } catch {
-                        ErrorMessage = "An error occurred while resetting your password.";
-                    }
-                    return Page();
-                }
-            }
-            catch (Exception ex)
-            {
-                ErrorMessage = $"An error occurred: {ex.Message}";
+
+                TempData["ErrorMessage"] = ExtractMessage(content);
                 return Page();
             }
+            catch
+            {
+                TempData["ErrorMessage"] = "We couldn't reach the server. Please try again in a moment.";
+                return Page();
+            }
+        }
+
+        private static string ExtractMessage(string raw)
+        {
+            try
+            {
+                using var doc = JsonDocument.Parse(raw);
+                if (doc.RootElement.TryGetProperty("message", out var m))
+                {
+                    var msg = m.GetString();
+                    if (!string.IsNullOrWhiteSpace(msg)) return msg;
+                }
+            }
+            catch { }
+            return "We couldn't reset your password. Please request a new reset link.";
         }
     }
 }
