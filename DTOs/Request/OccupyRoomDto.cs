@@ -6,5 +6,6 @@ namespace AUCAPulse.DTOs.Request
     {
         [Required]
         public DateTime OccupiedUntil { get; set; }
+        public string? CourseInfo { get; set; }
     }
 }

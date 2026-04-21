@@ -16,6 +16,7 @@ namespace AUCAPulse.Pages
             _configuration = configuration;
         }
 
+        public IConfiguration Configuration => _configuration;
         public List<LecturerDto> Lecturers { get; set; } = new();
         public string? SearchQuery { get; set; }
         public string? ErrorMessage { get; set; }
@@ -29,6 +30,7 @@ namespace AUCAPulse.Pages
             }
 
             SearchQuery = search;
+            var currentUserId = HttpContext.Session.GetString("UserId");
 
             try
             {
@@ -36,18 +38,20 @@ namespace AUCAPulse.Pages
                 client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
                 var apiUrl = _configuration["ApiSettings:BaseUrl"] ?? "https://localhost:5204/api";
 
-                // Get all lecturers
-                var response = await client.GetAsync($"{apiUrl}/User/lecturers");
+                // Get all staff (lecturers and staff members)
+                var response = await client.GetAsync($"{apiUrl}/User/staff");
 
                 if (response.IsSuccessStatusCode)
                 {
                     var content = await response.Content.ReadAsStringAsync();
-                    Lecturers = JsonSerializer.Deserialize<List<LecturerDto>>(content, new JsonSerializerOptions
+                    var allStaff = JsonSerializer.Deserialize<List<LecturerDto>>(content, new JsonSerializerOptions
                     {
                         PropertyNameCaseInsensitive = true
                     }) ?? new List<LecturerDto>();
 
-                    // Apply search filter
+                    // Filter out the current user and apply search filter
+                    Lecturers = allStaff.Where(l => l.Id.ToString() != currentUserId).ToList();
+
                     if (!string.IsNullOrEmpty(search))
                     {
                         Lecturers = Lecturers.Where(l =>

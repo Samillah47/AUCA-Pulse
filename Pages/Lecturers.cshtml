@@ -1,103 +1,119 @@
 @page
 @model AUCAPulse.Pages.LecturersModel
 @{
-    ViewData["Title"] = "Lecturers";
+    ViewData["Title"] = "Lecturers & Staff";
+    Layout = "_StudentLayout";
 }
 
-<div class="container-fluid">
-    <div class="row mb-4">
-        <div class="col-12">
-            <h1 class="display-6">Find Lecturers</h1>
-            <p class="text-muted">Search for lecturers and check their availability</p>
-        </div>
-    </div>
+<div class="mb-4">
+    <h1 class="mb-1">Lecturers & Staff</h1>
+    <p class="text-muted">Browse staff members, check availability, and book appointments</p>
+</div>
 
-    <!-- Search Bar -->
-    <div class="row mb-4">
-        <div class="col-md-8">
-            <form method="get" class="d-flex gap-2">
-                <input type="text" name="search" class="form-control form-control-lg" placeholder="Search by name, email, or department..." value="@Model.SearchQuery" />
-                <button type="submit" class="btn btn-primary btn-lg">
-                    <i class="bi bi-search"></i> Search
-                </button>
-            </form>
-        </div>
+<!-- Search Bar -->
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-body">
+        <form method="get" class="d-flex gap-2">
+            <input type="text" name="search" class="form-control" placeholder="Search by name, email, or department..." value="@Model.SearchQuery" />
+            <button type="submit" class="btn btn-primary">
+                <i class="bi bi-search"></i> Search
+            </button>
+        </form>
     </div>
+</div>
 
-    @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+@if (!string.IsNullOrEmpty(Model.ErrorMessage))
+{
+    <div class="alert alert-danger" role="alert">
+        @Model.ErrorMessage
+    </div>
+}
+
+<!-- Staff Grid -->
+<div class="row g-4">
+    @if (Model.Lecturers != null && Model.Lecturers.Any())
     {
-        <div class="alert alert-danger" role="alert">
-            @Model.ErrorMessage
-        </div>
-    }
-
-    <!-- Lecturers Grid -->
-    <div class="row g-4">
-        @if (Model.Lecturers != null && Model.Lecturers.Any())
+        @foreach (var lecturer in Model.Lecturers)
         {
-            @foreach (var lecturer in Model.Lecturers)
-            {
-                <div class="col-md-6 col-lg-4">
-                    <div class="card border-0 shadow-sm h-100">
-                        <div class="card-body">
-                            <div class="d-flex align-items-start mb-3">
-                                <div class="bg-primary bg-opacity-10 rounded-circle p-3 me-3">
-                                    <i class="bi bi-person fs-3 text-primary"></i>
-                                </div>
-                                <div class="flex-grow-1">
-                                    <h5 class="card-title mb-1">@lecturer.Name</h5>
-                                    <p class="text-muted small mb-2">
-                                        <i class="bi bi-envelope me-1"></i>@lecturer.Email
-                                    </p>
-                                    @if (!string.IsNullOrEmpty(lecturer.Department))
-                                    {
-                                        <p class="text-muted small mb-0">
-                                            <i class="bi bi-building me-1"></i>@lecturer.Department
-                                        </p>
-                                    }
-                                </div>
+            var isAvailable = lecturer.CurrentStatus == "AVAILABLE" || lecturer.CurrentStatus == "AVAILABLE_FOR_APPOINTMENT";
+            <div class="col-sm-6 col-lg-4 col-xxl-3">
+                <div class="card border-0 shadow-sm h-100 staff-card">
+                    <div class="card-body d-flex flex-column">
+                        <div class="d-flex align-items-start mb-3">
+                            <div class="staff-avatar">
+                                <i class="bi bi-person-circle"></i>
                             </div>
-
-                            @if (!string.IsNullOrEmpty(lecturer.CurrentStatus))
-                            {
-                                <div class="mb-3">
-                                    <span class="badge @GetStatusBadgeClass(lecturer.CurrentStatus)">
-                                        <i class="bi bi-circle-fill me-1" style="font-size: 8px;"></i>
-                                        @lecturer.CurrentStatus
+                            <div class="flex-grow-1 ms-3">
+                                <h5 class="card-title mb-2 fw-bold">@lecturer.Name</h5>
+                                @if (!string.IsNullOrEmpty(lecturer.CurrentStatus))
+                                {
+                                    <span class="badge @GetStatusBadgeClass(lecturer.CurrentStatus) mb-2">
+                                        <i class="bi bi-circle-fill me-1" style="font-size: 6px;"></i>
+                                        @lecturer.CurrentStatus.Replace("_", " ")
                                     </span>
-                                </div>
-                            }
-
-                            @if (!string.IsNullOrEmpty(lecturer.PhoneNumber))
-                            {
-                                <p class="text-muted small mb-2">
-                                    <i class="bi bi-telephone me-1"></i>@lecturer.PhoneNumber
-                                </p>
-                            }
-
-                            <div class="d-grid gap-2 mt-3">
-                                <a href="/Lecturers/@lecturer.Id" class="btn btn-outline-primary btn-sm">
-                                    <i class="bi bi-calendar-week me-1"></i> View Courses &amp; Schedule
-                                </a>
+                                }
                             </div>
                         </div>
-                    </div>
-                </div>
-            }
-        }
-        else
-        {
-            <div class="col-12">
-                <div class="card border-0 shadow-sm">
-                    <div class="card-body text-center py-5">
-                        <i class="bi bi-search display-1 text-muted"></i>
-                        <h5 class="mt-3">No lecturers found</h5>
-                        <p class="text-muted">Try adjusting your search query</p>
+
+                        <div class="staff-info flex-grow-1">
+                            <div class="info-item">
+                                <i class="bi bi-envelope text-muted"></i>
+                                <span class="text-truncate">@lecturer.Email</span>
+                            </div>
+                            @if (!string.IsNullOrEmpty(lecturer.Department))
+                            {
+                                <div class="info-item">
+                                    <i class="bi bi-building text-muted"></i>
+                                    <span>@lecturer.Department</span>
+                                </div>
+                            }
+                            @if (!string.IsNullOrEmpty(lecturer.PhoneNumber))
+                            {
+                                <div class="info-item">
+                                    <i class="bi bi-telephone text-muted"></i>
+                                    <span>@lecturer.PhoneNumber</span>
+                                </div>
+                            }
+                            <div class="info-item">
+                                <i class="bi bi-person-badge text-muted"></i>
+                                <span class="badge bg-secondary">@lecturer.Role</span>
+                            </div>
+                        </div>
+
+                        <div class="d-grid gap-2 mt-3">
+                            <button type="button" class="btn btn-outline-primary" onclick="viewProfile(@lecturer.Id)">
+                                <i class="bi bi-eye me-1"></i> View Profile
+                            </button>
+                            @if (isAvailable)
+                            {
+                                <button type="button" class="btn btn-primary" onclick="openAppointmentModal(@lecturer.Id, '@lecturer.Name')">
+                                    <i class="bi bi-calendar-plus me-1"></i> Book Appointment
+                                </button>
+                            }
+                            else
+                            {
+                                <button type="button" class="btn btn-secondary" disabled>
+                                    <i class="bi bi-calendar-x me-1"></i> Currently Unavailable
+                                </button>
+                            }
+                        </div>
                     </div>
                 </div>
             </div>
         }
-    </div>
+    }
+    else
+    {
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body text-center py-5">
+                    <i class="bi bi-search display-1 text-muted"></i>
+                    <h5 class="mt-3">No staff members found</h5>
+                    <p class="text-muted">Try adjusting your search query</p>
+                </div>
+            </div>
+        </div>
+    }
 </div>
 
 @functions {
@@ -106,11 +122,283 @@
         return status switch
         {
             "AVAILABLE" => "bg-success",
+            "AVAILABLE_FOR_APPOINTMENT" => "bg-info",
             "IN_CLASS" => "bg-danger",
             "IN_MEETING" => "bg-warning",
-            "ON_LEAVE" => "bg-secondary",
+            "AWAY" => "bg-secondary",
             "UNAVAILABLE" => "bg-dark",
             _ => "bg-secondary"
         };
     }
+}
+
+<!-- Lecturer Profile Modal -->
+<div class="modal fade" id="profileModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header border-0">
+                <h5 class="modal-title"><i class="bi bi-person-circle me-2"></i>Staff Profile</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="profileContent">
+                <div class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Book Appointment Modal -->
+<div class="modal fade" id="appointmentModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header border-0">
+                <h5 class="modal-title"><i class="bi bi-calendar-plus me-2"></i>Book Appointment</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="appointmentForm">
+                    <input type="hidden" id="staffUserId" />
+                    
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Staff Member</label>
+                        <input type="text" id="staffName" class="form-control" readonly />
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="appointmentDate" class="form-label fw-bold">Date & Time <span class="text-danger">*</span></label>
+                        <input type="datetime-local" class="form-control" id="appointmentDate" required />
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="reason" class="form-label fw-bold">Subject/Reason <span class="text-danger">*</span></label>
+                        <textarea class="form-control" id="reason" rows="3" placeholder="Brief description of the appointment purpose" required maxlength="500"></textarea>
+                        <div class="form-text">Maximum 500 characters</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="additionalInfo" class="form-label fw-bold">Additional Information <span class="text-muted">(Optional)</span></label>
+                        <textarea class="form-control" id="additionalInfo" rows="2" placeholder="Any other details you'd like to share" maxlength="500"></textarea>
+                    </div>
+
+                    <div class="alert alert-info small mb-0">
+                        <i class="bi bi-info-circle me-1"></i> Your appointment request will be sent for approval. You'll be notified once it's reviewed.
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer border-0">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="submitAppointment()">
+                    <i class="bi bi-send me-1"></i> Send Request
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        const profileModal = new bootstrap.Modal(document.getElementById('profileModal'));
+        const appointmentModal = new bootstrap.Modal(document.getElementById('appointmentModal'));
+        const apiUrl = "@Model.Configuration["ApiSettings:BaseUrl"]";
+        const token = "@HttpContext.Session.GetString("Token")";
+        const currentUserId = "@HttpContext.Session.GetString("UserId")";
+
+        function openAppointmentModal(staffId, staffName) {
+            document.getElementById('staffUserId').value = staffId;
+            document.getElementById('staffName').value = staffName;
+            document.getElementById('appointmentDate').value = '';
+            document.getElementById('reason').value = '';
+            document.getElementById('additionalInfo').value = '';
+            
+            // Set minimum date to now
+            const now = new Date();
+            now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+            document.getElementById('appointmentDate').min = now.toISOString().slice(0, 16);
+            
+            appointmentModal.show();
+        }
+
+        async function submitAppointment() {
+            const form = document.getElementById('appointmentForm');
+            if (!form.checkValidity()) {
+                form.reportValidity();
+                return;
+            }
+
+            const staffUserId = document.getElementById('staffUserId').value;
+            const appointmentDate = document.getElementById('appointmentDate').value;
+            const reason = document.getElementById('reason').value.trim();
+            const additionalInfo = document.getElementById('additionalInfo').value.trim();
+
+            // Combine reason and additional info
+            const fullReason = additionalInfo ? `${reason}\n\nAdditional Info: ${additionalInfo}` : reason;
+
+            const payload = {
+                studentUserId: parseInt(currentUserId),
+                staffUserId: parseInt(staffUserId),
+                appointmentDate: new Date(appointmentDate).toISOString(),
+                reason: fullReason
+            };
+
+            try {
+                const response = await fetch(`${apiUrl}/Appointment`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                if (response.ok) {
+                    appointmentModal.hide();
+                    if (typeof showToast === 'function') {
+                        showToast('Appointment request sent successfully! You will be notified once approved.', 'success');
+                    } else {
+                        alert('Appointment request sent successfully!');
+                    }
+                    setTimeout(() => window.location.href = '/Student/MyAppointments', 1500);
+                } else {
+                    const error = await response.json();
+                    if (typeof showToast === 'function') {
+                        showToast(error.message || 'Failed to book appointment. Please try again.', 'error');
+                    } else {
+                        alert('Failed to book appointment. Please try again.');
+                    }
+                }
+            } catch (err) {
+                console.error('Error:', err);
+                if (typeof showToast === 'function') {
+                    showToast('An error occurred. Please try again.', 'error');
+                } else {
+                    alert('An error occurred. Please try again.');
+                }
+            }
+        }
+
+        async function viewProfile(id) {
+            profileModal.show();
+            document.getElementById('profileContent').innerHTML = `
+                <div class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </div>`;
+
+            try {
+                const [userRes, statusRes, officeRes, scheduleRes] = await Promise.all([
+                    fetch(`${apiUrl}/User/${id}`, { headers: { 'Authorization': `Bearer ${token}` } }),
+                    fetch(`${apiUrl}/LecturerStatus/lecturer/${id}/current`, { headers: { 'Authorization': `Bearer ${token}` } }),
+                    fetch(`${apiUrl}/Office/staff/${id}`, { headers: { 'Authorization': `Bearer ${token}` } }),
+                    fetch(`${apiUrl}/LectureSchedule/lecturer/${id}`, { headers: { 'Authorization': `Bearer ${token}` } })
+                ]);
+
+                const user = await userRes.json();
+                const statusData = statusRes.ok ? await statusRes.json() : null;
+                const office = officeRes.ok ? await officeRes.json() : null;
+                const schedules = scheduleRes.ok ? await scheduleRes.json() : [];
+
+                let statusHtml = '';
+                if (statusData) {
+                    const status = statusData.status || statusData.Status;
+                    const badgeClass = getBadgeClass(status);
+                    statusHtml = `<span class="badge ${badgeClass} mb-3"><i class="bi bi-circle-fill me-1" style="font-size: 8px;"></i>${status.replace(/_/g, ' ')}</span>`;
+                }
+
+                let officeHtml = office ? `
+                    <div class="card border-0 bg-light mb-3">
+                        <div class="card-body">
+                            <h6 class="fw-bold mb-2"><i class="bi bi-building me-2"></i>Office Information</h6>
+                            <div class="row small">
+                                <div class="col-6 mb-2">
+                                    <span class="text-muted d-block">Office Number</span>
+                                    <strong>${office.officeNumber || office.OfficeNumber}</strong>
+                                </div>
+                                <div class="col-6 mb-2">
+                                    <span class="text-muted d-block">Building</span>
+                                    <strong>${office.building || office.Building}</strong>
+                                </div>
+                                <div class="col-12">
+                                    <span class="text-muted d-block">Office Hours</span>
+                                    <strong>${office.regularHours || office.RegularHours || 'Not specified'}</strong>
+                                </div>
+                            </div>
+                        </div>
+                    </div>` : '';
+
+                let scheduleRows = schedules.length > 0 
+                    ? schedules.map(s => `
+                        <tr>
+                            <td class="small fw-bold">${s.dayOfWeek || s.DayOfWeek}</td>
+                            <td class="small">${s.startTime || s.StartTime} - ${s.endTime || s.EndTime}</td>
+                            <td class="small">${s.courseName || s.CourseName || 'N/A'}</td>
+                            <td class="small"><span class="badge bg-primary">${s.roomNumber || s.RoomNumber || 'N/A'}</span></td>
+                        </tr>`).join('')
+                    : '<tr><td colspan="4" class="text-center text-muted py-3 small">No schedule available</td></tr>';
+
+                document.getElementById('profileContent').innerHTML = `
+                    <div class="row">
+                        <div class="col-md-4 text-center border-end">
+                            <div class="bg-primary bg-opacity-10 rounded-circle p-4 d-inline-flex mb-3">
+                                <i class="bi bi-person fs-1 text-primary"></i>
+                            </div>
+                            <h5 class="mb-1">${user.name || user.Name}</h5>
+                            <p class="text-muted small mb-2">${user.email || user.Email}</p>
+                            ${statusHtml}
+                            
+                            <div class="text-start mt-3">
+                                <div class="mb-2">
+                                    <small class="text-muted d-block">Department</small>
+                                    <span class="fw-bold">${user.department || user.Department || 'General'}</span>
+                                </div>
+                                <div class="mb-2">
+                                    <small class="text-muted d-block">Phone</small>
+                                    <span class="fw-bold">${user.phoneNumber || user.PhoneNumber || 'N/A'}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-8">
+                            ${officeHtml}
+                            <h6 class="fw-bold mb-2"><i class="bi bi-calendar3 me-2"></i>Weekly Schedule</h6>
+                            <div class="table-responsive">
+                                <table class="table table-sm table-hover">
+                                    <thead>
+                                        <tr class="text-muted small">
+                                            <th>Day</th>
+                                            <th>Time</th>
+                                            <th>Course</th>
+                                            <th>Room</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        ${scheduleRows}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            } catch (err) {
+                document.getElementById('profileContent').innerHTML = `
+                    <div class="alert alert-danger">
+                        <i class="bi bi-exclamation-circle me-2"></i> Failed to load profile. Please try again.
+                    </div>`;
+            }
+        }
+
+        function getBadgeClass(status) {
+            switch(status) {
+                case 'AVAILABLE': return 'bg-success';
+                case 'AVAILABLE_FOR_APPOINTMENT': return 'bg-info';
+                case 'IN_CLASS': return 'bg-danger';
+                case 'IN_MEETING': return 'bg-warning';
+                case 'AWAY': return 'bg-secondary';
+                default: return 'bg-dark';
+            }
+        }
+    </script>
 }

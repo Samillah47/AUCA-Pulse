@@ -75,6 +75,14 @@ namespace AUCAPulse.Controllers
             return Ok(lecturers);
         }
 
+        [HttpGet("staff")]
+        public async Task<IActionResult> GetAllStaff()
+        {
+            var users = await _userService.GetAllUsersAsync();
+            var staff = users.Where(u => u.Role == "STAFF" || u.Role == "LECTURER").ToList();
+            return Ok(staff);
+        }
+
         [HttpGet("status/{status}")]
         [Authorize(Roles = "ADMIN")]
         public async Task<IActionResult> GetUsersByStatus(string status)

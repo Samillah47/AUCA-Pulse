@@ -9,7 +9,8 @@ namespace AUCAPulse.Models
         IN_CLASS,
         IN_MEETING,
         AWAY,
-        UNAVAILABLE
+        UNAVAILABLE,
+        AVAILABLE_FOR_APPOINTMENT
     }
 
     [Table("lecturer_statuses")]

@@ -19,69 +19,107 @@
     <div class="text-muted">@(string.IsNullOrWhiteSpace(Model.SemesterName) ? "Current semester" : Model.SemesterName)</div>
 </div>
 
-@if (!Model.Schedules.Any())
+@if (!Model.Schedules.Any() && !Model.ApprovedAppointments.Any())
 {
     <div class="card">
         <div class="empty-state">
             <i class="bi bi-calendar-x"></i>
-            <h5>No timetable available yet</h5>
-            <div>Once classes are scheduled for the current semester, they'll appear here.</div>
+            <h5>No schedule available yet</h5>
+            <div>Once classes or appointments are scheduled, they'll appear here.</div>
         </div>
     </div>
 }
 else
 {
-    <div class="card">
-        <div class="card-body p-0">
-            <div class="table-responsive">
-                <table class="table table-bordered mb-0">
-                    <thead>
-                        <tr>
-                            <th style="width: 110px;">Time</th>
-                            @foreach (var d in dayOrder)
-                            {
-                                <th>@d</th>
-                            }
-                        </tr>
-                    </thead>
-                    <tbody>
-                    @foreach (var startTime in startTimes)
-                    {
-                        <tr>
-                            <td class="small text-muted">
-                                @startTime.Substring(0, Math.Min(5, startTime.Length))
-                            </td>
-                            @foreach (var d in dayOrder)
-                            {
-                                var entries = Model.Schedules.Where(e => e.DayOfWeek == d && e.StartTime == startTime).ToList();
-                                <td>
-                                    @foreach (var e in entries)
-                                    {
-                                        <div class="mb-2 p-2 rounded" style="background:var(--accent-soft);border-left:3px solid var(--accent);">
-                                            <div class="small text-muted">
-                                                @e.StartTime.Substring(0, Math.Min(5, e.StartTime.Length)) - @e.EndTime.Substring(0, Math.Min(5, e.EndTime.Length))
-                                            </div>
-                                            <div class="small" style="font-weight:600;">@e.CourseCode @e.CourseName</div>
-                                            <div class="small text-muted">@e.LecturerName</div>
-                                            <div class="small mt-1 d-flex gap-1 flex-wrap">
-                                                @if (!string.IsNullOrEmpty(e.GroupName))
-                                                {
-                                                    <span class="badge bg-primary">Group @e.GroupName</span>
-                                                }
-                                                @if (!string.IsNullOrEmpty(e.RoomNumber))
-                                                {
-                                                    <span class="badge bg-secondary">@e.RoomNumber</span>
-                                                }
-                                            </div>
-                                        </div>
-                                    }
-                                </td>
-                            }
-                        </tr>
-                    }
-                    </tbody>
-                </table>
+    @if (Model.ApprovedAppointments.Any())
+    {
+        <div class="mb-4">
+            <h5 class="mb-3"><i class="bi bi-calendar-check me-2"></i>Approved Appointments</h5>
+            <div class="row g-3">
+                @foreach (var apt in Model.ApprovedAppointments)
+                {
+                    <div class="col-md-6 col-lg-4">
+                        <div class="card border-0 shadow-sm" style="border-left: 4px solid #10b981 !important;">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <div class="fw-bold">@apt.StaffName</div>
+                                    <span class="badge bg-success-soft text-success">Approved</span>
+                                </div>
+                                <div class="small text-muted mb-1">
+                                    <i class="bi bi-clock me-1"></i> @apt.AppointmentDate.ToString("MMM dd, HH:mm")
+                                </div>
+                                <div class="small text-muted mb-2">
+                                    <i class="bi bi-geo-alt me-1"></i> Office Appointment
+                                </div>
+                                @if (!string.IsNullOrEmpty(apt.Reason))
+                                {
+                                    <div class="small p-2 bg-light rounded italic">"@apt.Reason"</div>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                }
             </div>
         </div>
-    </div>
+    }
+
+    @if (Model.Schedules.Any())
+    {
+        <div>
+            <h5 class="mb-3"><i class="bi bi-calendar3 me-2"></i>Class Timetable</h5>
+            <div class="card">
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-bordered mb-0">
+                            <thead>
+                                <tr>
+                                    <th style="width: 110px;">Time</th>
+                                    @foreach (var d in dayOrder)
+                                    {
+                                        <th>@d</th>
+                                    }
+                                </tr>
+                            </thead>
+                            <tbody>
+                            @foreach (var startTime in startTimes)
+                            {
+                                <tr>
+                                    <td class="small text-muted">
+                                        @startTime.Substring(0, Math.Min(5, startTime.Length))
+                                    </td>
+                                    @foreach (var d in dayOrder)
+                                    {
+                                        var entries = Model.Schedules.Where(e => e.DayOfWeek == d && e.StartTime == startTime).ToList();
+                                        <td>
+                                            @foreach (var e in entries)
+                                            {
+                                                <div class="mb-2 p-2 rounded" style="background:var(--accent-soft);border-left:3px solid var(--accent);">
+                                                    <div class="small text-muted">
+                                                        @e.StartTime.Substring(0, Math.Min(5, e.StartTime.Length)) - @e.EndTime.Substring(0, Math.Min(5, e.EndTime.Length))
+                                                    </div>
+                                                    <div class="small" style="font-weight:600;">@e.CourseCode @e.CourseName</div>
+                                                    <div class="small text-muted">@e.LecturerName</div>
+                                                    <div class="small mt-1 d-flex gap-1 flex-wrap">
+                                                        @if (!string.IsNullOrEmpty(e.GroupName))
+                                                        {
+                                                            <span class="badge bg-primary">Group @e.GroupName</span>
+                                                        }
+                                                        @if (!string.IsNullOrEmpty(e.RoomNumber))
+                                                        {
+                                                            <span class="badge bg-secondary">@e.RoomNumber</span>
+                                                        }
+                                                    </div>
+                                                </div>
+                                            }
+                                        </td>
+                                    }
+                                </tr>
+                            }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
 }

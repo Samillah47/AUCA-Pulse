@@ -40,6 +40,9 @@ namespace AUCAPulse.Pages.Dashboard
         public Dictionary<string, int> ClassesByDay { get; set; } = new();
 
         public List<LecturerLocationDto> LecturerLocations { get; set; } = new();
+        public List<RoomDto> MyRooms { get; set; } = new();
+        public int UnreadNotificationsCount { get; set; }
+        public string MyCurrentStatus { get; set; } = "AVAILABLE";
 
         // For the lecturer dashboard
         public int MyCoursesCount { get; set; }
@@ -49,11 +52,13 @@ namespace AUCAPulse.Pages.Dashboard
         public async Task<IActionResult> OnGetAsync()
         {
             var token = HttpContext.Session.GetString("Token");
-            if (string.IsNullOrEmpty(token))
+            var userIdStr = HttpContext.Session.GetString("UserId");
+            if (string.IsNullOrEmpty(token) || string.IsNullOrEmpty(userIdStr))
             {
                 return RedirectToPage("/Login");
             }
 
+            int userId = int.Parse(userIdStr);
             UserName = HttpContext.Session.GetString("UserName") ?? "User";
             UserRole = HttpContext.Session.GetString("UserRole") ?? "STUDENT";
 
@@ -70,6 +75,43 @@ namespace AUCAPulse.Pages.Dashboard
 
             try
             {
+                // Unread notifications for everyone
+                var notifResponse = await client.GetAsync($"{baseUrl}/Notification/user/{userId}/unread-count");
+                if (notifResponse.IsSuccessStatusCode)
+                {
+                    var notifContent = await notifResponse.Content.ReadAsStringAsync();
+                    using var notifDoc = JsonDocument.Parse(notifContent);
+                    UnreadNotificationsCount = notifDoc.RootElement.GetProperty("count").GetInt32();
+                }
+
+                if (UserRole == "LECTURER" || UserRole == "STAFF")
+                {
+                    var statusResponse = await client.GetAsync($"{baseUrl}/LecturerStatus/lecturer/{userId}/current");
+                    if (statusResponse.IsSuccessStatusCode)
+                    {
+                        var statusContent = await statusResponse.Content.ReadAsStringAsync();
+                        var statusData = JsonSerializer.Deserialize<JsonElement>(statusContent);
+                        // Check both camelCase and PascalCase
+                        if (statusData.TryGetProperty("status", out var sProp)) {
+                            MyCurrentStatus = sProp.GetString() ?? "AVAILABLE";
+                        } else if (statusData.TryGetProperty("Status", out var sPropCap)) {
+                            MyCurrentStatus = sPropCap.GetString() ?? "AVAILABLE";
+                        }
+                    }
+                }
+
+                if (UserRole == "LECTURER")
+                {
+                    var myRoomsResponse = await client.GetAsync($"{baseUrl}/Room");
+                    if (myRoomsResponse.IsSuccessStatusCode)
+                    {
+                        var roomsContent = await myRoomsResponse.Content.ReadAsStringAsync();
+                        var allRooms = JsonSerializer.Deserialize<List<RoomDto>>(roomsContent, 
+                            new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new();
+                        MyRooms = allRooms.Where(r => r.CurrentLecturerId == userId).ToList();
+                    }
+                }
+
                 // Users: counts by role + totals
                 var usersRes = await client.GetAsync($"{baseUrl}/users");
                 if (usersRes.IsSuccessStatusCode)

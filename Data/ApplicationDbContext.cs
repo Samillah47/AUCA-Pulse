@@ -26,10 +26,25 @@ namespace AUCAPulse.Data
         public DbSet<Course> Courses { get; set; }
         public DbSet<CourseAssignment> CourseAssignments { get; set; }
         public DbSet<Group> Groups { get; set; }
+        public DbSet<ChatMessage> ChatMessages { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
+
+            // Configure ChatMessage entity
+            modelBuilder.Entity<ChatMessage>(entity =>
+            {
+                entity.HasOne(e => e.Sender)
+                    .WithMany()
+                    .HasForeignKey(e => e.SenderId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(e => e.Receiver)
+                    .WithMany()
+                    .HasForeignKey(e => e.ReceiverId)
+                    .OnDelete(DeleteBehavior.Restrict);
+            });
 
             // Configure User entity
             modelBuilder.Entity<User>(entity =>

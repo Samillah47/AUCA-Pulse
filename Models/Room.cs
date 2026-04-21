@@ -8,7 +8,9 @@ namespace AUCAPulse.Models
         LECTURE_HALL,
         LAB,
         MEETING_ROOM,
-        OFFICE
+        OFFICE,
+        LIBRARY,
+        IT_LAB
     }
 
     public enum RoomStatus
@@ -63,6 +65,10 @@ namespace AUCAPulse.Models
 
         [Column("occupied_until")]
         public DateTime? OccupiedUntil { get; set; }
+
+        [Column("course_info")]
+        [MaxLength(255)]
+        public string? CourseInfo { get; set; }
 
         [Column("created_at")]
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;

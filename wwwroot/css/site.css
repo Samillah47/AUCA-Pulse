@@ -531,7 +531,7 @@ a:hover { color: var(--accent-hover); text-decoration: underline; }
 }
 .notif-mark:hover { color: var(--accent); }
 .student-page {
-    max-width: 1200px;
+    max-width: 1400px;
     margin: 0 auto;
     padding: 1.5rem;
 }
@@ -563,12 +563,15 @@ a:hover { color: var(--accent-hover); text-decoration: underline; }
     border-radius: var(--radius);
     transition: border-color .15s ease, box-shadow .15s ease, transform .15s ease;
     color: var(--text);
+    max-width: 400px;
+    margin: 0 auto;
 }
 .quick-tile:hover {
     border-color: var(--accent-border);
     box-shadow: var(--shadow-md);
     text-decoration: none;
     color: var(--text);
+    transform: translateY(-2px);
 }
 .quick-tile .tile-icon {
     width: 40px; height: 40px; border-radius: 10px;
@@ -703,6 +706,59 @@ a:hover { color: var(--accent-hover); text-decoration: underline; }
 .gap-16 { gap: 1rem; }
 .gap-24 { gap: 1.5rem; }
 .gap-32 { gap: 2rem; }
+
+/* Utility — remove border from last child */
+.last-child-no-border:last-child { border-bottom: none !important; }
+
+/* Staff cards styling */
+.staff-card {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    max-width: 400px;
+    margin: 0 auto;
+}
+.staff-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-lg) !important;
+}
+.staff-avatar {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent) 0%, #1d4ed8 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 2rem;
+    flex-shrink: 0;
+}
+.staff-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+.info-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+    color: var(--text);
+    min-width: 0;
+}
+.info-item i {
+    font-size: 1rem;
+    width: 20px;
+    flex-shrink: 0;
+}
+.info-item span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.info-item .text-truncate {
+    display: block;
+    max-width: 100%;
+}
 
 /* Print — generic */
 @media print {

@@ -109,6 +109,7 @@ namespace AUCAPulse.Pages.Lecturers
                 }
 
                 // Parse date and time
+                var now = DateTime.Now;
                 if (!DateTime.TryParse($"{appointmentDate} {appointmentTime}", out var appointmentDateTime))
                 {
                     ErrorMessage = "Invalid date or time format.";
@@ -116,8 +117,14 @@ namespace AUCAPulse.Pages.Lecturers
                     return Page();
                 }
 
-                // Validate appointment is in future and at least 1 hour away
-                var now = DateTime.Now;
+                // Validate appointment is for today only
+                if (appointmentDateTime.Date != now.Date)
+                {
+                    ErrorMessage = "Appointments can only be booked for today.";
+                    await OnGetAsync();
+                    return Page();
+                }
+
                 if (appointmentDateTime <= now)
                 {
                     ErrorMessage = "Appointment date must be in the future.";
