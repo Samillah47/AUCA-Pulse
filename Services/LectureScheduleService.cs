@@ -240,7 +240,7 @@ namespace AUCAPulse.Services
             if (schedule.LecturerId != lecturerId)
                 throw new UnauthorizedAccessException("You can only cancel your own classes.");
 
-            var today = DateTime.UtcNow.Date;
+            var today = DateTime.SpecifyKind(DateTime.UtcNow.Date, DateTimeKind.Utc);
             schedule.CancelledOn = today;
             schedule.CancellationReason = string.IsNullOrWhiteSpace(reason) ? null : reason.Trim();
             schedule.UpdatedAt = DateTime.UtcNow;
@@ -314,12 +314,19 @@ namespace AUCAPulse.Services
 
         public async Task<List<LectureScheduleResponse>> GetCancelledClassesAsync(DateTime? date = null)
         {
-            var target = (date ?? DateTime.UtcNow).Date;
+            // Normalize to a UTC day window. cancelled_on is timestamptz, so we
+            // compare against [startOfDay, startOfNextDay) in UTC instead of
+            // calling .Date in the LINQ query — Npgsql can't translate that.
+            var baseDay = (date ?? DateTime.UtcNow).Date;
+            var startUtc = DateTime.SpecifyKind(baseDay, DateTimeKind.Utc);
+            var endUtc = startUtc.AddDays(1);
 
             var schedules = await _context.LectureSchedules
                 .Include(s => s.Lecturer)
                 .Include(s => s.Semester)
-                .Where(s => s.CancelledOn.HasValue && s.CancelledOn.Value.Date == target)
+                .Where(s => s.CancelledOn != null
+                         && s.CancelledOn >= startUtc
+                         && s.CancelledOn < endUtc)
                 .OrderBy(s => s.StartTime)
                 .ToListAsync();
 
