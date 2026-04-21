@@ -45,7 +45,7 @@ namespace AUCAPulse.Pages
                     return;
                 }
 
-                if (userRole == "STAFF")
+                if (userRole == "STAFF" || userRole == "LECTURER")
                 {
                     var appointments = await _appointmentService.GetAppointmentsByStaffAsync(userId);
                     Appointments = appointments.Cast<dynamic>().ToList();
@@ -108,7 +108,7 @@ namespace AUCAPulse.Pages
             {
                 var userRole = HttpContext.Session.GetString("UserRole");
                 var userIdStr = HttpContext.Session.GetString("UserId");
-                if (userRole != "STAFF" || string.IsNullOrEmpty(userIdStr) || !int.TryParse(userIdStr, out var staffId))
+                if ((userRole != "STAFF" && userRole != "LECTURER") || string.IsNullOrEmpty(userIdStr) || !int.TryParse(userIdStr, out var staffId))
                 {
                     return RedirectToPage("/AccessDenied");
                 }
@@ -136,7 +136,7 @@ namespace AUCAPulse.Pages
             {
                 var userRole = HttpContext.Session.GetString("UserRole");
                 var userIdStr = HttpContext.Session.GetString("UserId");
-                if (userRole != "STAFF" || string.IsNullOrEmpty(userIdStr) || !int.TryParse(userIdStr, out var staffId))
+                if ((userRole != "STAFF" && userRole != "LECTURER") || string.IsNullOrEmpty(userIdStr) || !int.TryParse(userIdStr, out var staffId))
                 {
                     return RedirectToPage("/AccessDenied");
                 }
@@ -169,7 +169,7 @@ namespace AUCAPulse.Pages
             {
                 var userRole = HttpContext.Session.GetString("UserRole");
                 var userIdStr = HttpContext.Session.GetString("UserId");
-                if (userRole != "STAFF" || string.IsNullOrEmpty(userIdStr) || !int.TryParse(userIdStr, out var staffId))
+                if ((userRole != "STAFF" && userRole != "LECTURER") || string.IsNullOrEmpty(userIdStr) || !int.TryParse(userIdStr, out var staffId))
                 {
                     return RedirectToPage("/AccessDenied");
                 }

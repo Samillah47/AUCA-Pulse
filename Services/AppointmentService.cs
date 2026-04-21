@@ -19,11 +19,16 @@ namespace AUCAPulse.Services
     {
         private readonly ApplicationDbContext _context;
         private readonly ILogger<AppointmentService> _logger;
+        private readonly INotificationService _notificationService;
 
-        public AppointmentService(ApplicationDbContext context, ILogger<AppointmentService> logger)
+        public AppointmentService(
+            ApplicationDbContext context,
+            ILogger<AppointmentService> logger,
+            INotificationService notificationService)
         {
             _context = context;
             _logger = logger;
+            _notificationService = notificationService;
         }
 
         public async Task<AppointmentResponse> CreateAppointmentAsync(int studentUserId, CreateAppointmentDto request)
@@ -62,6 +67,26 @@ namespace AUCAPulse.Services
             await _context.SaveChangesAsync();
 
             _logger.LogInformation($"Appointment created: Student {studentUserId} requested appointment with Staff {request.StaffUserId}");
+
+            // Notify the staff / lecturer that a new appointment request has arrived
+            try
+            {
+                var localWhen = normalizedAppointmentDate.ToLocalTime().ToString("MMM d, HH:mm");
+                await _notificationService.CreateNotificationAsync(new CreateNotificationDto
+                {
+                    UserId = request.StaffUserId,
+                    Title = "New appointment request",
+                    Message = $"{student.Name} requested an appointment on {localWhen}. " +
+                              (string.IsNullOrWhiteSpace(request.Reason) ? "" : $"Reason: {request.Reason}"),
+                    Type = NotificationType.INFO
+                });
+            }
+            catch (Exception ex)
+            {
+                // Don't fail the booking if the notification write fails
+                _logger.LogWarning(ex, "Appointment {AppointmentId} saved but new-request notification to user {StaffId} failed",
+                    appointment.Id, request.StaffUserId);
+            }
 
             return await GetAppointmentResponseAsync(appointment);
         }
@@ -122,6 +147,54 @@ namespace AUCAPulse.Services
                 await _context.SaveChangesAsync();
 
                 _logger.LogInformation($"Appointment {appointmentId} status updated to {status}");
+
+                // Notify the student that their appointment was reviewed
+                try
+                {
+                    var localWhen = appointment.AppointmentDate.ToLocalTime().ToString("MMM d, HH:mm");
+                    var staffName = appointment.StaffUser?.Name ?? "Staff member";
+                    var title = status switch
+                    {
+                        AppointmentStatus.APPROVED  => "Appointment approved",
+                        AppointmentStatus.REJECTED  => "Appointment rejected",
+                        AppointmentStatus.COMPLETED => "Appointment completed",
+                        AppointmentStatus.CANCELLED => "Appointment cancelled",
+                        _ => $"Appointment {status}"
+                    };
+                    var body = status switch
+                    {
+                        AppointmentStatus.APPROVED =>
+                            $"{staffName} approved your appointment on {localWhen}.",
+                        AppointmentStatus.REJECTED =>
+                            $"{staffName} rejected your appointment on {localWhen}." +
+                            (!string.IsNullOrWhiteSpace(request.Reason) ? $" Reason: {request.Reason.Trim()}" : ""),
+                        AppointmentStatus.COMPLETED =>
+                            $"Your appointment with {staffName} on {localWhen} is marked as completed.",
+                        AppointmentStatus.CANCELLED =>
+                            $"Your appointment with {staffName} on {localWhen} was cancelled.",
+                        _ => $"Your appointment with {staffName} on {localWhen} is now {status}."
+                    };
+                    var type = status switch
+                    {
+                        AppointmentStatus.APPROVED  => NotificationType.APPROVAL,
+                        AppointmentStatus.REJECTED  => NotificationType.REJECTION,
+                        AppointmentStatus.COMPLETED => NotificationType.SUCCESS,
+                        _ => NotificationType.INFO
+                    };
+                    await _notificationService.CreateNotificationAsync(new CreateNotificationDto
+                    {
+                        UserId = appointment.StudentUserId,
+                        Title = title,
+                        Message = body,
+                        Type = type
+                    });
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Appointment {AppointmentId} updated but status-change notification failed",
+                        appointmentId);
+                }
+
                 return MapToResponse(appointment);
             }
 
