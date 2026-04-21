@@ -17,6 +17,7 @@ namespace AUCAPulse.Pages.Student
         }
 
         public List<SavedScheduleDto> Schedules { get; set; } = new();
+        public List<AUCAPulse.DTOs.Response.AppointmentResponse> ApprovedAppointments { get; set; } = new();
         public string SemesterName { get; set; } = string.Empty;
 
         [BindProperty(SupportsGet = true)] public int? LecturerId { get; set; }
@@ -24,6 +25,7 @@ namespace AUCAPulse.Pages.Student
         public async Task<IActionResult> OnGetAsync()
         {
             var token = HttpContext.Session.GetString("Token");
+            var userIdStr = HttpContext.Session.GetString("UserId");
             if (string.IsNullOrEmpty(token)) return RedirectToPage("/Login");
 
             var client = _httpClientFactory.CreateClient();
@@ -45,16 +47,32 @@ namespace AUCAPulse.Pages.Student
                 }
             }
 
-            if (!semesterId.HasValue) return Page();
-
-            var res = await client.GetAsync($"{baseUrl}/LectureSchedule/semester/{semesterId.Value}");
-            if (res.IsSuccessStatusCode)
+            if (semesterId.HasValue)
             {
-                var content = await res.Content.ReadAsStringAsync();
-                Schedules = JsonSerializer.Deserialize<List<SavedScheduleDto>>(content, opts) ?? new();
-                if (LecturerId.HasValue)
+                var res = await client.GetAsync($"{baseUrl}/LectureSchedule/semester/{semesterId.Value}");
+                if (res.IsSuccessStatusCode)
                 {
-                    Schedules = Schedules.Where(s => s.LecturerId == LecturerId.Value).ToList();
+                    var content = await res.Content.ReadAsStringAsync();
+                    Schedules = JsonSerializer.Deserialize<List<SavedScheduleDto>>(content, opts) ?? new();
+                    if (LecturerId.HasValue)
+                    {
+                        Schedules = Schedules.Where(s => s.LecturerId == LecturerId.Value).ToList();
+                    }
+                }
+            }
+
+            // Fetch Approved Appointments for "My Schedule" (student's appointments)
+            if (int.TryParse(userIdStr, out var studentId))
+            {
+                var aptRes = await client.GetAsync($"{baseUrl}/Appointment/student/{studentId}");
+                if (aptRes.IsSuccessStatusCode)
+                {
+                    var content = await aptRes.Content.ReadAsStringAsync();
+                    var allApts = JsonSerializer.Deserialize<List<AUCAPulse.DTOs.Response.AppointmentResponse>>(content, opts) ?? new();
+                    ApprovedAppointments = allApts
+                        .Where(a => a.Status == "APPROVED" && a.AppointmentDate.Date >= DateTime.UtcNow.Date)
+                        .OrderBy(a => a.AppointmentDate)
+                        .ToList();
                 }
             }
 

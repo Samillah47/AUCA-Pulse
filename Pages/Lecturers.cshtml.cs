@@ -38,19 +38,19 @@ namespace AUCAPulse.Pages
                 client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
                 var apiUrl = _configuration["ApiSettings:BaseUrl"] ?? "https://localhost:5204/api";
 
-                // Get all lecturers
-                var response = await client.GetAsync($"{apiUrl}/User/lecturers");
+                // Get all staff (lecturers and staff members)
+                var response = await client.GetAsync($"{apiUrl}/User/staff");
 
                 if (response.IsSuccessStatusCode)
                 {
                     var content = await response.Content.ReadAsStringAsync();
-                    var allLecturers = JsonSerializer.Deserialize<List<LecturerDto>>(content, new JsonSerializerOptions
+                    var allStaff = JsonSerializer.Deserialize<List<LecturerDto>>(content, new JsonSerializerOptions
                     {
                         PropertyNameCaseInsensitive = true
                     }) ?? new List<LecturerDto>();
 
                     // Filter out the current user and apply search filter
-                    Lecturers = allLecturers.Where(l => l.Id.ToString() != currentUserId).ToList();
+                    Lecturers = allStaff.Where(l => l.Id.ToString() != currentUserId).ToList();
 
                     if (!string.IsNullOrEmpty(search))
                     {

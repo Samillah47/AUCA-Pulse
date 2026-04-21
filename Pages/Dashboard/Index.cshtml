@@ -111,11 +111,11 @@
         </div>
     }
 
-@section Scripts {
-    @if (Model.UserRole == "ADMIN")
-    {
-        <script src="https://cdn.jsdelivr.net/npm/chart.js@@4.4.0/dist/chart.umd.min.js"></script>
-        <script>
+    @section Scripts {
+        @if (Model.UserRole == "ADMIN")
+        {
+            <script src="https://cdn.jsdelivr.net/npm/chart.js@@4.4.0/dist/chart.umd.min.js"></script>
+            <script>
             (function () {
                 const textColor = getComputedStyle(document.documentElement).getPropertyValue('--text-muted').trim() || '#6b7280';
                 const accent = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#2563eb';
@@ -124,7 +124,7 @@
                 Chart.defaults.color = textColor;
 
                 const rolesOrder = ['STUDENT', 'LECTURER', 'STAFF', 'ADMIN'];
-                const rolesData = @Html.Raw(Json.Serialize(Model.UsersByRole));
+                const rolesData = @Html.Raw(Json.Serialize(Model.UsersByRole ?? new Dictionary<string, int>()));
                 const roleColors = { STUDENT: '#2563eb', LECTURER: '#10b981', STAFF: '#f59e0b', ADMIN: '#ef4444' };
                 new Chart(document.getElementById('usersChart'), {
                     type: 'doughnut',
@@ -140,7 +140,7 @@
                 });
 
                 const roomOrder = ['AVAILABLE', 'OCCUPIED', 'RESERVED', 'MAINTENANCE'];
-                const roomsData = @Html.Raw(Json.Serialize(Model.RoomsByStatus));
+                const roomsData = @Html.Raw(Json.Serialize(Model.RoomsByStatus ?? new Dictionary<string, int>()));
                 const roomColors = { AVAILABLE: '#10b981', OCCUPIED: '#ef4444', RESERVED: '#2563eb', MAINTENANCE: '#f59e0b' };
                 new Chart(document.getElementById('roomsChart'), {
                     type: 'doughnut',
@@ -158,7 +158,7 @@
                 // Saturday is excluded from the teaching week (see TimetableGeneratorService)
                 const daysOrder = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SUNDAY'];
                 const daysLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sun'];
-                const classesData = @Html.Raw(Json.Serialize(Model.ClassesByDay));
+                const classesData = @Html.Raw(Json.Serialize(Model.ClassesByDay ?? new Dictionary<string, int>()));
                 new Chart(document.getElementById('classesChart'), {
                     type: 'bar',
                     data: {
@@ -180,141 +180,141 @@
                 });
             })();
         </script>
-    }
+        }
 
-    else if (Model.UserRole == "LECTURER")
-    {
-        <!-- Lecturer Dashboard -->
-        <div class="row g-4 mb-4">
-            <div class="col-md-8">
-                <h5 class="mb-3">My Occupied Rooms</h5>
-                <div class="row g-3">
-                    @if (Model.MyRooms.Any())
-                    {
-                        @foreach (var room in Model.MyRooms)
+        else if (Model.UserRole == "LECTURER")
+        {
+            <!-- Lecturer Dashboard -->
+            <div class="row g-4 mb-4">
+                <div class="col-md-8">
+                    <h5 class="mb-3">My Occupied Rooms</h5>
+                    <div class="row g-3">
+                        @if (Model.MyRooms.Any())
                         {
-                            <div class="col-md-6">
-                                <div class="card border-0 shadow-sm h-100 border-start border-4 border-primary">
-                                    <div class="card-body">
-                                        @{
-                                            var specializedTypes = new[] { "OFFICE", "LIBRARY", "IT_LAB" };
-                                            var roomDisplayName = specializedTypes.Contains(room.RoomType) 
-                                                ? $"{room.RoomType.Replace("_", " ")} {room.RoomNumber}" 
-                                                : $"Room {room.RoomNumber}";
-                                        }
-                                        <h6 class="card-title fw-bold">@roomDisplayName</h6>
-                                        <p class="text-muted small mb-2"><i class="bi bi-building me-1"></i>@room.Building</p>
-                                        <div class="d-flex justify-content-between align-items-center mt-3">
-                                            <span class="badge bg-primary">Occupied</span>
-                                            <a href="/RoomDetails/@room.Id" class="btn btn-sm btn-outline-primary">Details</a>
+                            @foreach (var room in Model.MyRooms)
+                            {
+                                <div class="col-md-6">
+                                    <div class="card border-0 shadow-sm h-100 border-start border-4 border-primary">
+                                        <div class="card-body">
+                                            @{
+                                                var specializedTypes = new[] { "OFFICE", "LIBRARY", "IT_LAB" };
+                                                var roomDisplayName = specializedTypes.Contains(room.RoomType)
+                                                    ? $"{room.RoomType.Replace("_", " ")} {room.RoomNumber}"
+                                                    : $"Room {room.RoomNumber}";
+                                            }
+                                            <h6 class="card-title fw-bold">@roomDisplayName</h6>
+                                            <p class="text-muted small mb-2"><i class="bi bi-building me-1"></i>@room.Building</p>
+                                            <div class="d-flex justify-content-between align-items-center mt-3">
+                                                <span class="badge bg-primary">Occupied</span>
+                                                <a href="/RoomDetails/@room.Id" class="btn btn-sm btn-outline-primary">Details</a>
+                                            </div>
                                         </div>
+                                    </div>
+                                </div>
+                            }
+                        }
+                        else
+                        {
+                            <div class="col-12">
+                                <div class="card border-0 shadow-sm bg-light">
+                                    <div class="card-body text-center py-4">
+                                        <i class="bi bi-door-closed fs-1 text-muted"></i>
+                                        <p class="mt-2 text-muted">You haven't occupied any rooms yet.</p>
+                                        <a href="/Rooms" class="btn btn-primary btn-sm">Find a Room</a>
                                     </div>
                                 </div>
                             </div>
                         }
+                    </div>
+                </div>
+
+                <div class="col-md-4">
+                    <h5 class="mb-3">Notifications</h5>
+                    <div class="card border-0 shadow-sm mb-4">
+                        <div class="card-body text-center py-4">
+                            <div class="position-relative d-inline-block mb-3">
+                                <i class="bi bi-bell fs-1 text-primary"></i>
+                                @if (Model.UnreadNotificationsCount > 0)
+                                {
+                                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                                        @Model.UnreadNotificationsCount
+                                    </span>
+                                }
+                            </div>
+                            <h6>@Model.UnreadNotificationsCount Unread Notifications</h6>
+                            <a href="/Notifications" class="btn btn-outline-primary btn-sm mt-2">View All</a>
+                        </div>
+                    </div>
+
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-header bg-white">
+                            <h5 class="mb-0">Quick Actions</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="d-grid gap-2">
+                                <a href="/UpdateStatus" class="btn btn-outline-primary text-start">
+                                    <i class="bi bi-person-badge me-2"></i> Update My Status
+                                </a>
+                                <a href="/Schedule" class="btn btn-outline-primary text-start">
+                                    <i class="bi bi-calendar me-2"></i> View My Schedule
+                                </a>
+                                <a href="/Rooms" class="btn btn-outline-primary text-start">
+                                    <i class="bi bi-search me-2"></i> Find/Reserve Room
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+        else if (Model.UserRole == "STUDENT")
+        {
+            <!-- Student Dashboard -->
+            <div class="row g-4 mb-4">
+                <div class="col-md-6">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-header bg-white">
+                            <h5 class="mb-0">Find Lecturers</h5>
+                        </div>
+                        <div class="card-body">
+                            <p class="text-muted">Search for lecturers and check their availability</p>
+                            <a href="/Lecturers" class="btn btn-primary">
+                                <i class="bi bi-search me-2"></i> Search Lecturers
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-header bg-white">
+                            <h5 class="mb-0">Available Rooms</h5>
+                        </div>
+                        <div class="card-body">
+                            <p class="text-muted">Find available rooms for study or meetings</p>
+                            <a href="/Rooms" class="btn btn-primary">
+                                <i class="bi bi-door-open me-2"></i> View Rooms
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="bi bi-broadcast me-2"></i>Lecturer Locations — Right Now</h5>
+                    <small class="text-muted">Auto-computed from schedule, status, and office</small>
+                </div>
+                <div class="card-body">
+                    @if (!Model.LecturerLocations.Any())
+                    {
+                        <p class="text-muted mb-0">No lecturers to show yet.</p>
                     }
                     else
                     {
-                        <div class="col-12">
-                            <div class="card border-0 shadow-sm bg-light">
-                                <div class="card-body text-center py-4">
-                                    <i class="bi bi-door-closed fs-1 text-muted"></i>
-                                    <p class="mt-2 text-muted">You haven't occupied any rooms yet.</p>
-                                    <a href="/Rooms" class="btn btn-primary btn-sm">Find a Room</a>
-                                </div>
-                            </div>
-                        </div>
-                    }
-                </div>
-            </div>
-
-            <div class="col-md-4">
-                <h5 class="mb-3">Notifications</h5>
-                <div class="card border-0 shadow-sm mb-4">
-                    <div class="card-body text-center py-4">
-                        <div class="position-relative d-inline-block mb-3">
-                            <i class="bi bi-bell fs-1 text-primary"></i>
-                            @if (Model.UnreadNotificationsCount > 0)
-                            {
-                                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
-                                    @Model.UnreadNotificationsCount
-                                </span>
-                            }
-                        </div>
-                        <h6>@Model.UnreadNotificationsCount Unread Notifications</h6>
-                        <a href="/Notifications" class="btn btn-outline-primary btn-sm mt-2">View All</a>
-                    </div>
-                </div>
-
-                <div class="card border-0 shadow-sm">
-                    <div class="card-header bg-white">
-                        <h5 class="mb-0">Quick Actions</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="d-grid gap-2">
-                            <a href="/UpdateStatus" class="btn btn-outline-primary text-start">
-                                <i class="bi bi-person-badge me-2"></i> Update My Status
-                            </a>
-                            <a href="/Schedule" class="btn btn-outline-primary text-start">
-                                <i class="bi bi-calendar me-2"></i> View My Schedule
-                            </a>
-                            <a href="/Rooms" class="btn btn-outline-primary text-start">
-                                <i class="bi bi-search me-2"></i> Find/Reserve Room
-                            </a>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    }
-    else if (Model.UserRole == "STUDENT")
-    {
-        <!-- Student Dashboard -->
-        <div class="row g-4 mb-4">
-            <div class="col-md-6">
-                <div class="card border-0 shadow-sm">
-                    <div class="card-header bg-white">
-                        <h5 class="mb-0">Find Lecturers</h5>
-                    </div>
-                    <div class="card-body">
-                        <p class="text-muted">Search for lecturers and check their availability</p>
-                        <a href="/Lecturers" class="btn btn-primary">
-                            <i class="bi bi-search me-2"></i> Search Lecturers
-                        </a>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-md-6">
-                <div class="card border-0 shadow-sm">
-                    <div class="card-header bg-white">
-                        <h5 class="mb-0">Available Rooms</h5>
-                    </div>
-                    <div class="card-body">
-                        <p class="text-muted">Find available rooms for study or meetings</p>
-                        <a href="/Rooms" class="btn btn-primary">
-                            <i class="bi bi-door-open me-2"></i> View Rooms
-                        </a>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="card border-0 shadow-sm">
-            <div class="card-header bg-white d-flex justify-content-between align-items-center">
-                <h5 class="mb-0"><i class="bi bi-broadcast me-2"></i>Lecturer Locations — Right Now</h5>
-                <small class="text-muted">Auto-computed from schedule, status, and office</small>
-            </div>
-            <div class="card-body">
-                @if (!Model.LecturerLocations.Any())
-                {
-                    <p class="text-muted mb-0">No lecturers to show yet.</p>
-                }
-                else
-                {
-                    <div class="table-responsive">
-                        <table class="table table-hover align-middle">
-                            <thead>
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle">
+                                <thead>
                                 <tr>
                                     <th>Lecturer</th>
                                     <th>Status</th>
@@ -322,113 +322,105 @@
                                     <th>Course</th>
                                     <th>Until</th>
                                 </tr>
-                            </thead>
-                            <tbody>
-                            @foreach (var loc in Model.LecturerLocations)
-                            {
-                                string badge = loc.Status switch
+                                </thead>
+                                <tbody>
+                                @foreach (var loc in Model.LecturerLocations)
                                 {
-                                    "IN_CLASS" => "bg-danger",
-                                    "IN_OFFICE" => "bg-success",
-                                    "AVAILABLE" => "bg-success",
-                                    "IN_MEETING" => "bg-warning text-dark",
-                                    "AWAY" => "bg-secondary",
-                                    "UNAVAILABLE" => "bg-dark",
-                                    _ => "bg-light text-dark"
-                                };
-                                string icon = loc.Status switch
-                                {
-                                    "IN_CLASS" => "bi-easel",
-                                    "IN_OFFICE" => "bi-building-check",
-                                    "AVAILABLE" => "bi-check-circle",
-                                    "IN_MEETING" => "bi-people",
-                                    "AWAY" => "bi-box-arrow-right",
-                                    _ => "bi-question-circle"
-                                };
-                                <tr>
-                                    <td>
-                                        <strong>@loc.LecturerName</strong>
-                                        @if (!string.IsNullOrWhiteSpace(loc.Department))
-                                        {
-                                            <br /><small class="text-muted">@loc.Department</small>
-                                        }
-                                    </td>
-                                    <td><span class="badge @badge"><i class="bi @icon me-1"></i>@loc.Status.Replace('_', ' ')</span></td>
-                                    <td>@loc.LocationLabel</td>
-                                    <td>@(string.IsNullOrWhiteSpace(loc.CourseInfo) ? "-" : loc.CourseInfo)</td>
-                                    <td>@(string.IsNullOrWhiteSpace(loc.UntilTime) ? "-" : loc.UntilTime)</td>
-                                </tr>
-                            }
-                            </tbody>
-                        </table>
-                    </div>
-                }
+                                    string badge = loc.Status switch
+                                    {
+                                        "IN_CLASS" => "bg-danger",
+                                        "IN_OFFICE" => "bg-success",
+                                        "AVAILABLE" => "bg-success",
+                                        "IN_MEETING" => "bg-warning text-dark",
+                                        "AWAY" => "bg-secondary",
+                                        "UNAVAILABLE" => "bg-dark",
+                                        _ => "bg-light text-dark"
+                                    };
+                                    string icon = loc.Status switch
+                                    {
+                                        "IN_CLASS" => "bi-easel",
+                                        "IN_OFFICE" => "bi-building-check",
+                                        "AVAILABLE" => "bi-check-circle",
+                                        "IN_MEETING" => "bi-people",
+                                        "AWAY" => "bi-box-arrow-right",
+                                        _ => "bi-question-circle"
+                                    };
+                                    <tr>
+                                        <td>
+                                            <strong>@loc.LecturerName</strong>
+                                            @if (!string.IsNullOrWhiteSpace(loc.Department))
+                                            {
+                                                <br/>
+                                                <small class="text-muted">@loc.Department</small>
+                                            }
+                                        </td>
+                                        <td><span class="badge @badge"><i class="bi @icon me-1"></i>@loc.Status.Replace('_', ' ')</span></td>
+                                        <td>@loc.LocationLabel</td>
+                                        <td>@(string.IsNullOrWhiteSpace(loc.CourseInfo) ? "-" : loc.CourseInfo)</td>
+                                        <td>@(string.IsNullOrWhiteSpace(loc.UntilTime) ? "-" : loc.UntilTime)</td>
+                                    </tr>
+                                }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                </div>
             </div>
-        </div>
-    }
-    else
-    {
-        <!-- Staff Dashboard -->
-        <div class="row g-4">
-            <div class="col-md-6">
-                <div class="card border-0 shadow-sm">
-                    <div class="card-header bg-white">
-                        <h5 class="mb-0">My Office</h5>
+        }
+        else
+        {
+            <!-- Staff Dashboard -->
+            <div class="row g-4">
+                <div class="col-md-6">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-header bg-white">
+                            <h5 class="mb-0">My Office</h5>
+                        </div>
+                        <div class="card-body">
+                            <p class="text-muted">Manage your office status and availability</p>
+                            <a href="/MyOffice" class="btn btn-primary">
+                                <i class="bi bi-building me-2"></i> View Office
+                            </a>
+                        </div>
                     </div>
-                    <div class="card-body">
-                        <p class="text-muted">Manage your office status and availability</p>
-                        <a href="/MyOffice" class="btn btn-primary">
-                            <i class="bi bi-building me-2"></i> View Office
-                        </a>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-header bg-white">
+                            <h5 class="mb-0">Campus Resources</h5>
+                        </div>
+                        <div class="card-body">
+                            <p class="text-muted">Access rooms and facilities</p>
+                            <a href="/Rooms" class="btn btn-primary">
+                                <i class="bi bi-door-open me-2"></i> View Rooms
+                            </a>
+                        </div>
                     </div>
                 </div>
             </div>
+        }
 
-            <div class="col-md-6">
-                <div class="card border-0 shadow-sm">
-                    <div class="card-header bg-white">
-                        <h5 class="mb-0">Campus Resources</h5>
-                    </div>
-                    <div class="card-body">
-                        <p class="text-muted">Access rooms and facilities</p>
-                        <a href="/Rooms" class="btn btn-primary">
-                            <i class="bi bi-door-open me-2"></i> View Rooms
-                        </a>
-                    </div>
-                </div>
-            </div>
-        </div>
-    }
-</div>
 
-@functions {
-    string GetStatusBadgeClass(string status)
-    {
-        return status switch
+        @functions {
+
+        string GetStatusBadgeClass(string status)
         {
-            "AVAILABLE" => "bg-success",
-            "AVAILABLE_FOR_APPOINTMENT" => "bg-info",
-            "IN_CLASS" => "bg-danger",
-            "IN_MEETING" => "bg-warning",
-            "IN_OFFICE" => "bg-success",
-            "AWAY" => "bg-secondary",
-            "UNAVAILABLE" => "bg-dark",
-            _ => "bg-secondary"
-        };
+            return status switch
+            {
+                "AVAILABLE" => "bg-success",
+                "AVAILABLE_FOR_APPOINTMENT" => "bg-info",
+                "IN_CLASS" => "bg-danger",
+                "IN_MEETING" => "bg-warning",
+                "IN_OFFICE" => "bg-success",
+                "AWAY" => "bg-secondary",
+                "UNAVAILABLE" => "bg-dark",
+                _ => "bg-secondary"
+            };
+        }
+
     }
-}
-    string GetStatusBadgeClass(string status)
-    {
-        return status switch
-        {
-            "AVAILABLE" => "bg-success",
-            "AVAILABLE_FOR_APPOINTMENT" => "bg-info",
-            "IN_CLASS" => "bg-danger",
-            "IN_MEETING" => "bg-warning",
-            "IN_OFFICE" => "bg-success",
-            "AWAY" => "bg-secondary",
-            "UNAVAILABLE" => "bg-dark",
-            _ => "bg-secondary"
-        };
+
     }
+
 }

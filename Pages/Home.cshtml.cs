@@ -2,6 +2,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using System.Net.Http.Headers;
 using System.Text.Json;
+using AUCAPulse.Services;
+using AUCAPulse.DTOs.Response;
 
 namespace AUCAPulse.Pages
 {
@@ -9,24 +11,39 @@ namespace AUCAPulse.Pages
     {
         private readonly IHttpClientFactory _httpClientFactory;
         private readonly IConfiguration _configuration;
+        private readonly IAppointmentService _appointmentService;
+        private readonly ILecturerStatusService _lecturerStatusService;
+        private readonly INotificationService _notificationService;
 
-        public HomeModel(IHttpClientFactory httpClientFactory, IConfiguration configuration)
+        public HomeModel(
+            IHttpClientFactory httpClientFactory, 
+            IConfiguration configuration,
+            IAppointmentService appointmentService,
+            ILecturerStatusService lecturerStatusService,
+            INotificationService notificationService)
         {
             _httpClientFactory = httpClientFactory;
             _configuration = configuration;
+            _appointmentService = appointmentService;
+            _lecturerStatusService = lecturerStatusService;
+            _notificationService = notificationService;
         }
 
         public string FirstName { get; set; } = "there";
         public int AvailableRoomCount { get; set; }
         public int UnreadNotifications { get; set; }
-        public int LecturerCount { get; set; }
+        public int AvailableLecturerCount { get; set; }
         public List<TodayClassDto> TodayClasses { get; set; } = new();
         public List<AnnouncementDto> Announcements { get; set; } = new();
+        public List<AppointmentResponse> UpcomingAppointments { get; set; } = new();
 
         public async Task<IActionResult> OnGetAsync()
         {
             var token = HttpContext.Session.GetString("Token");
-            if (string.IsNullOrEmpty(token)) return RedirectToPage("/Login");
+            var userIdStr = HttpContext.Session.GetString("UserId");
+            
+            if (string.IsNullOrEmpty(token) || string.IsNullOrEmpty(userIdStr) || !int.TryParse(userIdStr, out var userId)) 
+                return RedirectToPage("/Login");
 
             var fullName = HttpContext.Session.GetString("UserName") ?? "there";
             FirstName = fullName.Split(' ').FirstOrDefault() ?? fullName;
@@ -48,18 +65,19 @@ namespace AUCAPulse.Pages
                         .Count(r => (r.TryGetProperty("status", out var s) && s.GetString()?.ToUpper() == "AVAILABLE"));
                 }
 
-                // Lecturers count
-                var lecRes = await client.GetAsync($"{baseUrl}/User/lecturers");
-                if (lecRes.IsSuccessStatusCode)
-                {
-                    var content = await lecRes.Content.ReadAsStringAsync();
-                    using var doc = JsonDocument.Parse(content);
-                    LecturerCount = doc.RootElement.GetArrayLength();
-                }
+                // Available Lecturers count
+                var lecturers = await _lecturerStatusService.GetAllStatusesAsync();
+                AvailableLecturerCount = lecturers.Count(l => l.Status == "AVAILABLE");
 
-                // Today's timetable — only show classes when today falls inside
-                // the current semester's date window. A weekly schedule alone
-                // doesn't mean the lecturer is actually teaching today.
+                // Upcoming Appointments
+                var allAppointments = await _appointmentService.GetAppointmentsByStudentAsync(userId);
+                UpcomingAppointments = allAppointments
+                    .Where(a => a.AppointmentDate >= DateTime.UtcNow && a.Status != "CANCELLED" && a.Status != "REJECTED")
+                    .OrderBy(a => a.AppointmentDate)
+                    .Take(3)
+                    .ToList();
+
+                // Today's timetable
                 var semRes = await client.GetAsync($"{baseUrl}/semester/current");
                 int? semesterId = null;
                 DateTime? semStart = null, semEnd = null;
@@ -96,31 +114,73 @@ namespace AUCAPulse.Pages
                 }
 
                 // Notifications
-                var notifRes = await client.GetAsync($"{baseUrl}/notification/unread");
-                if (notifRes.IsSuccessStatusCode)
-                {
-                    var content = await notifRes.Content.ReadAsStringAsync();
-                    try
-                    {
-                        using var doc = JsonDocument.Parse(content);
-                        UnreadNotifications = doc.RootElement.ValueKind == JsonValueKind.Array
-                            ? doc.RootElement.GetArrayLength()
-                            : 0;
-                    }
-                    catch { }
-                }
+                UnreadNotifications = await _notificationService.GetUnreadCountAsync(userId);
 
-                // Announcements — reuse notification feed for now
-                var annRes = await client.GetAsync($"{baseUrl}/notification");
-                if (annRes.IsSuccessStatusCode)
+                // Announcements - Add dummy data
+                var notifs = await _notificationService.GetNotificationsByUserIdAsync(userId);
+                var dbAnnouncements = notifs
+                    .Where(n => n.Type == Models.NotificationType.INFO || n.Type == Models.NotificationType.WARNING)
+                    .Take(5)
+                    .Select(n => new AnnouncementDto 
+                    { 
+                        Id = n.Id, 
+                        Title = n.Title, 
+                        Message = n.Message, 
+                        Type = n.Type.ToString(), 
+                        CreatedAt = n.CreatedAt 
+                    })
+                    .ToList();
+
+                // Add dummy announcements if none exist
+                if (!dbAnnouncements.Any())
                 {
-                    var content = await annRes.Content.ReadAsStringAsync();
-                    try
+                    Announcements = new List<AnnouncementDto>
                     {
-                        Announcements = JsonSerializer.Deserialize<List<AnnouncementDto>>(content, opts) ?? new();
-                        Announcements = Announcements.Take(5).ToList();
-                    }
-                    catch { }
+                        new AnnouncementDto
+                        {
+                            Id = -1,
+                            Title = "Final Exams Schedule",
+                            Message = "Final examinations will begin on May 3rd, 2025. Please check your timetable for specific dates and times.",
+                            Type = "INFO",
+                            CreatedAt = DateTime.UtcNow.AddDays(-2)
+                        },
+                        new AnnouncementDto
+                        {
+                            Id = -2,
+                            Title = "Library Extended Hours",
+                            Message = "The library will be open 24/7 during exam period from April 28th to May 15th.",
+                            Type = "INFO",
+                            CreatedAt = DateTime.UtcNow.AddDays(-5)
+                        },
+                        new AnnouncementDto
+                        {
+                            Id = -3,
+                            Title = "Registration Deadline",
+                            Message = "Course registration for next semester closes on May 20th. Don't miss the deadline!",
+                            Type = "WARNING",
+                            CreatedAt = DateTime.UtcNow.AddDays(-7)
+                        },
+                        new AnnouncementDto
+                        {
+                            Id = -4,
+                            Title = "Campus Maintenance",
+                            Message = "Scheduled maintenance in Building A on April 30th from 8 AM to 12 PM. Classes will be relocated.",
+                            Type = "WARNING",
+                            CreatedAt = DateTime.UtcNow.AddDays(-10)
+                        },
+                        new AnnouncementDto
+                        {
+                            Id = -5,
+                            Title = "Student Awards Ceremony",
+                            Message = "Join us for the annual Student Excellence Awards on May 25th at 3 PM in the Main Auditorium.",
+                            Type = "INFO",
+                            CreatedAt = DateTime.UtcNow.AddDays(-12)
+                        }
+                    };
+                }
+                else
+                {
+                    Announcements = dbAnnouncements;
                 }
             }
             catch
