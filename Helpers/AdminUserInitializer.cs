@@ -29,17 +29,18 @@ namespace AUCAPulse.Helpers
                     return;
                 }
 
-                // Check if admin user already exists
-                if (!await context.Users.AnyAsync(u => u.Email == adminEmail))
+                // Get ADMIN role (always — we may need it whether we create or repair)
+                var adminRole = await context.Roles.FirstOrDefaultAsync(r => r.RoleName == "ADMIN");
+                if (adminRole == null)
                 {
-                    // Get ADMIN role
-                    var adminRole = await context.Roles.FirstOrDefaultAsync(r => r.RoleName == "ADMIN");
-                    if (adminRole == null)
-                    {
-                        logger.LogError("ADMIN role not found. Make sure roles are seeded first.");
-                        return;
-                    }
+                    logger.LogError("ADMIN role not found. Make sure roles are seeded first.");
+                    return;
+                }
 
+                var existing = await context.Users.FirstOrDefaultAsync(u => u.Email == adminEmail);
+
+                if (existing == null)
+                {
                     // Create admin user with BCrypt hashed password
                     var admin = new User
                     {
@@ -52,7 +53,6 @@ namespace AUCAPulse.Helpers
                         Department = "Administration",
                         CreatedAt = DateTime.UtcNow
                     };
-                    
 
                     context.Users.Add(admin);
                     await context.SaveChangesAsync();
@@ -61,7 +61,39 @@ namespace AUCAPulse.Helpers
                 }
                 else
                 {
-                    logger.LogInformation("Admin user already exists.");
+                    // Self-heal: keep the seeded admin reachable across redeploys
+                    // even if migrations or earlier startup attempts left them in
+                    // a half-configured state. Cheap to verify, costs nothing if
+                    // it's already correct.
+                    var changed = false;
+                    if (!BCrypt.Net.BCrypt.Verify(adminPassword, existing.PasswordHash))
+                    {
+                        existing.PasswordHash = BCrypt.Net.BCrypt.HashPassword(adminPassword);
+                        changed = true;
+                        logger.LogWarning("Admin password did not match configuration; resetting it.");
+                    }
+                    if (existing.Status != UserStatus.APPROVED)
+                    {
+                        existing.Status = UserStatus.APPROVED;
+                        changed = true;
+                        logger.LogWarning("Admin status was not APPROVED; setting it.");
+                    }
+                    if (existing.RoleId != adminRole.Id)
+                    {
+                        existing.RoleId = adminRole.Id;
+                        changed = true;
+                        logger.LogWarning("Admin role was not ADMIN; setting it.");
+                    }
+                    if (changed)
+                    {
+                        existing.UpdatedAt = DateTime.UtcNow;
+                        await context.SaveChangesAsync();
+                        logger.LogInformation("Admin user repaired for email: {Email}", adminEmail);
+                    }
+                    else
+                    {
+                        logger.LogInformation("Admin user already exists and matches configuration.");
+                    }
                 }
             }
             catch (Exception ex)
