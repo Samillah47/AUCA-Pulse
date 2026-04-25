@@ -1,0 +1,41 @@
+# Build output
+**/bin
+**/obj
+**/out
+
+# IDE / VCS
+.git
+.gitignore
+.gitattributes
+.vs
+.vscode
+.idea
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Local agent / tooling state
+.claude
+
+# Logs / temp
+**/*.log
+**/Logs
+**/logs
+
+# Restored client libs — Dockerfile re-runs libman restore
+wwwroot/lib
+
+# Local secrets — must come from Render env vars
+appsettings.Development.json
+appsettings.Local.json
+*.pfx
+*.snk
+
+# Documentation / artefacts that don't need to ship
+*.md
+!README.md
+!DEPLOY.md
+*.pptx
+scripts
+Migrations/*.Designer.cs.bak

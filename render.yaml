@@ -1,0 +1,66 @@
+# Render Blueprint for AUCA Pulse.
+#
+# Apply by visiting https://dashboard.render.com/blueprints, picking this
+# repository, and confirming. Render will create:
+#   - one free Postgres database (90-day expiry on the free plan)
+#   - one free Docker web service that builds from ./Dockerfile
+#
+# Free-tier services sleep after 15 minutes of inactivity; the first
+# request after that takes ~30s while the container spins back up.
+
+databases:
+  - name: auca-pulse-db
+    plan: free
+    databaseName: auca_pulse_db
+    user: auca_pulse
+
+services:
+  - type: web
+    name: auca-pulse
+    runtime: docker
+    plan: free
+    region: oregon
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /Login
+    autoDeploy: true
+    envVars:
+      # Render injects PORT; the Dockerfile binds ASPNETCORE_URLS to it.
+      - key: ASPNETCORE_ENVIRONMENT
+        value: Production
+
+      # Postgres connection — Render emits a postgres:// URL that
+      # Program.cs translates to an Npgsql connection string at startup.
+      - key: DATABASE_URL
+        fromDatabase:
+          name: auca-pulse-db
+          property: connectionString
+
+      # JWT signing key — Render generates a strong random value on first
+      # deploy and reuses it on subsequent deploys.
+      - key: JwtSettings__SecretKey
+        generateValue: true
+      - key: JwtSettings__Issuer
+        value: AUCAPulse
+      - key: JwtSettings__Audience
+        value: AUCAPulseUsers
+      - key: JwtSettings__ExpirationMinutes
+        value: "10080"
+
+      # SMTP — set these in the Render dashboard after the first deploy
+      # so you don't have to commit secrets. Leaving them empty here means
+      # email-dependent flows (OTP, password reset) will fail loudly until
+      # you fill them in.
+      - key: EmailSettings__SmtpServer
+        value: smtp.gmail.com
+      - key: EmailSettings__SmtpPort
+        value: "587"
+      - key: EmailSettings__SenderEmail
+        sync: false
+      - key: EmailSettings__SenderPassword
+        sync: false
+      - key: EmailSettings__SenderName
+        value: AUCA Pulse
+
+      # Used by the Razor Pages layer when it calls its own API
+      - key: ApiSettings__BaseUrl
+        value: /api

@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
@@ -8,6 +9,34 @@ using AUCAPulse.Helpers;
 using AUCAPulse.Middleware;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Render (and most managed Postgres providers) hand us a postgres:// URL
+// in DATABASE_URL. Npgsql wants Host=...;Database=...;Username=...;... so
+// translate once at startup and inject it as the standard connection string.
+static string? ConvertDatabaseUrlToNpgsql(string? url)
+{
+    if (string.IsNullOrWhiteSpace(url)) return null;
+    if (!url.StartsWith("postgres://", StringComparison.OrdinalIgnoreCase) &&
+        !url.StartsWith("postgresql://", StringComparison.OrdinalIgnoreCase))
+    {
+        // Already in Npgsql key/value form — leave it alone.
+        return url;
+    }
+    var u = new Uri(url);
+    var userInfo = u.UserInfo.Split(':', 2);
+    var user = Uri.UnescapeDataString(userInfo[0]);
+    var pwd = userInfo.Length > 1 ? Uri.UnescapeDataString(userInfo[1]) : string.Empty;
+    var db = u.AbsolutePath.TrimStart('/');
+    var port = u.Port > 0 ? u.Port : 5432;
+    return $"Host={u.Host};Port={port};Database={db};Username={user};Password={pwd};SSL Mode=Require;Trust Server Certificate=true";
+}
+
+var databaseUrl = Environment.GetEnvironmentVariable("DATABASE_URL");
+var translated = ConvertDatabaseUrlToNpgsql(databaseUrl);
+if (!string.IsNullOrEmpty(translated))
+{
+    builder.Configuration["ConnectionStrings:DefaultConnection"] = translated;
+}
 
 // Add services to the container.
 builder.Services.AddRazorPages();
@@ -118,6 +147,26 @@ builder.Services.AddCors(options =>
 });
 
 var app = builder.Build();
+
+// In production (Render, Docker), apply EF migrations on startup so the
+// schema is in sync with the deployed code without us shelling into the
+// container. In Development we keep the manual `dotnet ef database update`
+// flow so destructive migrations are deliberate.
+if (app.Environment.IsProduction())
+{
+    using var scope = app.Services.CreateScope();
+    var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    await db.Database.MigrateAsync();
+}
+
+// Trust X-Forwarded-* from Render's load balancer so HTTPS/scheme detection
+// works (cookies marked Secure, redirect URLs, etc.).
+app.UseForwardedHeaders(new ForwardedHeadersOptions
+{
+    ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto,
+    KnownNetworks = { },
+    KnownProxies = { }
+});
 
 // Initialize admin user
 await AdminUserInitializer.InitializeAsync(app.Services);
