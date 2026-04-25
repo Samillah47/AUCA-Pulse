@@ -1,9 +1,10 @@
+using Microsoft.AspNetCore.DataProtection.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using AUCAPulse.Models;
 
 namespace AUCAPulse.Data
 {
-    public class ApplicationDbContext : DbContext
+    public class ApplicationDbContext : DbContext, IDataProtectionKeyContext
     {
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
             : base(options)
@@ -27,6 +28,10 @@ namespace AUCAPulse.Data
         public DbSet<CourseAssignment> CourseAssignments { get; set; }
         public DbSet<Group> Groups { get; set; }
         public DbSet<ChatMessage> ChatMessages { get; set; }
+
+        // Data Protection keys (anti-forgery tokens, session cookies, etc.)
+        // Persisted in PostgreSQL so they survive container restarts on Render.
+        public DbSet<DataProtectionKey> DataProtectionKeys { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

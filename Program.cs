@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -69,6 +70,13 @@ if (string.IsNullOrEmpty(connectionString))
 }
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseNpgsql(connectionString));
+
+// Persist Data Protection keys (anti-forgery, session/auth cookies, etc.) in
+// PostgreSQL so they survive container restarts on Render. Without this each
+// redeploy throws "key was not found in the key ring" for every form post.
+builder.Services.AddDataProtection()
+    .PersistKeysToDbContext<ApplicationDbContext>()
+    .SetApplicationName("AUCAPulse");
 
 // Add JWT Authentication
 var jwtSettings = builder.Configuration.GetSection("JwtSettings");
