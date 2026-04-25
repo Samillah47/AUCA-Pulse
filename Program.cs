@@ -38,6 +38,16 @@ if (!string.IsNullOrEmpty(translated))
     builder.Configuration["ConnectionStrings:DefaultConnection"] = translated;
 }
 
+// Render auto-injects RENDER_EXTERNAL_URL (e.g. https://auca-pulse.onrender.com).
+// Razor pages call /api on themselves via HttpClient — HttpClient needs an
+// absolute URL when no BaseAddress is set, so promote the configured value
+// to a fully-qualified URL whenever we're running on Render.
+var renderUrl = Environment.GetEnvironmentVariable("RENDER_EXTERNAL_URL");
+if (!string.IsNullOrEmpty(renderUrl))
+{
+    builder.Configuration["ApiSettings:BaseUrl"] = renderUrl.TrimEnd('/') + "/api";
+}
+
 // Add services to the container.
 builder.Services.AddRazorPages();
 builder.Services.AddControllers()
