@@ -13,6 +13,8 @@ namespace AUCAPulse.Helpers
             var logger = scope.ServiceProvider.GetRequiredService<ILogger<AdminUserInitializer>>();
             var configuration = scope.ServiceProvider.GetRequiredService<IConfiguration>();
 
+            logger.LogInformation("=== AdminUserInitializer starting ===");
+
             try
             {
                 // Ensure database is created
@@ -61,12 +63,25 @@ namespace AUCAPulse.Helpers
                 }
                 else
                 {
-                    // Self-heal: keep the seeded admin reachable across redeploys
-                    // even if migrations or earlier startup attempts left them in
-                    // a half-configured state. Cheap to verify, costs nothing if
-                    // it's already correct.
+                    // Self-heal: keep the seeded admin reachable across redeploys.
+                    // BCrypt.Verify can throw on a malformed hash (e.g. empty string,
+                    // or a hash created by a different library). Wrap it so a bad
+                    // hash counts as "doesn't match" rather than a silent crash that
+                    // leaves the admin unable to log in.
+                    bool passwordOk;
+                    try
+                    {
+                        passwordOk = !string.IsNullOrEmpty(existing.PasswordHash)
+                                     && BCrypt.Net.BCrypt.Verify(adminPassword, existing.PasswordHash);
+                    }
+                    catch (Exception ex)
+                    {
+                        logger.LogWarning(ex, "Admin password hash could not be verified; treating as mismatch.");
+                        passwordOk = false;
+                    }
+
                     var changed = false;
-                    if (!BCrypt.Net.BCrypt.Verify(adminPassword, existing.PasswordHash))
+                    if (!passwordOk)
                     {
                         existing.PasswordHash = BCrypt.Net.BCrypt.HashPassword(adminPassword);
                         changed = true;
@@ -88,17 +103,17 @@ namespace AUCAPulse.Helpers
                     {
                         existing.UpdatedAt = DateTime.UtcNow;
                         await context.SaveChangesAsync();
-                        logger.LogInformation("Admin user repaired for email: {Email}", adminEmail);
+                        logger.LogWarning("=== Admin user REPAIRED for email: {Email} ===", adminEmail);
                     }
                     else
                     {
-                        logger.LogInformation("Admin user already exists and matches configuration.");
+                        logger.LogInformation("=== Admin user OK for email: {Email} ===", adminEmail);
                     }
                 }
             }
             catch (Exception ex)
             {
-                logger.LogError($"Error initializing admin user: {ex.Message}");
+                logger.LogError(ex, "=== Error initializing admin user: {Message} ===", ex.Message);
             }
         }
     }
