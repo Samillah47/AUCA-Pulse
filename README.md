@@ -1,339 +1,346 @@
-# AUCA Pulse - .NET Implementation
+# AUCA Pulse — Smart Campus Platform
 
-> **Feel the Pulse of AUCA** — A smarter, connected, and dynamic campus experience.
+> **Feel the pulse of AUCA.** A real-time campus coordination platform where lecturers, staff, and students all see the same live state of campus.
 
-[![.NET](https://img.shields.io/badge/.NET-8.0-purple.svg)](https://dotnet.microsoft.com/)
-[![ASP.NET Core](https://img.shields.io/badge/ASP.NET%20Core-Razor%20Pages-blue.svg)](https://docs.microsoft.com/en-us/aspnet/core/)
-[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Database-blue.svg)](https://www.postgresql.org/)
+[![.NET](https://img.shields.io/badge/.NET-8.0-512BD4)](https://dotnet.microsoft.com/)
+[![ASP.NET Core](https://img.shields.io/badge/ASP.NET%20Core-Razor%20Pages%20%2B%20REST-2563EB)](https://docs.microsoft.com/en-us/aspnet/core/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15%2B-336791)](https://www.postgresql.org/)
+[![Status](https://img.shields.io/badge/status-fully%20functional-10B981)](#highlights)
+
+---
 
 ## Overview
 
-**AUCA Pulse** is a comprehensive campus digital management platform designed to revolutionize campus operations at the Adventist University of Central Africa (AUCA). This is the **.NET C# implementation** using ASP.NET Core with REST API backend and Razor Pages frontend, migrated from the original Spring Boot Java application.
+**AUCA Pulse** is a campus operations platform built for the Adventist University of Central Africa. One web app coordinates four distinct journeys — **student**, **lecturer**, **staff**, **admin** — around three live signals: where lecturers are, which rooms are free, and what just changed.
 
-The system provides real-time insights into lecturer availability, room utilization, personnel status, and campus-wide notifications, fostering a more efficient, transparent, and connected academic environment.
+It replaces the WhatsApp-and-walking-to-offices status quo with a single, role-aware experience powered by a Round Robin timetable generator, instant class cancellation with auto room release, and an actionable notification system.
 
-## Current Status
+---
 
-✅ **FULLY FUNCTIONAL** - Complete backend API and frontend UI with authentication, role-based access, and all core features implemented.
+## Highlights
 
-## Key Features
+- **Round Robin timetable generator** — fairly distributes course slots and rooms across Mon–Fri + Sun (Saturday excluded for Sabbath).
+- **One-click cancel today's class** — frees the room instantly, alerts admins, leaves next week's occurrence on the timetable.
+- **Real-time room occupancy** — driven by the schedule itself, not by manual booking.
+- **Click-to-navigate notification bell** — pulses on new items, deep-links to the right page.
+- **Role-based experience** — same codebase, four tailored sidebars, route guard enforcing access.
+- **Friendly exception layer** — translates raw PostgreSQL errors into plain English for users.
+- **Modern, animated UI** — Poppins typography, blue accent theme, staggered card animations, frosted-glass top bar.
 
-### 🔐 Authentication & Authorization
-- Multi-role user system supporting **STUDENT**, **LECTURER**, **STAFF**, and **ADMIN** roles
-- Secure JWT-based authentication
-- Two-Factor Authentication (2FA) with OTP via email
-- Administrative verification workflow for new user approvals
-- Password reset with admin approval workflow
-- BCrypt password hashing
+---
 
-### 🏫 Room & Lecturer Management
-- Real-time room occupancy tracking and management
-- Lecturer availability status monitoring
-- Dynamic room booking with extension and release capabilities
-- Lecture schedule management
-- Conflict resolution for room scheduling
+## Roles & journeys
 
-### 📍 Hierarchical Location System
-- Five-tier geographic hierarchy: Province → District → Sector → Cell → Village
-- Recursive relationship modeling for flexible location queries
-- Campus-wide location mapping and search functionality
+| Role | What they get |
+|---|---|
+| **STUDENT** | Browse lecturers with live status, view available rooms, book appointments with staff, see today's schedule on the home dashboard. |
+| **LECTURER** | Personal dashboard, weekly schedule with **Cancel today / Reinstate** action, live status broadcast, appointment inbox, room reservations. |
+| **STAFF** | Office hours management, status broadcast (In Meeting, Available, Away, Unavailable), appointment approvals, room directory. |
+| **ADMIN** | User verification queue, course / group / assignment management, **Round Robin timetable generator**, **Cancelled Classes** dashboard, office assignment to staff, reports, notifications hub. |
 
-### 📬 Notification System
-- Automated notifications for status changes and approvals
-- Read/unread tracking with persistence
-- Email notifications for important events
+---
 
-### 🛠️ Administrative Tools
-- Comprehensive verification request management
-- Office status and assignment controls
-- User management and role assignment interfaces
-- Password reset request approval system
-- System-wide configuration and monitoring
-
-## Technology Stack
+## Tech stack
 
 | Layer | Technology |
-|-------|-----------|
-| **Language** | C# 12 |
-| **Framework** | ASP.NET Core 8.0 (REST API + Razor Pages) |
-| **Database** | PostgreSQL 12+ |
-| **ORM** | Entity Framework Core 8.0 |
-| **Authentication** | JWT Bearer Tokens |
-| **Password Hashing** | BCrypt.Net |
-| **Email** | MailKit |
-| **Build Tool** | .NET CLI / Visual Studio |
+|---|---|
+| Language | C# 12 (.NET 8.0, nullable reference types) |
+| Framework | ASP.NET Core 8.0 — Razor Pages + Web API |
+| Data | PostgreSQL 15+ via **Entity Framework Core 8.0.4** (Npgsql) |
+| Auth | JWT bearer (API) + session-based role (Razor Pages) |
+| Frontend | Razor Pages + Bootstrap 5 + Bootstrap Icons + Poppins (Google Fonts) + vanilla JS + Chart.js |
+| Email | MailKit 4 (Gmail SMTP for OTP & password reset) |
+| Hashing | BCrypt.Net-Next 4 |
+| Background work | `IHostedService` for the room auto-release loop |
 
-## Project Structure
+---
+
+## Architecture at a glance
 
 ```
-FinalProject_GroupB/
-├── Controllers/             # REST API Controllers (12 endpoints)
-│   ├── AuthController.cs
-│   ├── UserController.cs
-│   ├── RoomController.cs
-│   ├── LecturerStatusController.cs
-│   ├── LectureScheduleController.cs
-│   ├── OfficeController.cs
-│   ├── LocationController.cs
-│   ├── NotificationController.cs
-│   ├── VerificationRequestController.cs
-│   ├── PasswordResetRequestController.cs
-│   ├── SemesterController.cs
-│   └── TestController.cs
-├── Models/                  # Entity models (11 entities)
-│   ├── User.cs
-│   ├── Role.cs
-│   ├── Room.cs
-│   ├── LecturerStatus.cs
-│   ├── LectureSchedule.cs
-│   ├── Office.cs
-│   ├── Location.cs
-│   ├── Notification.cs
-│   ├── VerificationRequest.cs
-│   ├── PasswordResetRequest.cs
-│   └── Semester.cs
-├── Data/                    # DbContext and database configuration
-│   └── ApplicationDbContext.cs
-├── Services/                # Business logic layer (22 services)
-│   ├── AuthService.cs
-│   ├── EmailService.cs
-│   ├── UserService.cs
-│   ├── RoomService.cs
-│   ├── LecturerStatusService.cs
-│   ├── LectureScheduleService.cs
-│   ├── OfficeService.cs
-│   ├── LocationService.cs
-│   ├── NotificationService.cs
-│   ├── VerificationRequestService.cs
-│   ├── PasswordResetRequestService.cs
-│   ├── SemesterService.cs
-│   └── I[Service]Service.cs (interfaces)
-├── Pages/                   # Razor Pages UI (Frontend)
-│   ├── Dashboard/          # Role-based dashboard
-│   ├── Login.cshtml        # Authentication pages
-│   ├── VerifyOtp.cshtml
-│   ├── Signup.cshtml
-│   ├── Logout.cshtml
-│   ├── Rooms.cshtml        # Room management
-│   ├── RoomDetails/
-│   ├── Lecturers.cshtml    # Lecturer directory
-│   ├── LecturerProfile/
-│   ├── Schedule.cshtml     # Lecture schedules
-│   ├── Profile.cshtml      # User profile
-│   ├── Notifications.cshtml
-│   ├── UserManagement.cshtml      # Admin pages
-│   ├── VerificationRequests.cshtml
-│   ├── PasswordResets.cshtml
-│   └── Shared/             # Layout and partials
-├── DTOs/                    # Data Transfer Objects
-│   ├── Request/            # API request DTOs
-│   └── Response/           # API response DTOs
-├── Helpers/                 # Utility classes
-│   ├── JwtHelper.cs
-│   ├── OtpHelper.cs
-│   └── AdminUserInitializer.cs
-├── Migrations/              # EF Core migrations
-│   └── 20260404145133_InitialCreate.cs
-├── wwwroot/                 # Static files (CSS, JS, Bootstrap)
-├── appsettings.json         # Configuration
-├── Program.cs               # Application entry point
-├── AUCAPulse.csproj        # Project file
-└── FinalProject_GroupB.sln # Solution file
+┌────────────────────────────────────────────────────────────────────┐
+│ Razor Pages (Pages/) · Bootstrap 5 · Poppins · Chart.js            │  Presentation
+│  Admin / Lecturer / Staff layout    Student layout                 │
+├────────────────────────────────────────────────────────────────────┤
+│ Controllers (Controllers/)  ←→  Business Services (Services/)      │  API + Logic
+│   /api/...                       Round Robin, cancellation flows   │
+│  RoleGuardMiddleware  ·  FriendlyExceptionMiddleware               │
+├────────────────────────────────────────────────────────────────────┤
+│ ApplicationDbContext (EF Core)   ·   Migrations                    │  Data
+│ PostgreSQL — auca_pulse_db                                         │
+├────────────────────────────────────────────────────────────────────┤
+│ Cross-cutting: JWT  ·  EmailService  ·  NotificationService        │
+│  RoomAutoReleaseService (BackgroundService)                        │
+└────────────────────────────────────────────────────────────────────┘
 ```
 
-## Getting Started
+---
+
+## Standout features (in detail)
+
+### Round Robin room assignment
+[`Services/RoundRobinRoomService.cs`](Services/RoundRobinRoomService.cs)
+
+Singleton service maintaining a circular pointer over `Status == AVAILABLE` rooms. Every ad-hoc reservation increments the pointer modulo the available count, so requests rotate evenly instead of always picking room #1. The increment is wrapped in `lock(_pointerLock)` for thread safety; a fresh scoped `DbContext` is resolved through `IServiceScopeFactory` per call so the singleton never holds a request-scoped dependency.
+
+### Same-day class cancellation with instant room release
+[`Services/LectureScheduleService.CancelForTodayAsync`](Services/LectureScheduleService.cs)
+
+A lecturer hits **Suspend / End now** on `/Schedule`. The service stamps `LectureSchedule.CancelledOn = today (UTC)` and, if that lecturer was holding the room, frees it (`Room.Status = AVAILABLE`, `CurrentLecturerId = null`). All admins receive a notification — *"Class cancelled today: CS201"* — with a deep link to the lecturer's profile. Reinstatement (`ReinstateForTodayAsync`) clears `CancelledOn`. The recurring weekly pattern survives untouched.
+
+### Real-time room occupancy
+[`Services/RoomService.GetRoomNumbersWithActiveClassAsync`](Services/RoomService.cs)
+
+A room is shown as **OCCUPIED** if a `LectureSchedule` for today's day-of-week intersects the current time, falls inside the active semester window, and **isn't cancelled today**. The room detail page also shows an **In Session Now** card with the course code, lecturer, group, and time when an active class is running.
+
+### Notification bell with deep linking
+[`Pages/Shared/_Layout.cshtml`](Pages/Shared/_Layout.cshtml) + [`Services/NotificationService.cs`](Services/NotificationService.cs)
+
+Polls `/api/notification/user/{id}/unread-count` every 30s, badge pulses when new. Clicking the bell opens a Bootstrap modal listing notifications with relative timestamps. Each notification can carry a `Link`; clicking the row marks it read and navigates to that page.
+
+### Role-aware route guard
+[`Middleware/RoleGuardMiddleware.cs`](Middleware/RoleGuardMiddleware.cs)
+
+Runs after `UseSession()` and before Razor Pages. A rules table maps path prefixes to allowed roles; `/api/*` is delegated to `[Authorize]` attributes; signed-out users hit `/Login`; unauthorized roles get `/AccessDenied`.
+
+### Friendly exception middleware
+[`Middleware/FriendlyExceptionMiddleware.cs`](Middleware/FriendlyExceptionMiddleware.cs)
+
+Catches unhandled exceptions, logs the full stack server-side, and returns plain-English text to the user. PostgreSQL uniqueness violations become *"This record already exists"*; FK violations become *"Still in use"*; everything else becomes *"Something went wrong on our end"*. JSON for API callers, redirect to `/Error` for page requests.
+
+### Background room auto-release
+[`Services/RoomAutoReleaseService.cs`](Services/RoomAutoReleaseService.cs)
+
+`IHostedService` ticking every minute that releases rooms whose `OccupiedUntil` has passed — independent of HTTP traffic, so a forgotten reservation never blocks the room overnight.
+
+---
+
+## Domain model
+
+16 EF Core entities under [`Models/`](Models/). Grouped by concern:
+
+| Group | Entities |
+|---|---|
+| **People** | `User`, `Role`, `Location` (Province → District → Sector → Cell → Village), `VerificationRequest`, `PasswordResetRequest` |
+| **Academic** | `Course`, `CourseAssignment`, `Group`, `Semester`, `LectureSchedule` |
+| **Spaces** | `Room`, `Office` |
+| **Interactions** | `Appointment`, `LecturerStatus`, `Notification`, `ChatMessage` |
+
+Key relationships: `User` → `Role`; `LectureSchedule` → `User` (lecturer) + `Semester`; `Room` → `User` (current lecturer); `Appointment` → `User` (student) + `User` (staff); `Notification` → `User`.
+
+---
+
+## API surface
+
+All routes are under `/api/[controller]`:
+
+| Controller | Notable endpoints |
+|---|---|
+| `AuthController` | `POST /register`, `POST /login`, `POST /verify-otp`, `POST /forgot-password`, `POST /reset-password` |
+| `UserController` | CRUD users, approvals |
+| `RoomController` | CRUD, `GET /available`, `POST /{id}/occupy`, `POST /{id}/release`, `POST /auto-assign` |
+| `LectureScheduleController` | CRUD, `GET /lecturer/{id}`, `GET /room/{number}`, `POST /{id}/cancel-today`, `POST /{id}/reinstate-today`, `GET /cancelled?date=` |
+| `LecturerStatusController` | Update / read live status |
+| `LecturerLocationController` | Aggregate live lecturer state |
+| `OfficeController` | CRUD offices, availability updates |
+| `AppointmentController` | CRUD, approve / reject / complete |
+| `NotificationController` | `GET /user/{id}`, `GET /user/{id}/unread-count`, `PUT /{id}/mark-read`, `PUT /user/{id}/mark-all-read` |
+| `CourseController` · `GroupController` · `CourseAssignmentController` · `SemesterController` | Catalog management |
+| `LocationController` | Hierarchical locations |
+| `TimetableController` | Round Robin timetable generation |
+| `VerificationRequestController` · `PasswordResetRequestController` | Approval workflows |
+| `ChatController` | Direct messaging |
+
+---
+
+## Project structure
+
+```
+AUCA-Pulse-Habiyaremye/
+├── Controllers/           REST controllers (Auth, User, Room, ...
+│                          ...LectureSchedule, Appointment, Notification, etc.)
+├── Models/                EF Core entities (16)
+├── DTOs/Request,Response/ Wire shapes
+├── Services/              Business logic (services + interfaces)
+│   ├── RoundRobinRoomService.cs       Singleton, thread-safe pointer
+│   ├── LectureScheduleService.cs      Cancel/reinstate today, notify admins
+│   ├── RoomService.cs                 Active class detection
+│   ├── RoomAutoReleaseService.cs      BackgroundService, 1-min tick
+│   ├── TimetableGeneratorService.cs   Round Robin slot+room assignment
+│   ├── NotificationService.cs         Bell, polling, deep links
+│   └── ...
+├── Middleware/
+│   ├── RoleGuardMiddleware.cs         Page-level role enforcement
+│   └── FriendlyExceptionMiddleware.cs Plain-English errors
+├── Data/
+│   └── ApplicationDbContext.cs        EF Core configuration + relationships
+├── Migrations/                         EF Core migrations
+├── Pages/                              Razor Pages
+│   ├── Dashboard/                      Admin & Lecturer & Staff dashboard
+│   ├── StaffDashboard.cshtml           (alternate entry kept for legacy)
+│   ├── Home.cshtml                     Student home (with hero + tiles)
+│   ├── Schedule.cshtml                 Weekly schedule + Cancel today modal
+│   ├── Rooms.cshtml + RoomDetails/     Browse + In-Session-Now card
+│   ├── Lecturers.cshtml + LecturerDetail.cshtml + LecturerProfile/
+│   ├── Appointments.cshtml             Lecturer/staff inbox
+│   ├── Student/MyAppointments.cshtml   Student outbox
+│   ├── UpdateStatus.cshtml             Lecturer & staff status broadcast
+│   ├── MyOffice.cshtml                 Staff office management
+│   ├── OfficeManagement.cshtml         Admin: assign offices to staff
+│   ├── CourseAssignment, Courses, Groups, Semesters
+│   ├── TimetableGenerator.cshtml       Admin: Round Robin generator
+│   ├── CancelledClasses.cshtml         Admin: today's cancellations
+│   ├── VerificationRequests, UserManagement, Reports
+│   ├── Notifications.cshtml            Full list view
+│   └── Shared/_Layout.cshtml + _StudentLayout.cshtml
+├── wwwroot/
+│   ├── css/site.css                    Design tokens, animations,
+│   │                                   stagger, shine, modal slide-up
+│   └── js/                             Toast, table-paginate, site.js
+├── scripts/
+│   └── build_presentation.py           Class-presentation generator
+├── Program.cs                          DI, middleware order, JWT config
+├── appsettings.json                    Connection string, JWT, SMTP
+└── AUCAPulse.csproj
+```
+
+---
+
+## Getting started
 
 ### Prerequisites
+- **.NET 8.0 SDK**
+- **PostgreSQL 15+** running locally
+- A Gmail account with an app password (for OTP / password-reset emails) — or any SMTP server
+- (Optional) **Visual Studio 2022** or **VS Code** with the C# extension
 
-- **.NET 8.0 SDK** or higher
-- **PostgreSQL** 12+ installed and running
-- **Visual Studio 2022** or **VS Code** (optional)
-- **Git** for version control
+### 1. Clone
 
-### Installation
+```bash
+git clone https://github.com/Samillah47/AUCA-Pulse.git
+cd AUCA-Pulse
+git checkout final/team-merge
+```
 
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/Samillah47/AUCA-Pulse.git
-   cd "AUCA-Pulse/FinalProject_GroupB"
-   git checkout Habiyaremye_Adolphe_26751
-   ```
+### 2. Configure `appsettings.json`
 
-2. **Configure database connection**
-   
-   Edit `appsettings.json`:
-   ```json
-   {
-     "ConnectionStrings": {
-       "DefaultConnection": "Host=localhost;Database=auca_pulse_db;Username=postgres;Password=your_password"
-     },
-     "JwtSettings": {
-       "SecretKey": "your-secret-key-minimum-32-characters-long",
-       "Issuer": "AUCAPulse",
-       "Audience": "AUCAPulseUsers",
-       "ExpirationMinutes": 10080
-     },
-     "EmailSettings": {
-       "SmtpServer": "smtp.gmail.com",
-       "SmtpPort": 587,
-       "SenderEmail": "your-email@gmail.com",
-       "SenderPassword": "your-app-password",
-       "SenderName": "AUCA Pulse"
-     },
-     "ApiSettings": {
-       "BaseUrl": "http://localhost:5204/api"
-     }
-   }
-   ```
+```json
+{
+  "ConnectionStrings": {
+    "DefaultConnection": "Host=localhost;Database=auca_pulse_db;Username=postgres;Password=YOUR_PASSWORD"
+  },
+  "JwtSettings": {
+    "SecretKey": "your-secret-key-minimum-32-characters-long",
+    "Issuer": "AUCAPulse",
+    "Audience": "AUCAPulseUsers",
+    "ExpirationMinutes": 10080
+  },
+  "EmailSettings": {
+    "SmtpServer": "smtp.gmail.com",
+    "SmtpPort": 587,
+    "SenderEmail": "your-email@gmail.com",
+    "SenderPassword": "your-gmail-app-password",
+    "SenderName": "AUCA Pulse"
+  },
+  "ApiSettings": {
+    "BaseUrl": "http://localhost:5204/api"
+  }
+}
+```
 
-3. **Restore dependencies**
-   ```bash
-   dotnet restore
-   ```
+> **Tip:** keep secrets out of git. `appsettings.Development.json` is the recommended override file for local dev.
 
-4. **Restore client-side libraries** (Bootstrap, jQuery)
-   ```bash
-   # Install LibMan CLI (one-time setup)
-   dotnet tool install -g Microsoft.Web.LibraryManager.Cli
-   
-   # Restore libraries
-   libman restore
-   ```
-   
-   **Note:** If styles are not working, see [TEAM_SETUP_GUIDE.md](TEAM_SETUP_GUIDE.md) for detailed instructions.
+### 3. Restore + migrate + run
 
-5. **Apply database migrations**
-   ```bash
-   dotnet ef database update
-   ```
+```bash
+dotnet restore
+dotnet tool install -g Microsoft.Web.LibraryManager.Cli   # one-time, for libman
+libman restore                                            # bootstrap, jquery
+dotnet ef database update
+dotnet run
+```
 
-6. **Run the application**
-   ```bash
-   dotnet run
-   ```
-   Or open `FinalProject_GroupB.sln` in Visual Studio and press F5.
+The app starts at **http://localhost:5204**.
 
-The application will start at `http://localhost:5204`
+### 4. First login
 
-### Initial Data
+Migrations seed an admin account on a fresh database. Use the credentials configured in [`Helpers/AdminUserInitializer.cs`](Helpers/AdminUserInitializer.cs) (or whichever admin you set up). From there: create roles → semesters → courses → groups → assignments → generate timetable.
 
-The application automatically seeds essential data on first migration:
+---
 
-| Entity | Sample Data |
-|--------|-------------|
-| **Roles** | STUDENT, LECTURER, STAFF, ADMIN |
-| **Admin Account** | Email: `habiyaadolphe19@gmail.com` <br/> Password: `Mugisha1234!@` |
-| **Locations** | Rwanda provinces, districts, sectors, cells, villages |
-| **Rooms** | 10 lecture halls and labs |
-| **Offices** | 5 administrative offices |
-| **Users** | 15 sample users (students, lecturers, staff) |
-| **Schedules** | Sample lecture schedules |
-| **Semesters** | Current and upcoming semesters |
+## How a typical day flows
 
-## Development Phases
+1. **Admin** creates the semester, courses, groups, and assigns lecturers to course-groups.
+2. **Admin** clicks **Generate Timetable** — Round Robin distributes slots Mon–Fri + Sun, picks rooms in rotation.
+3. **Students** open `/Home` and see today's classes with rooms; the **Lecturers** page shows live status.
+4. **Lecturer** opens `/Schedule`; their classes appear under "Today". They can press **Suspend / End now** to cancel today only.
+5. The **Room** the lecturer was holding flips back to AVAILABLE; students see it in `/Rooms` immediately.
+6. **Admins** see a notification with a link to that lecturer; the **Cancelled Classes** dashboard lists every cancellation for the day.
+7. **Staff** approve student appointments from `/StaffDashboard` (or `/Appointments`); both parties get notifications.
 
-### ✅ Phase 1: Project Setup & Core Infrastructure (COMPLETED)
-- ASP.NET Core project created with REST API + Razor Pages
-- NuGet packages installed (EF Core, PostgreSQL, JWT, BCrypt, MailKit)
-- Git repository initialized and connected to GitHub
-- .gitignore configured
+---
 
-### ✅ Phase 2: Database Models & Context (COMPLETED)
-- 11 entity models created (User, Role, Location, Room, Office, etc.)
-- ApplicationDbContext configured with relationships
-- Database constraints and indexes
-- Initial migration created and applied
-- Seed data for all entities
+## Security model
 
-### ✅ Phase 3: Authentication & Authorization (COMPLETED)
-- JWT authentication with Bearer tokens
-- OTP-based two-factor authentication via email
-- BCrypt password hashing
-- Role-based authorization (ADMIN, LECTURER, STAFF, STUDENT)
-- Session management with 7-day persistent cookies
+- Passwords hashed with **BCrypt** (no plaintext, ever).
+- **JWT bearer** secures the REST API (`/api/*`).
+- **Session-based role** powers Razor Pages — required by the `RoleGuardMiddleware` rules table.
+- **OTP email verification** at signup — accounts stay PENDING until OTP is confirmed.
+- **Admin approval** is then required before lecturers and staff can sign in.
+- Errors don't leak: end users see human messages, full stack traces stay in server logs.
 
-### ✅ Phase 4: Backend API Development (COMPLETED)
-- 12 REST API controllers with full CRUD operations
-- 22 service classes with business logic
-- Email service with MailKit
-- Notification system
-- Verification request workflow
-- Password reset workflow
-- Room booking and management
-- Lecturer status and schedule management
+---
 
-### ✅ Phase 5: Razor Pages Frontend (COMPLETED)
-- Authentication pages (Login, Signup, OTP Verification, Logout)
-- Role-based dashboard with real-time statistics
-- Room management and details pages
-- Lecturer directory and profile pages
-- Lecture schedule viewer
-- User profile management
-- Notifications page
-- Admin pages (User Management, Verification Requests, Password Resets)
-- Responsive UI with Bootstrap 5
-- API integration with HttpClient
+## Class presentation
 
-### ✅ Phase 6: Bug Fixes & Optimization (COMPLETED)
-- Fixed authentication flow and session persistence
-- Corrected API response parsing across all pages
-- Fixed admin endpoint authorization
-- Added public lecturer endpoint for non-admin users
-- Removed mock data and integrated real API calls
-- Configured HTTP (disabled HTTPS for development)
-- Extended session timeout to 7 days
-- Project structure cleanup
+A pre-built PowerPoint walkthrough lives at the project root:
 
-### 📋 Phase 7: Testing & Deployment (FUTURE)
-- Unit tests for services
-- Integration tests for API endpoints
-- UI testing
-- Production deployment configuration
-- HTTPS configuration for production
+- [`AUCA-Pulse-Presentation.pptx`](AUCA-Pulse-Presentation.pptx) — 20 slides covering problem, solution, tech stack, UML class / use-case / sequence diagrams, Round Robin pseudo-code, cancellation flow, role views, security, demo script, and Q&A.
+- Regenerate any time:
+  ```bash
+  python scripts/build_presentation.py
+  ```
 
-## Team Members
+---
 
-This project is developed by **Group B**:
+## Team — Group B
 
-- **Habiyaremye Adolphe** (26751) - Lead Developer - Branch: `Habiyaremye_Adolphe_26751`
+Adventist University of Central Africa · Bachelor of Information Technology · 2026
+
+- **Habiyaremye Adolphe** — backend lead (.NET, EF Core, Round Robin, route guard, cancellation flow)
+- **Kwizera** — staff & office module, integrations
+- **Samillah Mutoni** — student portal, dashboards
+- **Joseph Manizabayo** — lecturer portal, password-reset flow
+
+The original Java Spring Boot version of AUCA Pulse was authored by **Joseph Manizabayo** ([acpulse-backend](https://github.com/josephmanizabayo/acpulse-backend)). This repository is the .NET migration plus a substantial set of new features (Round Robin generator, same-day cancellation, cancelled-classes dashboard, notification deep-linking, modernized UI).
+
+---
 
 ## Contributing
 
-Each team member works on their own branch and creates pull requests for code review before merging to main.
+We work on per-feature branches. The current integration branch is `final/team-merge`.
 
-### Branch Naming Convention
-```
-FirstName_LastName_StudentID
-```
-
-### Commit Message Convention
-```
-Phase X.Y - Feature: Brief description of changes
+```bash
+git checkout -b feature/your-thing
+# ... edits, commits ...
+git push -u origin feature/your-thing
+# open a PR against final/team-merge
 ```
 
-### Git Workflow
-- Each phase is committed separately with descriptive messages
-- All commits are pushed to the feature branch
-- 16+ commits documenting the complete development journey
+Commits should describe **why**, not just **what**. Builds and tests must pass before merging.
 
-## Original Project
-
-This is a .NET C# migration of the original Java Spring Boot project by **Joseph Manizabayo**.
-
-**Original Repository:** [ACPulse Backend](https://github.com/josephmanizabayo/acpulse-backend)
+---
 
 ## License
 
-This project is licensed under the AUCA WebTech class License.
-
-**Attribution Required:** Any reuse, modification, or extension of this codebase must credit the original author (Joseph Manizabayo) and the migration team.
+For academic use under the AUCA WebTech course. Reuse outside coursework requires attribution to the original author (Joseph Manizabayo) and the .NET migration team.
 
 ---
 
 <div align="center">
 
-**© 2026 AUCA Group B — All Rights Reserved**
+**© 2026 AUCA Pulse · Group B**
 
-*Migrated to .NET by Habiyaremye Adolphe and Team*
+*Built with .NET, PostgreSQL, Bootstrap 5, and a lot of merge conflicts.*
 
 </div>
