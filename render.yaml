@@ -64,3 +64,14 @@ services:
       # Used by the Razor Pages layer when it calls its own API
       - key: ApiSettings__BaseUrl
         value: /api
+
+      # Seeded admin (AdminUserInitializer self-heals this row on every
+      # boot — password is reset to the configured value if it drifts).
+      - key: AdminUser__Name
+        value: System Admin
+      - key: AdminUser__Email
+        value: sethmaur7@gmail.com
+      - key: AdminUser__Password
+        value: Admin1234!@
+      - key: AdminUser__IdentificationNumber
+        value: ADMIN001
